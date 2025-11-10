@@ -2,11 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import { AllExceptionsFilter } from './all-execption.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
 
-  app.use(helmet()); // XSS, 클릭재킹 공격방어
+  // XSS, 클릭재킹 공격방어
+  app.use(helmet());
 
   // CORS 설정 ( 프론트와 백엔드 간 통신 허용 )
   app.enableCors({
@@ -15,6 +19,7 @@ async function bootstrap() {
   });
 
   app.enableShutdownHooks();
+  const port = configService.get<number>('PORT') || 3001;
 
   // 글로벌 Prefix 설정
   app.setGlobalPrefix('api/v1', {
@@ -36,7 +41,7 @@ async function bootstrap() {
     .setTitle('API')
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }) // Swagger에서 JWT 토큰을 넣고 모든 API 테스트 가능
-    .addServer('/api/v1') // 글로벌 prefix(/api)가 Swagger 문서에 반영됨
+    .addServer('/api/v1') // 글로벌 prefix(/api/v1)가 Swagger 문서에 반영됨
     .build();
 
   const doc = SwaggerModule.createDocument(app, config);
@@ -48,6 +53,7 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(process.env.PORT ?? 3000);
+  app.useGlobalFilters(new AllExceptionsFilter()); // 에러 문 처리
+  await app.listen(port);
 }
 bootstrap();
