@@ -17,7 +17,7 @@ import { GradesModule } from './grades/grades.module';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      validationSchema: configModuleValidationSchema,
+      // validationSchema: configModuleValidationSchema,
       envFilePath: '.env',
     }),
     TypeOrmModule.forRoot({
