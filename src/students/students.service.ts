@@ -3,7 +3,7 @@ import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentsRepository } from './students.repository';
 import { IPaginationOptions, Pagination } from 'nestjs-typeorm-paginate';
-import { Grade } from 'src/grades/entities/grade.entity';
+import { Grade } from './entities/grade.entity';
 
 @Injectable()
 export class StudentsService {

@@ -10,7 +10,6 @@ import { AdminModule } from './admin/admin.module';
 import { UsersModule } from './users/users.module';
 import { configModuleValidationSchema } from './configs/env-validation.config';
 import { ExamsModule } from './exams/exams.module';
-import { GradesModule } from './grades/grades.module';
 
 @Module({
   imports: [
@@ -38,7 +37,6 @@ import { GradesModule } from './grades/grades.module';
     AdminModule,
     UsersModule,
     ExamsModule,
-    GradesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

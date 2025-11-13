@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Student } from './entities/student.entity';
 import { Repository } from 'typeorm';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
-import { Grade } from '../grades/entities/grade.entity';
+import { Grade } from './entities/grade.entity';
 
 @Injectable()
 export class StudentsRepository {
