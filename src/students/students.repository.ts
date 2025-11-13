@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Student } from './entities/student.entity';
 import { Repository } from 'typeorm';
-import { Grade } from 'src/grades/entities/grade.entity';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
+import { Grade } from '../grades/entities/grade.entity';
 
 @Injectable()
 export class StudentsRepository {
   constructor(
     @InjectRepository(Student)
-    private readonly repository: Repository<Student>,
+    private readonly studentRepository: Repository<Student>,
     @InjectRepository(Grade)
     private readonly gradeRepository: Repository<Grade>,
   ) {}
