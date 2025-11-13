@@ -23,7 +23,7 @@ export class StudentsController {
   async getGrades(
     @Param('studentId', ParseIntPipe) studentId: number,
     @Query('page') page = 1,
-    @Query('limit') limit = 10,
+    @Query('limit') limit = 10, //한 페이지에 보여줄 갯수
     @Req() req,
   ) {
     const _page = Number(page) || 1;
@@ -34,6 +34,21 @@ export class StudentsController {
       limit: _limit,
     });
     return grades;
+  }
+
+  //성적 상세 조회
+  @Get('/:studentId/grades/:gradeId')
+  async getGradeDetail(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Param('gradeId', ParseIntPipe) gradeId: number,
+    @Req() req,
+  ) {
+    // const userId = req.user.userId;
+    const grade = await this.studentsService.findGardeDetail(
+      studentId,
+      gradeId,
+    );
+    return grade;
   }
 
   @Post()

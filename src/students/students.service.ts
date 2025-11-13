@@ -8,12 +8,22 @@ import { Grade } from 'src/grades/entities/grade.entity';
 @Injectable()
 export class StudentsService {
   constructor(private readonly studentsRepository: StudentsRepository) {}
+
   async findGarde(
     studentId: number,
     options?: IPaginationOptions,
   ): Promise<Pagination<Grade>> {
     return await this.studentsRepository.findGrade(studentId, options);
   }
+
+  async findGardeDetail(studentId: number, gradeId: number): Promise<Grade> {
+    const grade = await this.studentsRepository.findGradeDetail(
+      studentId,
+      gradeId,
+    );
+    return grade;
+  }
+
   create(createStudentDto: CreateStudentDto) {
     return 'This action adds a new student';
   }

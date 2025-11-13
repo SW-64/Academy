@@ -14,6 +14,7 @@ export class StudentsRepository {
     private readonly gradeRepository: Repository<Grade>,
   ) {}
 
+  //성적 목록 조회(페이징)
   async findGrade(studentId: number, options?: IPaginationOptions) {
     return paginate(this.gradeRepository, options, {
       where: { student_id: studentId },
@@ -33,5 +34,14 @@ export class StudentsRepository {
         },
       },
     });
+  }
+
+  //성적 상세 조회
+  async findGradeDetail(studentId: number, gradeId: number) {
+    const grade = await this.gradeRepository.findOne({
+      where: { student_id: studentId, grade_id: gradeId },
+      relations: ['exam'],
+    });
+    return grade;
   }
 }
