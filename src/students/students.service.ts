@@ -1,46 +1,54 @@
 import { Injectable } from '@nestjs/common';
-import { CreateStudentDto } from './dto/create-student.dto';
-import { UpdateStudentDto } from './dto/update-student.dto';
-import { StudentsRepository } from './students.repository';
-import { IPaginationOptions, Pagination } from 'nestjs-typeorm-paginate';
+import {
+  IPaginationOptions,
+  paginate,
+  Pagination,
+} from 'nestjs-typeorm-paginate';
 import { Grade } from './entities/grade.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Student } from './entities/student.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class StudentsService {
-  constructor(private readonly studentsRepository: StudentsRepository) {}
+  constructor(
+    @InjectRepository(Student)
+    private readonly studentsRepository: Repository<Student>,
+    @InjectRepository(Grade)
+    private readonly gradesRepository: Repository<Grade>,
+  ) {}
 
-  async findGarde(
+  //성적 목록 조회(페이징)
+  async getGardes(
     studentId: number,
     options?: IPaginationOptions,
   ): Promise<Pagination<Grade>> {
-    return await this.studentsRepository.findGrade(studentId, options);
+    return await paginate(this.gradesRepository, options, {
+      where: { student_id: studentId },
+      relations: ['exam'],
+      order: { grade_id: 'ASC' },
+      select: {
+        grade_id: true,
+        exam_id: true,
+        student_id: true,
+        subject: true,
+        score: true,
+        exam: {
+          year: true,
+          semester: true,
+          type: true,
+          exam_date: true,
+        },
+      },
+    });
   }
 
-  async findGardeDetail(studentId: number, gradeId: number): Promise<Grade> {
-    const grade = await this.studentsRepository.findGradeDetail(
-      studentId,
-      gradeId,
-    );
+  //성적 상세 조회
+  async getGardeDetail(studentId: number, gradeId: number): Promise<Grade> {
+    const grade = await this.gradesRepository.findOne({
+      where: { student_id: studentId, grade_id: gradeId },
+      relations: ['exam'],
+    });
     return grade;
-  }
-
-  create(createStudentDto: CreateStudentDto) {
-    return 'This action adds a new student';
-  }
-
-  findAll() {
-    return `This action returns all students`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} student`;
-  }
-
-  update(id: number, updateStudentDto: UpdateStudentDto) {
-    return `This action updates a #${id} student`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} student`;
   }
 }

@@ -1,7 +1,7 @@
-import { Admin } from 'src/admin/entities/admin.entity';
-import { RefreshToken } from 'src/auth/entities/refreshtoken.entity';
-import { Parent } from 'src/parents/entities/parent.entity';
-import { Student } from 'src/students/entities/student.entity';
+import { Admin } from '../../admin/entities/admin.entity';
+import { RefreshToken } from '../../auth/entities/refreshtoken.entity';
+import { Parent } from '../../parents/entities/parent.entity';
+import { Student } from '../../students/entities/student.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -20,8 +20,8 @@ export enum Role {
 
 @Entity()
 export class User {
-  @PrimaryGeneratedColumn({ comment: '유저 아이디' })
-  user_id: number;
+  @PrimaryGeneratedColumn({ name: 'user_id', comment: '유저 아이디' })
+  userId: number;
 
   @Column({ unique: true, comment: '이메일' })
   email: string;

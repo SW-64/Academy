@@ -7,15 +7,15 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity()
 export class RefreshToken {
   @PrimaryGeneratedColumn({ comment: '토큰 id' })
-  refreshtoken_id: number;
+  refreshtokenId: number;
 
   @Column({ name: 'user_id', comment: '유저 id' })
-  user_id: number;
+  userId: number;
 
   @Column({ comment: '리프레시 토큰(SHA256)' })
   refreshtoken: string;
