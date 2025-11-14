@@ -1,18 +1,12 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
-  Patch,
   Param,
-  Delete,
   Req,
   ParseIntPipe,
   Query,
 } from '@nestjs/common';
 import { StudentsService } from './students.service';
-import { CreateStudentDto } from './dto/create-student.dto';
-import { UpdateStudentDto } from './dto/update-student.dto';
 
 @Controller('students')
 export class StudentsController {
@@ -29,7 +23,7 @@ export class StudentsController {
     const _page = Number(page) || 1;
     const _limit = Math.min(Number(limit) || 10, 50);
 
-    const grades = await this.studentsService.findGarde(studentId, {
+    const grades = await this.studentsService.getGardes(studentId, {
       page: _page,
       limit: _limit,
     });
@@ -44,35 +38,7 @@ export class StudentsController {
     @Req() req,
   ) {
     // const userId = req.user.userId;
-    const grade = await this.studentsService.findGardeDetail(
-      studentId,
-      gradeId,
-    );
+    const grade = await this.studentsService.getGardeDetail(studentId, gradeId);
     return grade;
-  }
-
-  @Post()
-  create(@Body() createStudentDto: CreateStudentDto) {
-    return this.studentsService.create(createStudentDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.studentsService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.studentsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
-    return this.studentsService.update(+id, updateStudentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.studentsService.remove(+id);
   }
 }
