@@ -2,30 +2,33 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Parent } from './entities/parent.entity';
 import { Repository } from 'typeorm';
+import { Student } from '../students/entities/student.entity';
 
 @Injectable()
 export class ParentsRepository {
   constructor(
     @InjectRepository(Parent)
     private readonly parentRepository: Repository<Parent>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
   ) {}
 
   async findByUserId(userId: number) {
     const parent = await this.parentRepository.findOne({
-      where: { user_id: userId },
-      select: ['parent_id'],
+      where: { userId },
+      select: ['parentId'],
     });
-    return parent ? parent.parent_id : null;
+    return parent ? parent.parentId : null;
   }
 
   async findMyStudents(parentId: any) {
     const myStudents = await this.studentRepository.find({
-      where: { parent_id: parentId },
-      relations: ['users'],
+      where: { parentId },
+      relations: ['user'],
       select: {
-        student_id: true,
+        studentId: true,
         user: {
-          user_id: true,
+          userId: true,
           name: true,
           email: true,
         },
