@@ -1,8 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpStatus,
+  UseGuards,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
-
+import { SignUpDto } from './dto/sign-up.dto';
+import { ApiTags } from '@nestjs/swagger';
+import { MESSAGES } from './../constants/message.constant';
+import { SignInDto } from './dto/sign-in.dto';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { UserInfo } from '../util/decorators/user-info.decorator';
+import { PartialUser } from '../users/interfaces/partial-user.entity';
+import { Response } from 'express';
+@ApiTags('인증')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
