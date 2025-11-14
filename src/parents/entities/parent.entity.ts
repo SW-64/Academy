@@ -15,10 +15,10 @@ import {
 @Entity()
 export class Parent {
   @PrimaryGeneratedColumn({ comment: '부모 id' })
-  parent_id: number;
+  parentId: number;
 
   @Column({ name: 'user_id', unique: true, comment: '유저 id' })
-  user_id: number;
+  userId: number;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;

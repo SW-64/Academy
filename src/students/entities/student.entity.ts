@@ -1,6 +1,6 @@
-import { Grade } from 'src/grades/entities/grade.entity';
-import { Parent } from 'src/parents/entities/parent.entity';
-import { User } from 'src/users/entities/user.entity';
+import { Grade } from './grade.entity';
+import { Parent } from '../../parents/entities/parent.entity';
+import { User } from '../../users/entities/user.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -17,13 +17,13 @@ import {
 @Entity()
 export class Student {
   @PrimaryGeneratedColumn({ comment: '학생 id' })
-  student_id: number;
+  studentId: number;
 
   @Column({ name: 'user_id', unique: true, comment: '유저 id' })
-  user_id: number;
+  userId: number;
 
   @Column({ name: 'parent_id', nullable: true, comment: '부모 id' })
-  parent_id: number | null;
+  parentId: number | null;
 
   @Column({ comment: '학년' })
   grade: number;

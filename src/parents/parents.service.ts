@@ -1,26 +1,39 @@
 import { Injectable } from '@nestjs/common';
-import { CreateParentDto } from './dto/create-parent.dto';
-import { UpdateParentDto } from './dto/update-parent.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Parent } from './entities/parent.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ParentsService {
-  create(createParentDto: CreateParentDto) {
-    return 'This action adds a new parent';
+  constructor(
+    @InjectRepository(Parent)
+    private readonly parentRepository: Repository<Parent>,
+  ) {}
+
+  async getParentByUserId(userId: number) {
+    const parent = await this.parentRepository.findOne({
+      where: { userId },
+      select: ['parentId'],
+    });
+    return parent ? parent.parentId : null;
   }
 
-  findAll() {
-    return `This action returns all parents`;
-  }
+  async getMyStudents(parentId: number) {
+    const students = await this.parentRepository.find({
+      where: { parentId },
+      relations: ['user', 'student'],
+      select: {
+        student: {
+          studentId: true,
+        },
+        user: {
+          userId: true,
+          name: true,
+          email: true,
+        },
+      },
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} parent`;
-  }
-
-  update(id: number, updateParentDto: UpdateParentDto) {
-    return `This action updates a #${id} parent`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} parent`;
+    return students;
   }
 }

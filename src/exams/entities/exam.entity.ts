@@ -7,7 +7,7 @@ import {
   DeleteDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Grade } from 'src/grades/entities/grade.entity';
+import { Grade } from '../../students/entities/grade.entity';
 
 export enum ExamType {
   MIDTERM = 'MIDTERM',
@@ -18,7 +18,7 @@ export enum ExamType {
 @Entity()
 export class Exam {
   @PrimaryGeneratedColumn({ comment: '시험 id' })
-  exam_id: number;
+  examId: number;
 
   @Column({ comment: '해당년도' })
   year: number;
