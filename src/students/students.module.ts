@@ -4,9 +4,7 @@ import { StudentsController } from './students.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Student } from './entities/student.entity';
 import { StudentsRepository } from './students.repository';
-import { GradeRepository } from 'src/grades/grades.repository';
-import { GradesModule } from 'src/grades/grades.module';
-import { Grade } from 'src/grades/entities/grade.entity';
+import { Grade } from './entities/grade.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Student, Grade])],
