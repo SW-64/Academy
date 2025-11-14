@@ -13,10 +13,10 @@ import { Admin } from './admin.entity';
 @Entity()
 export class Material {
   @PrimaryGeneratedColumn({ comment: '학습자료 id' })
-  material_id: number;
+  materialId: number;
 
   @Column({ name: 'admin_id', nullable: true, comment: '관리자 id' })
-  admin_id: number | null;
+  adminId: number | null;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;

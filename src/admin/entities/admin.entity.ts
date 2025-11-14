@@ -17,10 +17,10 @@ import { Notice } from './notice.entity';
 @Entity()
 export class Admin {
   @PrimaryGeneratedColumn({ comment: '관리자 id' })
-  admin_id: number;
+  adminId: number;
 
-  @Column({ name: 'user_id', unique: true, comment: '유저 id' })
-  user_id: number;
+  @Column({ name: 'userId', unique: true, comment: '유저 id' })
+  userId: number;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;
@@ -32,7 +32,7 @@ export class Admin {
   deletedAt: Date | null;
 
   @OneToOne(() => User, (user) => user.admin, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @OneToMany(() => Material, (m) => m.admin)

@@ -30,7 +30,7 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
     const user = await this.userRepository.findOne({
       where: { email },
       select: {
-        user_id: true,
+        userId: true,
         password: true,
         isApproved: true,
         role: true,
@@ -46,7 +46,7 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
     }
     // 여기서 컨트롤러에 넘겨줄 최소 정보만 리턴
     const partialUser: PartialUser = {
-      user_id: user.user_id,
+      userId: user.userId,
       role: user.role,
     };
 

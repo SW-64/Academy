@@ -65,7 +65,7 @@ export class AuthService {
 
   // accesstoken 생성
   createAccessToken(userId: number) {
-    const payload = { user_id: userId };
+    const payload = { userId: userId };
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
       expiresIn: this.configService.get<number>('JWT_EXPIRES_IN'),
@@ -82,7 +82,7 @@ export class AuthService {
   }
   // refreshtoken 생성
   createRefreshToken(userId: number) {
-    const payload = { user_id: userId };
+    const payload = { userId: userId };
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('REFRESH_SECRET'),
       expiresIn: this.configService.get<number>('REFRESH_TOKEN_EXPIRES_IN'),
@@ -112,7 +112,7 @@ export class AuthService {
 
     // 3. 유저가 이미 RefreshToken row를 가지고 있는지 검사
     const existedRefreshToken = await this.refreshtokenRepository.findOneBy({
-      user_id: userId,
+      userId: userId,
     });
     // 4-1. 이미 있다 → refreshtoken, expiresAt update
     const updateContent = {
@@ -121,13 +121,13 @@ export class AuthService {
     };
     if (existedRefreshToken) {
       await this.refreshtokenRepository.update(
-        { user_id: userId },
+        { userId: userId },
         updateContent,
       );
     } else {
       // 4-2. 없다 → 새 row 생성
       await this.refreshtokenRepository.save({
-        user_id: userId,
+        userId: userId,
         refreshtoken: currentHashedRefreshToken,
         createdAt: new Date(),
         expiresAt: expiresAt,

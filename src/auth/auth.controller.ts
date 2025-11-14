@@ -52,7 +52,7 @@ export class AuthController {
     @Body() signInDto: SignInDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const data = await this.authService.signIn(user.user_id, res);
+    const data = await this.authService.signIn(user.userId, res);
 
     return {
       statusCode: HttpStatus.OK,

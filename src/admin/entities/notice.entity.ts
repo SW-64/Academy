@@ -13,10 +13,10 @@ import { Admin } from './admin.entity';
 @Entity()
 export class Notice {
   @PrimaryGeneratedColumn({ comment: '공지 id' })
-  notice_id: number;
+  noticeId: number;
 
   @Column({ name: 'admin_id', nullable: true, comment: '관리자 id' })
-  admin_id: number | null;
+  adminId: number | null;
 
   @Column({ comment: '제목' })
   title: string;

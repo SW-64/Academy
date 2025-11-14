@@ -14,13 +14,13 @@ import { Exam } from 'src/exams/entities/exam.entity';
 @Entity()
 export class Grade {
   @PrimaryGeneratedColumn({ comment: '성적 id' })
-  grade_id: number;
+  gradeId: number;
 
   @Column({ name: 'exam_id', comment: '시험 id' })
-  exam_id: number;
+  examId: number;
 
   @Column({ name: 'student_id', comment: '학생 id' })
-  student_id: number;
+  studentId: number;
 
   @Column({ comment: '과목명' })
   subject: string;
