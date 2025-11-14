@@ -24,13 +24,13 @@ export class StudentsService {
     options?: IPaginationOptions,
   ): Promise<Pagination<Grade>> {
     return await paginate(this.gradesRepository, options, {
-      where: { student_id: studentId },
+      where: { studentId: studentId },
       relations: ['exam'],
-      order: { grade_id: 'ASC' },
+      order: { gradeId: 'ASC' },
       select: {
-        grade_id: true,
-        exam_id: true,
-        student_id: true,
+        gradeId: true,
+        examId: true,
+        studentId: true,
         subject: true,
         score: true,
         exam: {
@@ -46,7 +46,7 @@ export class StudentsService {
   //성적 상세 조회
   async getGardeDetail(studentId: number, gradeId: number): Promise<Grade> {
     const grade = await this.gradesRepository.findOne({
-      where: { student_id: studentId, grade_id: gradeId },
+      where: { studentId: studentId, gradeId: gradeId },
       relations: ['exam'],
     });
     return grade;

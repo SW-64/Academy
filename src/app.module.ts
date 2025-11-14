@@ -16,7 +16,7 @@ import { ExamsModule } from './exams/exams.module';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      // validationSchema: configModuleValidationSchema,
+      validationSchema: configModuleValidationSchema,
       envFilePath: '.env',
     }),
     TypeOrmModule.forRoot({
