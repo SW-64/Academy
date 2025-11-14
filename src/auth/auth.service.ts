@@ -52,15 +52,86 @@ export class AuthService {
     return user;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  // 로그인
+  async signIn(userId: number, res: Response) {
+    const { accessToken, ...accessOption } = this.createAccessToken(userId);
+    const { refreshToken, ...refreshOption } = this.createRefreshToken(userId);
+    await this.setCurrentRefreshToken(refreshToken, userId);
+    res.cookie('Authentication', accessToken, accessOption);
+    res.cookie('Refresh', refreshToken, refreshOption);
+
+    return { accessToken, refreshToken };
   }
 
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
+  // accesstoken 생성
+  createAccessToken(userId: number) {
+    const payload = { user_id: userId };
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: this.configService.get<number>('JWT_EXPIRES_IN'),
+    });
+    // accesstoken을 쿠키에 담아 클라이언트에 전달하기 위함
+    return {
+      accessToken: accessToken,
+      path: '/',
+      httpOnly: true, // 클라이언트 측 스크립트에서 쿠키에 접근할 수 없어 보안 강화
+      maxAge: Number(this.configService.get('JWT_EXPIRES_IN')) * 1000,
+      //secure: false, // 개발 환경에서는 false, 배포 환경에서는 true로 설정할 것
+      //sameSite: 'none',
+    };
+  }
+  // refreshtoken 생성
+  createRefreshToken(userId: number) {
+    const payload = { user_id: userId };
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('REFRESH_SECRET'),
+      expiresIn: this.configService.get<number>('REFRESH_TOKEN_EXPIRES_IN'),
+    });
+    return {
+      refreshToken: refreshToken,
+      path: '/',
+      httpOnly: true,
+      maxAge: Number(this.configService.get('REFRESH_TOKEN_EXPIRES_IN')) * 1000,
+      //secure: false, // 개발 환경에서는 false, 배포 환경에서는 true로 설정할 것
+      //sameSite: 'none',
+    };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  // refreshtoken 데이터베이스에 저장
+  async setCurrentRefreshToken(refreshToken: string, userId: number) {
+    // 1. refreshToken 암호화
+    const currentHashedRefreshToken = await bcrypt.hash(
+      refreshToken,
+      this.configService.get<number>('REFRESH_TOKEN_HASH'),
+    );
+    // 2. refreshToken 만료시간 계산
+    const expiresSec = this.configService.get<number>(
+      'REFRESH_TOKEN_EXPIRES_IN',
+    ); // 1209600
+    const expiresAt = new Date(Date.now() + expiresSec * 1000);
+
+    // 3. 유저가 이미 RefreshToken row를 가지고 있는지 검사
+    const existedRefreshToken = await this.refreshtokenRepository.findOneBy({
+      user_id: userId,
+    });
+    // 4-1. 이미 있다 → refreshtoken, expiresAt update
+    const updateContent = {
+      refreshtoken: currentHashedRefreshToken,
+      expiresAt: expiresAt,
+    };
+    if (existedRefreshToken) {
+      await this.refreshtokenRepository.update(
+        { user_id: userId },
+        updateContent,
+      );
+    } else {
+      // 4-2. 없다 → 새 row 생성
+      await this.refreshtokenRepository.save({
+        user_id: userId,
+        refreshtoken: currentHashedRefreshToken,
+        createdAt: new Date(),
+        expiresAt: expiresAt,
+      });
+    }
   }
 }

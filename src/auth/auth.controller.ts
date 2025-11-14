@@ -40,18 +40,24 @@ export class AuthController {
     };
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
-  }
+  /**
+   * 로그인
+   * @param signInDto
+   * @returns
+   */
+  @UseGuards(LocalAuthGuard)
+  @Post('/sign-in')
+  async signIn(
+    @UserInfo() user: PartialUser,
+    @Body() signInDto: SignInDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.authService.signIn(user.user_id, res);
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.AUTH.SIGN_IN.SUCCEED,
+      data: data,
+    };
   }
 }
