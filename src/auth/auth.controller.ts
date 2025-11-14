@@ -24,14 +24,20 @@ import { Response } from 'express';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
-  }
+  /**
+   * 회원가입
+   * @param signUpDto
+   * @returns
+   */
+  @Post('/sign-up')
+  async signUp(@Body() signUpDto: SignUpDto) {
+    const data = await this.authService.signUp(signUpDto);
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: MESSAGES.AUTH.SIGN_UP.SUCCEED,
+      data: data,
+    };
   }
 
   @Get(':id')

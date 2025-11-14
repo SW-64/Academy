@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
+import { QueryFailedError } from 'typeorm';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -32,6 +33,26 @@ export class AllExceptionsFilter implements ExceptionFilter {
         timestamp: new Date().toISOString(),
         path: request.url,
       });
+    }
+    // 2) DB QueryFailedError + ER_DUP_ENTRY 처리
+    if (exception instanceof QueryFailedError) {
+      const anyException = exception as any;
+
+      // MySQL 중복 키 에러 코드
+      if (anyException.code === 'ER_DUP_ENTRY') {
+        console.error({
+          status: HttpStatus.BAD_REQUEST,
+          path: request.url,
+          error: exception,
+        });
+
+        return response.status(HttpStatus.BAD_REQUEST).json({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: '이미 존재하는 값입니다.',
+          timestamp: new Date().toISOString(),
+          path: request.url,
+        });
+      }
     }
 
     // 그 외 예외 (예: TypeError, QueryFailedError 등)
