@@ -19,7 +19,7 @@ async function bootstrap() {
   });
 
   app.enableShutdownHooks();
-  const port = configService.get<number>('PORT') || 3001;
+  const port = configService.get<number>('SERVER_PORT') || 3001;
 
   // 글로벌 Prefix 설정
   app.setGlobalPrefix('api/v1', {

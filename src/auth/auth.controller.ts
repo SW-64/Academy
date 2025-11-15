@@ -1,34 +1,63 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpStatus,
+  UseGuards,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
-
+import { SignUpDto } from './dto/sign-up.dto';
+import { ApiTags } from '@nestjs/swagger';
+import { MESSAGES } from './../constants/message.constant';
+import { SignInDto } from './dto/sign-in.dto';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { UserInfo } from '../util/decorators/user-info.decorator';
+import { PartialUser } from '../users/interfaces/partial-user.entity';
+import { Response } from 'express';
+@ApiTags('인증')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  /**
+   * 회원가입
+   * @param signUpDto
+   * @returns
+   */
+  @Post('/sign-up')
+  async signUp(@Body() signUpDto: SignUpDto) {
+    const data = await this.authService.signUp(signUpDto);
+
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: MESSAGES.AUTH.SIGN_UP.SUCCEED,
+      data: data,
+    };
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
-  }
+  /**
+   * 로그인
+   * @param signInDto
+   * @returns
+   */
+  @UseGuards(LocalAuthGuard)
+  @Post('/sign-in')
+  async signIn(
+    @UserInfo() user: PartialUser,
+    @Body() signInDto: SignInDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.authService.signIn(user.userId, res);
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.AUTH.SIGN_IN.SUCCEED,
+      data: data,
+    };
   }
 }

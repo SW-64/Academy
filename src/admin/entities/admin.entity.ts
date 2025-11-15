@@ -16,11 +16,11 @@ import { Notice } from './notice.entity';
 
 @Entity()
 export class Admin {
-  @PrimaryGeneratedColumn({ comment: '관리자 id' })
-  admin_id: number;
+  @PrimaryGeneratedColumn({ name: 'admin_id', comment: '관리자 id' })
+  adminId: number;
 
   @Column({ name: 'user_id', unique: true, comment: '유저 id' })
-  user_id: number;
+  userId: number;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;

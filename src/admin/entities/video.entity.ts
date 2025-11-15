@@ -13,10 +13,10 @@ import { Admin } from './admin.entity';
 @Entity()
 export class Video {
   @PrimaryGeneratedColumn({ comment: '영상 id' })
-  video_id: number;
+  videoId: number;
 
   @Column({ name: 'admin_id', nullable: true, comment: '관리자 id' })
-  admin_id: number | null;
+  adminId: number | null;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;
