@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete,
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
   Req,
   HttpStatus,
   Query,
@@ -6,7 +13,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete,
 import { AdminService } from './admin.service';
 import { CreateNoticeDto } from './dto/create-notice.dto';
 import { MESSAGES } from '../constants/message.constant';
-import { UpdateAdminDto } from './dto/update-admin.dto';
+import { UpdateNoticeDto } from './dto/update-notice.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -31,18 +38,47 @@ export class AdminController {
     };
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.adminService.findOne(+id);
+  /**
+   * 공지사항 전체조회
+   * @param req
+   * @returns
+   */
+  @Get('/notices')
+  async findAllNotices(@Query('page') page = 1, @Query('limit') limit = 10) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Number(limit) || 10, 50);
+    const notices = await this.adminService.findAllNotices({
+      page: _page,
+      limit: _limit,
+    });
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.NOTICE.GET_ALL,
+      data: notices,
+    };
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAdminDto: UpdateAdminDto) {
-    return this.adminService.update(+id, updateAdminDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.adminService.remove(+id);
+  /**
+   * 공지사항 수정
+   * @param updateNoticeDto
+   * @returns
+   */
+  @Patch('/notices/:noticeId')
+  async updateNotice(
+    @Param('noticeId') noticeId: number,
+    @Body() updateNoticeDto: UpdateNoticeDto,
+    @Req() req,
+  ) {
+    const userId = req.user.userId;
+    const updatedNotice = await this.adminService.updateNotice(
+      userId,
+      noticeId,
+      updateNoticeDto,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.NOTICE.UPDATED,
+      data: updatedNotice,
+    };
   }
 }
