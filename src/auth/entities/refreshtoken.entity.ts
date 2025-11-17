@@ -23,8 +23,8 @@ export class RefreshToken {
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', nullable: true, comment: '만료날짜' })
-  deletedAt: Date | null;
+  @DeleteDateColumn({ name: 'expires_at', nullable: true, comment: '만료날짜' })
+  expiresAt: Date | null;
 
   @OneToOne(() => User, (user) => user.refreshToken, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
