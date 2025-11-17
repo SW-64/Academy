@@ -1,20 +1,34 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete,
+  Req,
+  HttpStatus,
+  Query,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { CreateAdminDto } from './dto/create-admin.dto';
+import { CreateNoticeDto } from './dto/create-notice.dto';
+import { MESSAGES } from '../constants/message.constant';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Post()
-  create(@Body() createAdminDto: CreateAdminDto) {
-    return this.adminService.create(createAdminDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.adminService.findAll();
+  /**
+   * 공지사항 생성
+   * @param createNoticeDto
+   * @returns
+   */
+  @Post('/notices')
+  async createNotice(@Req() req, @Body() createNoticeDto: CreateNoticeDto) {
+    const userId = req.user.userId;
+    const notice = await this.adminService.createNotice(
+      userId,
+      createNoticeDto,
+    );
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: MESSAGES.ADMIN.NOTICE.CREATED,
+      data: notice,
+    };
   }
 
   @Get(':id')
