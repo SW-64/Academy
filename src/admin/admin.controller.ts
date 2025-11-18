@@ -14,6 +14,8 @@ import { AdminService } from './admin.service';
 import { CreateNoticeDto } from './dto/create-notice.dto';
 import { MESSAGES } from '../constants/message.constant';
 import { UpdateNoticeDto } from './dto/update-notice.dto';
+import { UserInfo } from '../util/decorators/user-info.decorator';
+import { User } from '../users/entities/user.entity';
 
 @Controller('admin')
 export class AdminController {
@@ -25,8 +27,11 @@ export class AdminController {
    * @returns
    */
   @Post('/notices')
-  async createNotice(@Req() req, @Body() createNoticeDto: CreateNoticeDto) {
-    const userId = req.user.userId;
+  async createNotice(
+    @UserInfo() user: User,
+    @Body() createNoticeDto: CreateNoticeDto,
+  ) {
+    const userId = user.userId;
     const notice = await this.adminService.createNotice(
       userId,
       createNoticeDto,
@@ -81,9 +86,9 @@ export class AdminController {
   async updateNotice(
     @Param('noticeId') noticeId: number,
     @Body() updateNoticeDto: UpdateNoticeDto,
-    @Req() req,
+    @UserInfo() user: User,
   ) {
-    const userId = req.user.userId;
+    const userId = user.userId;
     const updatedNotice = await this.adminService.updateNotice(
       userId,
       noticeId,
@@ -102,8 +107,11 @@ export class AdminController {
    *
    */
   @Delete('/notices/:noticeId')
-  async deleteNotice(@Param('noticeId') noticeId: number, @Req() req) {
-    const userId = req.user.userId;
+  async deleteNotice(
+    @Param('noticeId') noticeId: number,
+    @UserInfo() user: User,
+  ) {
+    const userId = user.userId;
     await this.adminService.deleteNotice(userId, noticeId);
     return {
       statusCode: HttpStatus.OK,
