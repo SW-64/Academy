@@ -86,11 +86,10 @@ export class AdminService {
       throw new BadRequestException(MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.SAME);
     }
 
-    const updateNotice = await this.noticeRepository.update(
-      { noticeId },
-      { title, content },
-    );
+    await this.noticeRepository.update({ noticeId }, { title, content }); // 업데이트 쿼리만 실행
 
+    //다시 조회함으로써 엔티티 반영한 정보를 리턴
+    const updateNotice = await this.noticeRepository.findOneBy({ noticeId });
     return updateNotice;
   }
 
