@@ -30,9 +30,11 @@ export class AdminService {
     if (!adminConfirmed) {
       throw new BadRequestException(MESSAGES.ADMIN.NOTICE.UNAUTHORIZED.CREATED);
     }
+    const { adminId } = adminConfirmed;
     const notice = this.noticeRepository.save({
       title,
       content,
+      adminId,
     });
     return notice;
   }
