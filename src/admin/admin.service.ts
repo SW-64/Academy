@@ -47,6 +47,17 @@ export class AdminService {
     return notices;
   }
 
+  // 공지사항 상세 조회
+  async findNotice(noticeId: number) {
+    const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
+    if (!existedNotice) {
+      throw new NotFoundException(
+        MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.NOT_EXISTED,
+      );
+    }
+    return existedNotice;
+  }
+
   // 공지사항 수정
   async updateNotice(
     userId: number,

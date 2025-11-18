@@ -40,7 +40,6 @@ export class AdminController {
 
   /**
    * 공지사항 전체조회
-   * @param req
    * @returns
    */
   @Get('/notices')
@@ -55,6 +54,21 @@ export class AdminController {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.GET_ALL,
       data: notices,
+    };
+  }
+
+  /**
+   * 공지사항 상세조회
+   * @returns
+   */
+  @Get('/notices/:noticeId')
+  async noticeDetail(@Param('noticeId') noticeId: number) {
+    const notice = await this.adminService.findNotice(noticeId);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.NOTICE.GET,
+      data: notice,
     };
   }
 
