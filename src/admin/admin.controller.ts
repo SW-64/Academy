@@ -95,4 +95,19 @@ export class AdminController {
       data: updatedNotice,
     };
   }
+
+  /**
+   * 공지사항 삭제
+   * @returns
+   *
+   */
+  @Delete('/notices/:noticeId')
+  async deleteNotice(@Param('noticeId') noticeId: number, @Req() req) {
+    const userId = req.user.userId;
+    await this.adminService.deleteNotice(userId, noticeId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.NOTICE.DELETED,
+    };
+  }
 }

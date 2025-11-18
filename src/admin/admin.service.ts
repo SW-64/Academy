@@ -91,4 +91,21 @@ export class AdminService {
 
     return updateNotice;
   }
+
+  // 공지사항 삭제
+  async deleteNotice(userId: number, noticeId: number) {
+    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
+    if (!adminConfirmed) {
+      throw new BadRequestException(MESSAGES.ADMIN.NOTICE.UNAUTHORIZED.DELETED);
+    }
+    const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
+    if (!existedNotice) {
+      throw new NotFoundException(
+        MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.NOT_EXISTED,
+      );
+    }
+    const notice = await this.noticeRepository.delete(noticeId);
+
+    return notice;
+  }
 }
