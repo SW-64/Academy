@@ -64,5 +64,18 @@ export const MESSAGES = {
         },
       },
     },
+    EXAM: {
+      CREATE: {
+        OK: '시험일정이 생성되었습니다.',
+        YEAR: '시험 해당년도는 필수 입력 항목입니다.',
+        SEMESTER: '시험 학기는 필수 입력 항목입니다.',
+        EXAM_DATE: '시험 날짜는 필수 입력 항목입니다.',
+      },
+      UNAUTHORIZED: {
+        CREATED: '시험일정 생성 권한이 없습니다.',
+        UPDATED: '시험일정 수정 권한이 없습니다.',
+        DELETED: '시험일정 삭제 권한이 없습니다.',
+      },
+    },
   },
 };

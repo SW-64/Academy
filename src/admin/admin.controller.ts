@@ -16,6 +16,7 @@ import { MESSAGES } from '../constants/message.constant';
 import { UpdateNoticeDto } from './dto/update-notice.dto';
 import { UserInfo } from '../util/decorators/user-info.decorator';
 import { User } from '../users/entities/user.entity';
+import { CreateExamDto } from './dto/create-exam.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -116,6 +117,25 @@ export class AdminController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.DELETED,
+    };
+  }
+
+  /**
+   * 공지사항 생성
+   * @param createExamDto
+   * @returns
+   */
+  @Post('/exams')
+  async creatExam(
+    @UserInfo() user: User,
+    @Body() createExamDto: CreateExamDto,
+  ) {
+    const userId = user.userId;
+    const exam = await this.adminService.createExam(userId, createExamDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: MESSAGES.ADMIN.EXAM.CREATE.OK,
+      data: exam,
     };
   }
 }

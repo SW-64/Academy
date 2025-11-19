@@ -15,12 +15,15 @@ import {
   Pagination,
 } from 'nestjs-typeorm-paginate';
 import { UpdateNoticeDto } from './dto/update-notice.dto';
+import { Exam } from './entities/exam.entity';
+import { CreateExamDto } from './dto/create-exam.dto';
 
 @Injectable()
 export class AdminService {
   @InjectRepository(Notice)
   private readonly noticeRepository: Repository<Notice>;
   @InjectRepository(Admin) private readonly adminRepository: Repository<Admin>;
+  @InjectRepository(Exam) private readonly examRepository: Repository<Exam>;
 
   // 공지사항 생성
   async createNotice(userId: number, { title, content }: CreateNoticeDto) {
@@ -108,5 +111,25 @@ export class AdminService {
     const notice = await this.noticeRepository.delete(noticeId);
 
     return notice;
+  }
+
+  //시험일정 생성
+  async createExam(
+    userId: number,
+    { year, semester, exam_date }: CreateExamDto,
+  ) {
+    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
+    if (!adminConfirmed) {
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.CREATED);
+    }
+    const { adminId } = adminConfirmed;
+    const exam = await this.examRepository.save({
+      year,
+      semester,
+      exam_date,
+      adminId,
+    });
+
+    return exam;
   }
 }
