@@ -132,4 +132,21 @@ export class AdminService {
 
     return exam;
   }
+
+  //시험일정 전체조회
+  async findAllExams(options?: IPaginationOptions): Promise<Pagination<Exam>> {
+    const exams = await paginate(this.examRepository, options, {
+      order: { createdAt: 'DESC' },
+    });
+    return exams;
+  }
+
+  //시험일정 상세조회
+  async findExam(examId: number) {
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    return existedExam;
+  }
 }

@@ -138,4 +138,38 @@ export class AdminController {
       data: exam,
     };
   }
+
+  /**
+   * 시험일정 전체조회
+   * @returns
+   */
+  @Get('/exams')
+  async GetAllExams(@Query('page') page = 1, @Query('limit') limit = 10) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Number(limit) || 10, 50);
+    const exams = await this.adminService.findAllExams({
+      page: _page,
+      limit: _limit,
+    });
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.GET.ALL,
+      data: exams,
+    };
+  }
+
+  /**
+   * 시험일정 상세조회
+   * @returns
+   */
+  @Get('/exams/:examId')
+  async GetExam(@Param('examId') examId: number) {
+    const exam = await this.adminService.findExam(examId);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.GET.ONE,
+      date: exam,
+    };
+  }
 }
