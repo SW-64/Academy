@@ -36,7 +36,6 @@ export class StudentsService {
         exam: {
           year: true,
           semester: true,
-          type: true,
           exam_date: true,
         },
       },
