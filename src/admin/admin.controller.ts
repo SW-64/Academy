@@ -122,7 +122,7 @@ export class AdminController {
   }
 
   /**
-   * 공지사항 생성
+   * 시험일정 생성
    * @param createExamDto
    * @returns
    */
