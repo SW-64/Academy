@@ -160,7 +160,7 @@ export class AdminService {
     //1.어드민인지
     const adminConfirmed = await this.adminRepository.findOneBy({ userId });
     if (!adminConfirmed) {
-      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.CREATED);
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.UPDATED);
     }
     //2.존재하는 시험일정인지
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -179,5 +179,19 @@ export class AdminService {
 
     const updatedExam = await this.examRepository.findOneBy({ examId });
     return updatedExam;
+  }
+
+  //시험일정 삭제
+  async deleteExam(userId: number, examId: number) {
+    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
+    if (!adminConfirmed) {
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.DELETED);
+    }
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    const exam = await this.examRepository.delete(examId);
+    return exam;
   }
 }

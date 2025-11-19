@@ -89,6 +89,7 @@ export const MESSAGES = {
         EXAM_DATE: '수정할 시험 날짜를 입력해주세요.',
         SAME: '변경된 정보가 없습니다.',
       },
+      DELETE: '시험일정이 삭제되었습니다.',
     },
   },
 };
