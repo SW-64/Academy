@@ -15,12 +15,16 @@ import {
   Pagination,
 } from 'nestjs-typeorm-paginate';
 import { UpdateNoticeDto } from './dto/update-notice.dto';
+import { Exam } from './entities/exam.entity';
+import { CreateExamDto } from './dto/create-exam.dto';
+import { UpdateExamDto } from './dto/update-exam.dto';
 
 @Injectable()
 export class AdminService {
   @InjectRepository(Notice)
   private readonly noticeRepository: Repository<Notice>;
   @InjectRepository(Admin) private readonly adminRepository: Repository<Admin>;
+  @InjectRepository(Exam) private readonly examRepository: Repository<Exam>;
 
   // 공지사항 생성
   async createNotice(userId: number, { title, content }: CreateNoticeDto) {
@@ -108,5 +112,86 @@ export class AdminService {
     const notice = await this.noticeRepository.delete(noticeId);
 
     return notice;
+  }
+
+  //시험일정 생성
+  async createExam(
+    userId: number,
+    { year, semester, exam_date }: CreateExamDto,
+  ) {
+    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
+    if (!adminConfirmed) {
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.CREATED);
+    }
+    const { adminId } = adminConfirmed;
+    const exam = await this.examRepository.save({
+      year,
+      semester,
+      exam_date,
+      adminId,
+    });
+
+    return exam;
+  }
+
+  //시험일정 전체조회
+  async findAllExams(options?: IPaginationOptions): Promise<Pagination<Exam>> {
+    const exams = await paginate(this.examRepository, options, {
+      order: { createdAt: 'DESC' },
+    });
+    return exams;
+  }
+
+  //시험일정 상세조회
+  async findExam(examId: number) {
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    return existedExam;
+  }
+
+  //시험일정 수정
+  async updateExam(
+    userId: number,
+    examId: number,
+    { year, semester, exam_date }: UpdateExamDto,
+  ) {
+    //1.어드민인지
+    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
+    if (!adminConfirmed) {
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.UPDATED);
+    }
+    //2.존재하는 시험일정인지
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    const sameExam =
+      existedExam.year === year &&
+      existedExam.semester === semester &&
+      existedExam.exam_date === exam_date;
+    //3.변경된 내용이 없는 경우
+    if (sameExam) {
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UPDATE.SAME);
+    }
+    await this.examRepository.update({ examId }, { year, semester, exam_date });
+
+    const updatedExam = await this.examRepository.findOneBy({ examId });
+    return updatedExam;
+  }
+
+  //시험일정 삭제
+  async deleteExam(userId: number, examId: number) {
+    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
+    if (!adminConfirmed) {
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.DELETED);
+    }
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    const exam = await this.examRepository.delete(examId);
+    return exam;
   }
 }

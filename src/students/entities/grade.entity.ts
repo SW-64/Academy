@@ -8,8 +8,8 @@ import {
   DeleteDateColumn,
   JoinColumn,
 } from 'typeorm';
-import { Student } from 'src/students/entities/student.entity';
-import { Exam } from 'src/exams/entities/exam.entity';
+import { Student } from '../entities/student.entity';
+import { Exam } from '../../admin/entities/exam.entity';
 
 @Entity()
 export class Grade {

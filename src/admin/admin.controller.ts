@@ -16,6 +16,8 @@ import { MESSAGES } from '../constants/message.constant';
 import { UpdateNoticeDto } from './dto/update-notice.dto';
 import { UserInfo } from '../util/decorators/user-info.decorator';
 import { User } from '../users/entities/user.entity';
+import { CreateExamDto } from './dto/create-exam.dto';
+import { UpdateExamDto } from './dto/update-exam.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -32,14 +34,11 @@ export class AdminController {
     @Body() createNoticeDto: CreateNoticeDto,
   ) {
     const userId = user.userId;
-    const notice = await this.adminService.createNotice(
-      userId,
-      createNoticeDto,
-    );
+    const data = await this.adminService.createNotice(userId, createNoticeDto);
     return {
       statusCode: HttpStatus.CREATED,
       message: MESSAGES.ADMIN.NOTICE.CREATED,
-      data: notice,
+      data: data,
     };
   }
 
@@ -51,14 +50,14 @@ export class AdminController {
   async findAllNotices(@Query('page') page = 1, @Query('limit') limit = 10) {
     const _page = Number(page) || 1;
     const _limit = Math.min(Number(limit) || 10, 50);
-    const notices = await this.adminService.findAllNotices({
+    const data = await this.adminService.findAllNotices({
       page: _page,
       limit: _limit,
     });
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.GET_ALL,
-      data: notices,
+      data: data,
     };
   }
 
@@ -68,12 +67,12 @@ export class AdminController {
    */
   @Get('/notices/:noticeId')
   async noticeDetail(@Param('noticeId') noticeId: number) {
-    const notice = await this.adminService.findNotice(noticeId);
+    const data = await this.adminService.findNotice(noticeId);
 
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.GET,
-      data: notice,
+      data: data,
     };
   }
 
@@ -89,7 +88,7 @@ export class AdminController {
     @UserInfo() user: User,
   ) {
     const userId = user.userId;
-    const updatedNotice = await this.adminService.updateNotice(
+    const data = await this.adminService.updateNotice(
       userId,
       noticeId,
       updateNoticeDto,
@@ -97,7 +96,7 @@ export class AdminController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.UPDATED,
-      data: updatedNotice,
+      data: data,
     };
   }
 
@@ -116,6 +115,97 @@ export class AdminController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.DELETED,
+    };
+  }
+
+  /**
+   * 시험일정 생성
+   * @param createExamDto
+   * @returns
+   */
+  @Post('/exams')
+  async creatExam(
+    @UserInfo() user: User,
+    @Body() createExamDto: CreateExamDto,
+  ) {
+    const userId = user.userId;
+    const data = await this.adminService.createExam(userId, createExamDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: MESSAGES.ADMIN.EXAM.CREATE.OK,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험일정 전체조회
+   * @returns
+   */
+  @Get('/exams')
+  async getAllExams(@Query('page') page = 1, @Query('limit') limit = 10) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Number(limit) || 10, 50);
+    const data = await this.adminService.findAllExams({
+      page: _page,
+      limit: _limit,
+    });
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.GET.ALL,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험일정 상세조회
+   * @returns
+   */
+  @Get('/exams/:examId')
+  async getExam(@Param('examId') examId: number) {
+    const data = await this.adminService.findExam(examId);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.GET.ONE,
+      date: data,
+    };
+  }
+
+  /**
+   * 시험일정 수정
+   * @param updateExamDto
+   * @returns
+   */
+  @Patch('/exams/:examId')
+  async updateExam(
+    @Param('examId') examId: number,
+    @Body() updateExamDto: UpdateExamDto,
+    @UserInfo() user: User,
+  ) {
+    const userId = user.userId;
+    const data = await this.adminService.updateExam(
+      userId,
+      examId,
+      updateExamDto,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.UPDATE.OK,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험일정 삭제
+   * @returns
+   */
+  @Delete('/exams/:examId')
+  async deleteExam(@Param('examId') examId: number, @UserInfo() user: User) {
+    const userId = user.userId;
+    await this.adminService.deleteExam(userId, examId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.DELETE,
     };
   }
 }
