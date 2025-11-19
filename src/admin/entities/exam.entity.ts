@@ -9,12 +9,6 @@ import {
 } from 'typeorm';
 import { Grade } from '../../students/entities/grade.entity';
 
-export enum ExamType {
-  MIDTERM = 'MIDTERM',
-  FINAL = 'FINAL',
-  QUIZ = 'QUIZ',
-}
-
 @Entity()
 export class Exam {
   @PrimaryGeneratedColumn({ comment: '시험 id' })
@@ -25,13 +19,6 @@ export class Exam {
 
   @Column({ comment: '학기' })
   semester: number;
-
-  @Column({
-    type: 'enum',
-    enum: ExamType,
-    comment: '시험구분',
-  })
-  type: ExamType;
 
   @Column({ name: 'exam_date', type: 'datetime', comment: '시험 날짜' })
   exam_date: Date;
