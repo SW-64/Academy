@@ -202,7 +202,7 @@ export class AdminController {
    * 시험일정 삭제
    * @returns
    */
-  @Delete('/exam/:examId')
+  @Delete('/exams/:examId')
   async deleteExam(@Param('examId') examId: number, @UserInfo() user: User) {
     const userId = user.userId;
     await this.adminService.deleteExam(userId, examId);
