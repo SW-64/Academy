@@ -20,7 +20,7 @@ export class Exam {
   @Column({ comment: '학기' })
   semester: number;
 
-  @Column({ name: 'exam_date', type: 'datetime', comment: '시험 날짜' })
+  @Column({ name: 'exam_date', type: 'date', comment: '시험 날짜' })
   exam_date: Date;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
