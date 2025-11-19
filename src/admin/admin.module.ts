@@ -6,9 +6,10 @@ import { Admin } from './entities/admin.entity';
 import { Material } from './entities/material.entity';
 import { Notice } from './entities/notice.entity';
 import { Video } from './entities/video.entity';
+import { Exam } from './entities/exam.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Admin, Material, Notice, Video])],
+  imports: [TypeOrmModule.forFeature([Admin, Material, Notice, Video, Exam])],
   controllers: [AdminController],
   providers: [AdminService],
 })
