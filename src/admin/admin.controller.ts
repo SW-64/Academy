@@ -197,4 +197,18 @@ export class AdminController {
       data: updateExam,
     };
   }
+
+  /**
+   * 시험일정 삭제
+   * @returns
+   */
+  @Delete('/exam/:examId')
+  async deleteExam(@Param('examId') examId: number, @UserInfo() user: User) {
+    const userId = user.userId;
+    await this.adminService.deleteExam(userId, examId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.DELETE,
+    };
+  }
 }
