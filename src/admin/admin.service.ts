@@ -17,6 +17,7 @@ import {
 import { UpdateNoticeDto } from './dto/update-notice.dto';
 import { Exam } from './entities/exam.entity';
 import { CreateExamDto } from './dto/create-exam.dto';
+import { UpdateExamDto } from './dto/update-exam.dto';
 
 @Injectable()
 export class AdminService {
@@ -148,5 +149,35 @@ export class AdminService {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
     }
     return existedExam;
+  }
+
+  //시험일정 수정
+  async updateExam(
+    userId: number,
+    examId: number,
+    { year, semester, exam_date }: UpdateExamDto,
+  ) {
+    //1.어드민인지
+    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
+    if (!adminConfirmed) {
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.CREATED);
+    }
+    //2.존재하는 시험일정인지
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    const sameExam =
+      existedExam.year === year &&
+      existedExam.semester === semester &&
+      existedExam.exam_date === exam_date;
+    //3.변경된 내용이 없는 경우
+    if (sameExam) {
+      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UPDATE.SAME);
+    }
+    await this.examRepository.update({ examId }, { year, semester, exam_date });
+
+    const updatedExam = await this.examRepository.findOneBy({ examId });
+    return updatedExam;
   }
 }

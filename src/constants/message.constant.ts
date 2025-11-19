@@ -82,6 +82,13 @@ export const MESSAGES = {
         NOT_FOUND: '시험일정이 없습니다.',
       },
       NOT_EXISTED: '시험일정이 존재하지 않습니다.',
+      UPDATE: {
+        OK: '시험일정이 수정되었습니다.',
+        YEAR: '수정할 해당년도를 입력해주세요.',
+        SEMESTER: '수정할 학기를 입력해주세요.',
+        EXAM_DATE: '수정할 시험 날짜를 입력해주세요.',
+        SAME: '변경된 정보가 없습니다.',
+      },
     },
   },
 };

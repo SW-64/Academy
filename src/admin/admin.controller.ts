@@ -17,6 +17,7 @@ import { UpdateNoticeDto } from './dto/update-notice.dto';
 import { UserInfo } from '../util/decorators/user-info.decorator';
 import { User } from '../users/entities/user.entity';
 import { CreateExamDto } from './dto/create-exam.dto';
+import { UpdateExamDto } from './dto/update-exam.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -170,6 +171,30 @@ export class AdminController {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.GET.ONE,
       date: exam,
+    };
+  }
+
+  /**
+   * 시험일정 수정
+   * @param updateExamDto
+   * @returns
+   */
+  @Patch('/exams/:examId')
+  async updateExam(
+    @Param('examId') examId: number,
+    @Body() updateExamDto: UpdateExamDto,
+    @UserInfo() user: User,
+  ) {
+    const userId = user.userId;
+    const updateExam = await this.adminService.updateExam(
+      userId,
+      examId,
+      updateExamDto,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.UPDATE.OK,
+      data: updateExam,
     };
   }
 }
