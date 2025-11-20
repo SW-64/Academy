@@ -38,7 +38,7 @@ export const configModuleValidationSchema = Joi.object({
     'any.required': 'JWT_EXPIRES_IN is required',
     'number.base': 'JWT_EXPIRES_IN must be a number (seconds)',
   }),
-  REFRESH_SECRET: Joi.string().min(10).required().messages({
+  REFRESH_TOKEN_SECRET: Joi.string().min(10).required().messages({
     'any.required': 'REFRESH_SECRET is required',
     'string.empty': 'REFRESH_SECRET cannot be empty',
   }),
