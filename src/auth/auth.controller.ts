@@ -1,11 +1,7 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
   HttpStatus,
   UseGuards,
   Res,
@@ -19,6 +15,8 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { UserInfo } from '../util/decorators/user-info.decorator';
 import { PartialUser } from '../users/interfaces/partial-user.entity';
 import { Response } from 'express';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
 @ApiTags('인증')
 @Controller('auth')
 export class AuthController {
@@ -52,11 +50,50 @@ export class AuthController {
     @Body() signInDto: SignInDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const data = await this.authService.signIn(user.userId, res);
+    const data = await this.authService.signIn(user.userId, user.role, res);
 
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.AUTH.SIGN_IN.SUCCEED,
+      data: data,
+    };
+  }
+
+  /**
+   * 로그아웃
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('/sign-out')
+  async signOut(
+    @UserInfo() user: PartialUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const userId = user.userId;
+    await this.authService.signOut(userId, res);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.AUTH.SIGN_OUT.SUCCEED,
+    };
+  }
+
+  /**
+   * 토큰 재발급
+   */
+  @UseGuards(JwtRefreshAuthGuard)
+  @Post('/token')
+  async getAccessToken(
+    @UserInfo() user: PartialUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const data = await this.authService.reissueAccessToken(
+      user.userId,
+      user.role,
+      res,
+    );
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.AUTH.REFRESH.SUCCEED,
       data: data,
     };
   }
