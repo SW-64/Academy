@@ -9,7 +9,6 @@ import { ParentsModule } from './parents/parents.module';
 import { AdminModule } from './admin/admin.module';
 import { UsersModule } from './users/users.module';
 import { configModuleValidationSchema } from './configs/env-validation.config';
-import { ExamsModule } from './exams/exams.module';
 
 @Module({
   imports: [
@@ -36,7 +35,6 @@ import { ExamsModule } from './exams/exams.module';
     ParentsModule,
     AdminModule,
     UsersModule,
-    ExamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
