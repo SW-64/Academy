@@ -29,4 +29,52 @@ export const configModuleValidationSchema = Joi.object({
     'any.required': 'PASSWORD_HASH is required',
     'number.base': 'PASSWORD_HASH must be a number',
   }),
+  JWT_SECRET: Joi.string().min(10).required().messages({
+    'any.required': 'JWT_SECRET is required',
+    'string.empty': 'JWT_SECRET cannot be empty',
+  }),
+
+  JWT_EXPIRES_IN: Joi.number().integer().min(60).required().messages({
+    'any.required': 'JWT_EXPIRES_IN is required',
+    'number.base': 'JWT_EXPIRES_IN must be a number (seconds)',
+  }),
+  REFRESH_SECRET: Joi.string().min(10).required().messages({
+    'any.required': 'REFRESH_SECRET is required',
+    'string.empty': 'REFRESH_SECRET cannot be empty',
+  }),
+  REFRESH_TOKEN_EXPIRES_IN: Joi.number()
+    .integer()
+    .min(60 * 60) // 최소 1시간 이상
+    .required()
+    .messages({
+      'any.required': 'REFRESH_TOKEN_EXPIRES_IN is required',
+      'number.base': 'REFRESH_TOKEN_EXPIRES_IN must be a number (seconds)',
+    }),
+  REFRESH_TOKEN_HASH: Joi.number()
+    .integer()
+    .min(4)
+    .max(15)
+    .required()
+    .messages({
+      'any.required': 'REFRESH_TOKEN_HASH is required',
+      'number.base': 'REFRESH_TOKEN_HASH must be a number',
+    }),
+  NODE_ENV: Joi.string()
+    .valid('development', 'production', 'test')
+    .required()
+    .messages({
+      'any.only': 'NODE_ENV must be one of: development, production, test',
+      'any.required': 'NODE_ENV is required',
+    }),
+
+  COOKIE_SAMESITE: Joi.string()
+    .valid('lax', 'strict', 'none')
+    .default('lax')
+    .messages({
+      'any.only': 'COOKIE_SAMESITE must be one of: lax, strict, none',
+    }),
+
+  COOKIE_DOMAIN: Joi.string().allow('').optional().messages({
+    'string.base': 'COOKIE_DOMAIN must be a string',
+  }),
 });
