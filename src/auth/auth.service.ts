@@ -72,8 +72,8 @@ export class AuthService {
     const accessOption = { ...base, maxAge: 0 };
     const refreshOption = { ...base, maxAge: 0 };
 
-    res.cookie('Authentication', '', accessOption);
-    res.cookie('Refresh', '', refreshOption);
+    res.clearCookie('Authentication', accessOption);
+    res.clearCookie('Refresh', refreshOption);
 
     await this.removeRefreshToken(userId);
     return;
