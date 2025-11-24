@@ -17,13 +17,13 @@ export class RefreshToken {
   @Column({ name: 'user_id', comment: '유저 id' })
   userId: number;
 
-  @Column({ comment: '리프레시 토큰(SHA256)' })
+  @Column({ comment: '리프레시 토큰(SHA256)', nullable: true })
   refreshtoken: string;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;
 
-  @DeleteDateColumn({ name: 'expires_at', nullable: true, comment: '만료날짜' })
+  @Column({ name: 'expires_at', nullable: true, comment: '만료날짜' })
   expiresAt: Date | null;
 
   @OneToOne(() => User, (user) => user.refreshToken, { onDelete: 'CASCADE' })

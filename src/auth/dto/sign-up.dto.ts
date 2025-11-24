@@ -5,6 +5,7 @@ import {
   IsStrongPassword,
   IsEnum,
   Matches,
+  IsString,
 } from 'class-validator';
 import { MESSAGES } from './../../constants/message.constant';
 import { Role } from '../../users/entities/user.entity';
@@ -51,7 +52,13 @@ export class SignUpDto {
    */
   @IsNotEmpty({ message: MESSAGES.AUTH.COMMON.PASSWORD.REQUIRED })
   @IsStrongPassword(
-    { minLength: 8 },
+    {
+      minLength: 8,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 1,
+    },
     { message: MESSAGES.AUTH.COMMON.PASSWORD.INVALID_FORMAT },
   )
   password: string;
@@ -61,10 +68,5 @@ export class SignUpDto {
    * @example "Example1!"
    */
   @IsNotEmpty({ message: MESSAGES.AUTH.COMMON.PASSWORD.REQUIRED })
-  @IsStrongPassword(
-    { minLength: 8 },
-    { message: MESSAGES.AUTH.COMMON.PASSWORD.INVALID_FORMAT },
-  )
-  @Matches('password')
   passwordConfirm: string;
 }

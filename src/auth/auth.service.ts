@@ -20,7 +20,14 @@ export class AuthService {
     private readonly refreshTokenRepository: Repository<RefreshToken>,
   ) {}
   // 회원가입
-  async signUp({ name, email, role, phone, password }: SignUpDto) {
+  async signUp({
+    name,
+    email,
+    role,
+    phone,
+    password,
+    passwordConfirm,
+  }: SignUpDto) {
     // 유효성 검증
     // 1. email
     // 기존 이메일로 가입된 이력이 있을 경우 False
@@ -34,6 +41,12 @@ export class AuthService {
     if (existedPhone)
       throw new BadRequestException(MESSAGES.AUTH.COMMON.DUPLICATED);
 
+    // 3. password confirm
+    if (password !== passwordConfirm) {
+      throw new BadRequestException(
+        MESSAGES.AUTH.COMMON.PASSWORD_CONFIRM.NOT_MATCHED_WITH_PASSWORD,
+      );
+    }
     // 유효성검증 끝
 
     // 비밀번호 암호화
