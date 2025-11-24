@@ -5,9 +5,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AllExceptionsFilter } from './all-execption.filter';
+import * as cookieParser from 'cookie-parser';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  app.use(cookieParser());
 
   // XSS, 클릭재킹 공격방어
   app.use(helmet());

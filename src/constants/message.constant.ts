@@ -7,6 +7,12 @@ export const MESSAGES = {
       SUCCEED: '로그인에 성공했습니다.',
       NOT_APPROVED: '관리자 승인 대기중인 계정입니다.',
     },
+    SIGN_OUT: {
+      SUCCEED: '로그아웃에 성공했습니다.',
+    },
+    REFRESH: {
+      SUCCEED: '토큰 재발급에 성공했습니다.',
+    },
     COMMON: {
       DUPLICATED: '이미 가입된 이메일입니다.',
       PASSWORD: {
