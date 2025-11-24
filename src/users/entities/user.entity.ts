@@ -40,7 +40,7 @@ export class User {
   @Column({ unique: true, comment: '연락처처' })
   phone: string;
 
-  @Column({ comment: '비밀번호' })
+  @Column({ comment: '비밀번호', select: false })
   password: string;
 
   @Column({ default: false, comment: '승인 여부' })
