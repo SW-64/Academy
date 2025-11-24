@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Repository } from 'typeorm';
+import { MESSAGES } from './../constants/message.constant';
+import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService {
@@ -14,15 +20,46 @@ export class UsersService {
     return user;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  // 내 정보 수정
+  async updateMyInfo(userId: number, updateUserDto: UpdateUserDto) {
+    await this.userRepository.update({ userId }, updateUserDto);
+    return this.userRepository.findOneBy({ userId });
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
+  // 비밀번호 변경
+  async updateMyPassword(userId: number, changePasswordDto: ChangePasswordDto) {
+    const { currentPassword, newPassword, newPasswordConfirm } =
+      changePasswordDto;
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+    if (newPassword !== newPasswordConfirm) {
+      MESSAGES.AUTH.COMMON.PASSWORD_CONFIRM.NOT_MATCHED_WITH_PASSWORD;
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { userId },
+      select: {
+        password: true,
+      },
+    });
+    if (!user) return null; // 아이디 없음 → null → Guard가 401
+
+    const comparePassword = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
+    if (!comparePassword) return null; // 비번 틀림 → null → Guard가 401
+
+    // 비밀번호 암호화
+    const hashRounds = this.configService.get<number>('PASSWORD_HASH');
+    const hashedPassword = await bcrypt.hash(newPassword, hashRounds);
+
+    await this.userRepository.update(
+      { userId },
+      {
+        password: hashedPassword,
+      },
+    );
+
+    return;
   }
 }
