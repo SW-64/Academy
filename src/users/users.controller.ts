@@ -7,14 +7,19 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+  /**
+   * 내 정보 조회
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('/me')
+  async getMyInfo(@UserInfo() user: PartialUser) {
+    const userId = user.userId;
+    const data = await this.usersService.getMyInfo(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.AUTH.USER_INFO.SUCCEED,
+      data: data,
+    };
   }
 
   @Get(':id')

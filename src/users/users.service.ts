@@ -4,12 +4,14 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
-  }
-
-  findAll() {
-    return `This action returns all users`;
+  constructor(
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly configService: ConfigService,
+  ) {}
+  // 내 정보 조회
+  async getMyInfo(userId: number) {
+    const user = await this.userRepository.findOneBy({ userId });
+    return user;
   }
 
   findOne(id: number) {
