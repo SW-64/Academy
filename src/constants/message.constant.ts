@@ -13,6 +13,15 @@ export const MESSAGES = {
     REFRESH: {
       SUCCEED: '토큰 재발급에 성공했습니다.',
     },
+    PASSWORD_CHANGE: {
+      SUCCEED: '비밀번호 변경에 성공했습니다.',
+    },
+    USER_INFO: {
+      SUCCEED: '내 정보 조회에 성공했습니다.',
+    },
+    USER_UPDATE: {
+      SUCCEED: '내 정보 수정에 성공했습니다.',
+    },
     COMMON: {
       DUPLICATED: '이미 가입된 이메일입니다.',
       PASSWORD: {
