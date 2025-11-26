@@ -312,4 +312,18 @@ export class AdminController {
     };
   }
 
+  /**
+   * 유저 계정 거절
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/users/:userId/reject')
+  async rejectUserAccount(@Param('userId') userId: number) {
+    await this.adminService.rejectUserAccount(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.UPDATE.REJECT,
+    };
+  }
 }

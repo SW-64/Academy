@@ -265,4 +265,15 @@ export class AdminService {
     return;
   }
 
+  // 유저 계정 거부
+  async rejectUserAccount(userId: number) {
+    const user = await this.userRepository.findOneBy({ userId });
+    if (!user) {
+      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+    }
+    user.isApproved = false;
+    await this.userRepository.save(user);
+
+    return;
+  }
 }
