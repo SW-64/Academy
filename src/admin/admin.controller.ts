@@ -253,4 +253,32 @@ export class AdminController {
     };
   }
 
+  /**
+   * 학부모 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/parents')
+  async getAllParents(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('status') status?: string,
+  ) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Number(limit) || 10, 50);
+    const data = await this.adminService.findAllParents(
+      {
+        page: _page,
+        limit: _limit,
+      },
+      status,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.PARENT.GET.ALL,
+      data: data,
+    };
+  }
+
 }

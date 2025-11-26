@@ -217,4 +217,15 @@ export class AdminService {
     return student;
   }
 
+  // 학부모 목록 조회
+  async findAllParents(options?: IPaginationOptions, status?: string) {
+    const statusText = 'approved';
+    const parents = await paginate(this.userRepository, options, {
+      order: { createdAt: 'DESC' },
+      where: { isApproved: status == statusText, role: Role.PARENT },
+    });
+
+    return parents;
+  }
+
 }
