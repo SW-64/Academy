@@ -194,4 +194,16 @@ export class AdminService {
     const exam = await this.examRepository.delete(examId);
     return exam;
   }
+
+  // 학생 목록 조회
+  async findAllStudents(options?: IPaginationOptions, status?: string) {
+    const statusText = 'approved';
+    const students = await paginate(this.userRepository, options, {
+      order: { createdAt: 'DESC' },
+      where: { isApproved: status == statusText, role: Role.STUDENT },
+    });
+
+    return students;
+  }
+
 }
