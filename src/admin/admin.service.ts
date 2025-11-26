@@ -33,15 +33,10 @@ export class AdminService {
   private readonly studentRepository: Repository<Student>;
   @InjectRepository(Parent)
   private readonly parentRepository: Repository<Parent>;
+
   // 공지사항 생성
   async createNotice(userId: number, { title, content }: CreateNoticeDto) {
-    const adminConfirmed = await this.adminRepository.findOneBy({
-      userId,
-    });
-    if (!adminConfirmed) {
-      throw new BadRequestException(MESSAGES.ADMIN.NOTICE.UNAUTHORIZED.CREATED);
-    }
-    const { adminId } = adminConfirmed;
+    const { adminId } = await this.adminRepository.findOneBy({ userId });
     const notice = this.noticeRepository.save({
       title,
       content,
@@ -72,25 +67,15 @@ export class AdminService {
   }
 
   // 공지사항 수정
-  async updateNotice(
-    userId: number,
-    noticeId: number,
-    { title, content }: UpdateNoticeDto,
-  ) {
-    //유효성 검증
-    //1. 어드민 자격 검증
-    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
-    if (!adminConfirmed) {
-      throw new BadRequestException(MESSAGES.ADMIN.NOTICE.UNAUTHORIZED.UPDATED);
-    }
-    //2. 해당 공지사항이 존재하는지 검증
+  async updateNotice(noticeId: number, { title, content }: UpdateNoticeDto) {
+    //1. 해당 공지사항이 존재하는지 검증
     const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
     if (!existedNotice) {
       throw new NotFoundException(
         MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.NOT_EXISTED,
       );
     }
-    //3. 변경된 내용이 없을 경우
+    //2. 변경된 내용이 없을 경우
     const sameNotice =
       existedNotice.title === title && existedNotice.content === content;
     if (sameNotice) {
@@ -105,11 +90,7 @@ export class AdminService {
   }
 
   // 공지사항 삭제
-  async deleteNotice(userId: number, noticeId: number) {
-    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
-    if (!adminConfirmed) {
-      throw new BadRequestException(MESSAGES.ADMIN.NOTICE.UNAUTHORIZED.DELETED);
-    }
+  async deleteNotice(noticeId: number) {
     const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
     if (!existedNotice) {
       throw new NotFoundException(
@@ -126,11 +107,7 @@ export class AdminService {
     userId: number,
     { year, semester, exam_date }: CreateExamDto,
   ) {
-    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
-    if (!adminConfirmed) {
-      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.CREATED);
-    }
-    const { adminId } = adminConfirmed;
+    const { adminId } = await this.adminRepository.findOneBy({ userId });
     const exam = await this.examRepository.save({
       year,
       semester,
@@ -160,16 +137,10 @@ export class AdminService {
 
   //시험일정 수정
   async updateExam(
-    userId: number,
     examId: number,
     { year, semester, exam_date }: UpdateExamDto,
   ) {
-    //1.어드민인지
-    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
-    if (!adminConfirmed) {
-      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.UPDATED);
-    }
-    //2.존재하는 시험일정인지
+    //1.존재하는 시험일정인지
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
@@ -178,7 +149,7 @@ export class AdminService {
       existedExam.year === year &&
       existedExam.semester === semester &&
       existedExam.exam_date === exam_date;
-    //3.변경된 내용이 없는 경우
+    //2.변경된 내용이 없는 경우
     if (sameExam) {
       throw new BadRequestException(MESSAGES.ADMIN.EXAM.UPDATE.SAME);
     }
@@ -189,11 +160,7 @@ export class AdminService {
   }
 
   //시험일정 삭제
-  async deleteExam(userId: number, examId: number) {
-    const adminConfirmed = await this.adminRepository.findOneBy({ userId });
-    if (!adminConfirmed) {
-      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UNAUTHORIZED.DELETED);
-    }
+  async deleteExam(examId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);

@@ -19,9 +19,11 @@ import { UserInfo } from '../util/decorators/user-info.decorator';
 import { Role, User } from '../users/entities/user.entity';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { PartialUser } from '../users/interfaces/partial-user.entity';
+import { useContainer } from 'class-validator';
 
 @Controller('admin')
 export class AdminController {
@@ -32,9 +34,11 @@ export class AdminController {
    * @param createNoticeDto
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Post('/notices')
   async createNotice(
-    @UserInfo() user: User,
+    @UserInfo() user: PartialUser,
     @Body() createNoticeDto: CreateNoticeDto,
   ) {
     const userId = user.userId;
@@ -50,8 +54,9 @@ export class AdminController {
    * 공지사항 전체조회
    * @returns
    */
+  @UseGuards(JwtAuthGuard)
   @Get('/notices')
-  async findAllNotices(@Query('page') page = 1, @Query('limit') limit = 10) {
+  async getNoticesAll(@Query('page') page = 1, @Query('limit') limit = 10) {
     const _page = Number(page) || 1;
     const _limit = Math.min(Number(limit) || 10, 50);
     const data = await this.adminService.findAllNotices({
@@ -69,8 +74,9 @@ export class AdminController {
    * 공지사항 상세조회
    * @returns
    */
+  @UseGuards(JwtAuthGuard)
   @Get('/notices/:noticeId')
-  async noticeDetail(@Param('noticeId') noticeId: number) {
+  async getNoticeOne(@Param('noticeId') noticeId: number) {
     const data = await this.adminService.findNotice(noticeId);
 
     return {
@@ -85,15 +91,14 @@ export class AdminController {
    * @param updateNoticeDto
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Patch('/notices/:noticeId')
   async updateNotice(
     @Param('noticeId') noticeId: number,
     @Body() updateNoticeDto: UpdateNoticeDto,
-    @UserInfo() user: User,
   ) {
-    const userId = user.userId;
     const data = await this.adminService.updateNotice(
-      userId,
       noticeId,
       updateNoticeDto,
     );
@@ -109,13 +114,11 @@ export class AdminController {
    * @returns
    *
    */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Delete('/notices/:noticeId')
-  async deleteNotice(
-    @Param('noticeId') noticeId: number,
-    @UserInfo() user: User,
-  ) {
-    const userId = user.userId;
-    await this.adminService.deleteNotice(userId, noticeId);
+  async deleteNotice(@Param('noticeId') noticeId: number) {
+    await this.adminService.deleteNotice(noticeId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.DELETED,
@@ -127,9 +130,11 @@ export class AdminController {
    * @param createExamDto
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Post('/exams')
-  async creatExam(
-    @UserInfo() user: User,
+  async createExam(
+    @UserInfo() user: PartialUser,
     @Body() createExamDto: CreateExamDto,
   ) {
     const userId = user.userId;
@@ -145,8 +150,9 @@ export class AdminController {
    * 시험일정 전체조회
    * @returns
    */
+  @UseGuards(JwtAuthGuard)
   @Get('/exams')
-  async getAllExams(@Query('page') page = 1, @Query('limit') limit = 10) {
+  async getExamsAll(@Query('page') page = 1, @Query('limit') limit = 10) {
     const _page = Number(page) || 1;
     const _limit = Math.min(Number(limit) || 10, 50);
     const data = await this.adminService.findAllExams({
@@ -164,8 +170,9 @@ export class AdminController {
    * 시험일정 상세조회
    * @returns
    */
+  @UseGuards(JwtAuthGuard)
   @Get('/exams/:examId')
-  async getExam(@Param('examId') examId: number) {
+  async getExamOne(@Param('examId') examId: number) {
     const data = await this.adminService.findExam(examId);
 
     return {
@@ -180,18 +187,14 @@ export class AdminController {
    * @param updateExamDto
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Patch('/exams/:examId')
   async updateExam(
     @Param('examId') examId: number,
     @Body() updateExamDto: UpdateExamDto,
-    @UserInfo() user: User,
   ) {
-    const userId = user.userId;
-    const data = await this.adminService.updateExam(
-      userId,
-      examId,
-      updateExamDto,
-    );
+    const data = await this.adminService.updateExam(examId, updateExamDto);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.UPDATE.OK,
@@ -203,10 +206,11 @@ export class AdminController {
    * 시험일정 삭제
    * @returns
    */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Delete('/exams/:examId')
-  async deleteExam(@Param('examId') examId: number, @UserInfo() user: User) {
-    const userId = user.userId;
-    await this.adminService.deleteExam(userId, examId);
+  async deleteExam(@Param('examId') examId: number) {
+    await this.adminService.deleteExam(examId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.DELETE,
