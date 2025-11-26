@@ -297,4 +297,19 @@ export class AdminController {
     };
   }
 
+  /**
+   * 유저 계정 승인
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/users/:userId/approve')
+  async approveUserAccount(@Param('userId') userId: number) {
+    await this.adminService.approveUserAccount(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.UPDATE.APPROVE,
+    };
+  }
+
 }

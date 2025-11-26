@@ -237,4 +237,32 @@ export class AdminService {
   }
 
   // 유저 계정 승인
+  async approveUserAccount(userId: number) {
+    const user = await this.userRepository.findOneBy({ userId });
+    if (!user) {
+      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+    }
+    user.isApproved = true;
+    await this.userRepository.save(user);
+
+    const student = await this.studentRepository.findOneBy({ userId });
+    const parent = await this.parentRepository.findOneBy({ userId });
+
+    if (!student && user.role === Role.STUDENT) {
+      await this.studentRepository.save({
+        userId: user.userId,
+        grade: user.signupGrade,
+        school: user.signupSchool,
+      });
+    }
+
+    if (!parent && user.role === Role.PARENT) {
+      await this.parentRepository.save({
+        userId: user.userId,
+      });
+    }
+
+    return;
+  }
+
 }
