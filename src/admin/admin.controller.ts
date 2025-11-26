@@ -237,4 +237,20 @@ export class AdminController {
     };
   }
 
+  /**
+   * 학생 상세 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/students/:studentId')
+  async getStudent(@Param('studentId') studentId: number) {
+    const data = await this.adminService.findOneStudent(studentId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.STUDENT.GET.ONE,
+      data: data,
+    };
+  }
+
 }

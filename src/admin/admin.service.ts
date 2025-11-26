@@ -206,4 +206,15 @@ export class AdminService {
     return students;
   }
 
+  // 학생 상세 조회
+  async findOneStudent(studentId: number) {
+    const student = await this.studentRepository.findOneBy({
+      studentId: studentId,
+    });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+    }
+    return student;
+  }
+
 }
