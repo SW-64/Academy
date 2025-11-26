@@ -281,4 +281,20 @@ export class AdminController {
     };
   }
 
+  /**
+   * 학부모 상세 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/parents/:parentId')
+  async getParent(@Param('parentId') parentId: number) {
+    const data = await this.adminService.findOneParent(parentId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.PARENT.GET.ONE,
+      data: data,
+    };
+  }
+
 }

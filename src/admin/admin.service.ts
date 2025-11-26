@@ -228,4 +228,13 @@ export class AdminService {
     return parents;
   }
 
+  // 학부모 상세 조회
+  async findOneParent(parentId: number) {
+    const parent = await this.parentRepository.findOneBy({
+      parentId: parentId,
+    });
+    return parent;
+  }
+
+  // 유저 계정 승인
 }
