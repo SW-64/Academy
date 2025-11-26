@@ -27,6 +27,8 @@ export class AuthService {
     phone,
     password,
     passwordConfirm,
+    signupSchool,
+    signupGrade,
   }: SignUpDto) {
     // 유효성 검증
     // 1. email
@@ -47,6 +49,25 @@ export class AuthService {
         MESSAGES.AUTH.COMMON.PASSWORD_CONFIRM.NOT_MATCHED_WITH_PASSWORD,
       );
     }
+
+    // 4. signupGrade, signupSchool
+    // Role이 STUDENT일 경우에만 값이 있어야 함
+    if (role === Role.STUDENT) {
+      if (!signupGrade || !signupSchool) {
+        throw new BadRequestException(
+          MESSAGES.AUTH.SIGN_UP.STUDENT.SCHOOL_GRADE_REQUIRED,
+        );
+      }
+
+      // Role이 STUDENT가 아닐 경우에는 값이 없어야 함
+      if (role !== Role.STUDENT) {
+        if (signupGrade || signupSchool) {
+          throw new BadRequestException(
+            MESSAGES.AUTH.SIGN_UP.PARENT.SCHOOL_GRADE_FORBIDDEN,
+          );
+        }
+      }
+    }
     // 유효성검증 끝
 
     // 비밀번호 암호화
@@ -59,6 +80,8 @@ export class AuthService {
       name,
       role,
       phone,
+      signupSchool,
+      signupGrade,
     });
     delete user.password;
 

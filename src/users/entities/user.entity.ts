@@ -46,6 +46,12 @@ export class User {
   @Column({ default: false, comment: '승인 여부' })
   isApproved: boolean;
 
+  @Column({ comment: '임시 학교', nullable: true })
+  signupSchool: string;
+
+  @Column({ comment: '임시 학년', nullable: true })
+  signupGrade: number;
+
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;
 

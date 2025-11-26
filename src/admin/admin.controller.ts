@@ -9,15 +9,19 @@ import {
   Req,
   HttpStatus,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateNoticeDto } from './dto/create-notice.dto';
 import { MESSAGES } from '../constants/message.constant';
 import { UpdateNoticeDto } from './dto/update-notice.dto';
 import { UserInfo } from '../util/decorators/user-info.decorator';
-import { User } from '../users/entities/user.entity';
+import { Role, User } from '../users/entities/user.entity';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Controller('admin')
 export class AdminController {
@@ -206,6 +210,124 @@ export class AdminController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.DELETE,
+    };
+  }
+
+  /**
+   * 학생 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/students')
+  async getAllStudents(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('status') status?: string,
+  ) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Number(limit) || 10, 50);
+    const data = await this.adminService.findAllStudents(
+      {
+        page: _page,
+        limit: _limit,
+      },
+      status,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.STUDENT.GET.ALL,
+      data: data,
+    };
+  }
+
+  /**
+   * 학생 상세 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/students/:studentId')
+  async getStudent(@Param('studentId') studentId: number) {
+    const data = await this.adminService.findOneStudent(studentId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.STUDENT.GET.ONE,
+      data: data,
+    };
+  }
+
+  /**
+   * 학부모 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/parents')
+  async getAllParents(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('status') status?: string,
+  ) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Number(limit) || 10, 50);
+    const data = await this.adminService.findAllParents(
+      {
+        page: _page,
+        limit: _limit,
+      },
+      status,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.PARENT.GET.ALL,
+      data: data,
+    };
+  }
+
+  /**
+   * 학부모 상세 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/parents/:parentId')
+  async getParent(@Param('parentId') parentId: number) {
+    const data = await this.adminService.findOneParent(parentId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.PARENT.GET.ONE,
+      data: data,
+    };
+  }
+
+  /**
+   * 유저 계정 승인
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/users/:userId/approve')
+  async approveUserAccount(@Param('userId') userId: number) {
+    await this.adminService.approveUserAccount(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.UPDATE.APPROVE,
+    };
+  }
+
+  /**
+   * 유저 계정 거절
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/users/:userId/reject')
+  async rejectUserAccount(@Param('userId') userId: number) {
+    await this.adminService.rejectUserAccount(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.UPDATE.REJECT,
     };
   }
 }

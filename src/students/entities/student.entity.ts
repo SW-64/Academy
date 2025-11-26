@@ -28,6 +28,9 @@ export class Student {
   @Column({ comment: '학년' })
   grade: number;
 
+  @Column({ comment: '학교' })
+  school: string;
+
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;
 

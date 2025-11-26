@@ -18,6 +18,9 @@ import { UpdateNoticeDto } from './dto/update-notice.dto';
 import { Exam } from './entities/exam.entity';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
+import { Role, User } from '../users/entities/user.entity';
+import { Student } from './../students/entities/student.entity';
+import { Parent } from './../parents/entities/parent.entity';
 
 @Injectable()
 export class AdminService {
@@ -25,7 +28,11 @@ export class AdminService {
   private readonly noticeRepository: Repository<Notice>;
   @InjectRepository(Admin) private readonly adminRepository: Repository<Admin>;
   @InjectRepository(Exam) private readonly examRepository: Repository<Exam>;
-
+  @InjectRepository(User) private readonly userRepository: Repository<User>;
+  @InjectRepository(Student)
+  private readonly studentRepository: Repository<Student>;
+  @InjectRepository(Parent)
+  private readonly parentRepository: Repository<Parent>;
   // 공지사항 생성
   async createNotice(userId: number, { title, content }: CreateNoticeDto) {
     const adminConfirmed = await this.adminRepository.findOneBy({
@@ -193,5 +200,87 @@ export class AdminService {
     }
     const exam = await this.examRepository.delete(examId);
     return exam;
+  }
+
+  // 학생 목록 조회
+  async findAllStudents(options?: IPaginationOptions, status?: string) {
+    const statusText = 'approved';
+    const students = await paginate(this.userRepository, options, {
+      order: { createdAt: 'DESC' },
+      where: { isApproved: status == statusText, role: Role.STUDENT },
+    });
+
+    return students;
+  }
+
+  // 학생 상세 조회
+  async findOneStudent(studentId: number) {
+    const student = await this.studentRepository.findOneBy({
+      studentId: studentId,
+    });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+    }
+    return student;
+  }
+
+  // 학부모 목록 조회
+  async findAllParents(options?: IPaginationOptions, status?: string) {
+    const statusText = 'approved';
+    const parents = await paginate(this.userRepository, options, {
+      order: { createdAt: 'DESC' },
+      where: { isApproved: status == statusText, role: Role.PARENT },
+    });
+
+    return parents;
+  }
+
+  // 학부모 상세 조회
+  async findOneParent(parentId: number) {
+    const parent = await this.parentRepository.findOneBy({
+      parentId: parentId,
+    });
+    return parent;
+  }
+
+  // 유저 계정 승인
+  async approveUserAccount(userId: number) {
+    const user = await this.userRepository.findOneBy({ userId });
+    if (!user) {
+      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+    }
+    user.isApproved = true;
+    await this.userRepository.save(user);
+
+    const student = await this.studentRepository.findOneBy({ userId });
+    const parent = await this.parentRepository.findOneBy({ userId });
+
+    if (!student && user.role === Role.STUDENT) {
+      await this.studentRepository.save({
+        userId: user.userId,
+        grade: user.signupGrade,
+        school: user.signupSchool,
+      });
+    }
+
+    if (!parent && user.role === Role.PARENT) {
+      await this.parentRepository.save({
+        userId: user.userId,
+      });
+    }
+
+    return;
+  }
+
+  // 유저 계정 거부
+  async rejectUserAccount(userId: number) {
+    const user = await this.userRepository.findOneBy({ userId });
+    if (!user) {
+      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+    }
+    user.isApproved = false;
+    await this.userRepository.save(user);
+
+    return;
   }
 }

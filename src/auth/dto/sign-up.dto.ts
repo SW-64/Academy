@@ -6,6 +6,10 @@ import {
   IsEnum,
   Matches,
   IsString,
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
 } from 'class-validator';
 import { MESSAGES } from './../../constants/message.constant';
 import { Role } from '../../users/entities/user.entity';
@@ -69,4 +73,22 @@ export class SignUpDto {
    */
   @IsNotEmpty({ message: MESSAGES.AUTH.COMMON.PASSWORD.REQUIRED })
   passwordConfirm: string;
+
+  /**
+   * 임시 학교
+   * @example "서울대학교"
+   */
+  @IsOptional()
+  @IsString()
+  signupSchool?: string;
+
+  /**
+   * 임시 학년
+   * @example 3
+   */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(3)
+  signupGrade?: number;
 }
