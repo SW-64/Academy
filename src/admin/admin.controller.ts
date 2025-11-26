@@ -9,15 +9,19 @@ import {
   Req,
   HttpStatus,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { CreateNoticeDto } from './dto/create-notice.dto';
 import { MESSAGES } from '../constants/message.constant';
 import { UpdateNoticeDto } from './dto/update-notice.dto';
 import { UserInfo } from '../util/decorators/user-info.decorator';
-import { User } from '../users/entities/user.entity';
+import { Role, User } from '../users/entities/user.entity';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Controller('admin')
 export class AdminController {

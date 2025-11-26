@@ -18,6 +18,9 @@ import { UpdateNoticeDto } from './dto/update-notice.dto';
 import { Exam } from './entities/exam.entity';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
+import { Role, User } from '../users/entities/user.entity';
+import { Student } from './../students/entities/student.entity';
+import { Parent } from './../parents/entities/parent.entity';
 
 @Injectable()
 export class AdminService {
@@ -25,7 +28,11 @@ export class AdminService {
   private readonly noticeRepository: Repository<Notice>;
   @InjectRepository(Admin) private readonly adminRepository: Repository<Admin>;
   @InjectRepository(Exam) private readonly examRepository: Repository<Exam>;
-
+  @InjectRepository(User) private readonly userRepository: Repository<User>;
+  @InjectRepository(Student)
+  private readonly studentRepository: Repository<Student>;
+  @InjectRepository(Parent)
+  private readonly parentRepository: Repository<Parent>;
   // 공지사항 생성
   async createNotice(userId: number, { title, content }: CreateNoticeDto) {
     const adminConfirmed = await this.adminRepository.findOneBy({
