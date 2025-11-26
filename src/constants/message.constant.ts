@@ -2,6 +2,13 @@ export const MESSAGES = {
   AUTH: {
     SIGN_UP: {
       SUCCEED: '회원가입에 성공했습니다.',
+      STUDENT: {
+        SCHOOL_GRADE_REQUIRED: '학생은 학교와 학년 정보를 입력해야 합니다.',
+      },
+      PARENT: {
+        SCHOOL_GRADE_FORBIDDEN:
+          '학부모는 학교와 학년 정보를 입력할 수 없습니다.',
+      },
     },
     SIGN_IN: {
       SUCCEED: '로그인에 성공했습니다.',
@@ -79,6 +86,12 @@ export const MESSAGES = {
         },
       },
     },
+    ACCOUNT: {
+      UPDATE: {
+        APPROVE: '유저 계정이 승인되었습니다.',
+        REJECT: '유저 계정이 거부되었습니다.',
+      },
+    },
     EXAM: {
       CREATE: {
         OK: '시험일정이 생성되었습니다.',
@@ -106,5 +119,24 @@ export const MESSAGES = {
       },
       DELETE: '시험일정이 삭제되었습니다.',
     },
+    PARENT: {
+      GET: {
+        ALL: '학부모 전체가 조회되었습니다.',
+        ONE: '학부모가 조회되었습니다.',
+        NOT_FOUND: '학부모가 없습니다.',
+      },
+      NOT_EXISTED: '학부모가 존재하지 않습니다.',
+    },
+    STUDENT: {
+      GET: {
+        ALL: '학생 전체가 조회되었습니다.',
+        ONE: '학생이 조회되었습니다.',
+        NOT_FOUND: '학생이 없습니다.',
+      },
+      NOT_EXISTED: '학생이 존재하지 않습니다.',
+    },
+  },
+  USER: {
+    NOT_FOUND: '유저를 찾을 수 없습니다.',
   },
 };
