@@ -15,7 +15,7 @@ export class ParentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PARENT)
   @Get('/students')
-  async findMyStudents(@UserInfo() user: PartialUser) {
+  async getMyStudents(@UserInfo() user: PartialUser) {
     const userId = user.userId;
     const students = await this.parentsService.getMyStudents(userId);
     return students;

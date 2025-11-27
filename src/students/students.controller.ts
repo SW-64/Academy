@@ -20,7 +20,7 @@ export class StudentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT, Role.PARENT)
   @Get('/:studentId/grades')
-  async getGrades(
+  async getAllGrades(
     @Param('studentId', ParseIntPipe) studentId: number,
     @Query('page') page = 1,
     @Query('limit') limit = 10, //한 페이지에 보여줄 갯수
@@ -39,7 +39,7 @@ export class StudentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT, Role.PARENT)
   @Get('/:studentId/grades/:gradeId')
-  async getGradeDetail(
+  async getGrade(
     @Param('studentId', ParseIntPipe) studentId: number,
     @Param('gradeId', ParseIntPipe) gradeId: number,
   ) {
