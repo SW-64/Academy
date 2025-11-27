@@ -23,7 +23,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PartialUser } from '../users/interfaces/partial-user.entity';
-import { useContainer } from 'class-validator';
+import { CreateGradeDto } from './dto/create-grades.dto';
+import { UpdateGradeDto } from './dto/update-grades.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -332,6 +333,115 @@ export class AdminController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.ACCOUNT.UPDATE.REJECT,
+    };
+  }
+
+  /**
+   * 시험점수 생성
+   * @param CreateGradeDto
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/exams/:examId/grades')
+  async createGrade(
+    @UserInfo() user: PartialUser,
+    @Param('examId') examId: number,
+    @Body()
+    createGradeDto: CreateGradeDto,
+  ) {
+    const data = await this.adminService.createGrade(examId, createGradeDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: MESSAGES.ADMIN.GRADE.CREATE.OK,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험점수 전체조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/exams/:examId/grades')
+  async getAllGrades(
+    @Param('examId') examId: number,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Number(limit) || 10, 50);
+    const data = await this.adminService.getAllGrades(examId, {
+      page: _page,
+      limit: _limit,
+    });
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.GET.ALL,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험점수 상세조회
+   * @retuens
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/exams/:examId/grades/:gradeId')
+  async getGrade(
+    @Param('examId') examId: number,
+    @Param('gradeId') gradeId: number,
+  ) {
+    const data = await this.adminService.getGrade(examId, gradeId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.GET.ONE,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험점수 수정
+   * @param updateGradeDto
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('/exams/:examId/grades/:gradeId')
+  async updateGrade(
+    @Param('examId') examId: number,
+    @Param('gradeId') gradeId: number,
+    @Body() updategradeDto: UpdateGradeDto,
+  ) {
+    const data = await this.adminService.updateGrade(
+      examId,
+      gradeId,
+      updategradeDto,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.UPDATE.OK,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험점수 삭제
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Delete('/exams/:examId/grades/:gradeId')
+  async deleteGrade(
+    @Param('examId') examId: number,
+    @Param('gradeId') gradeId: number,
+  ) {
+    await this.adminService.deleteGrade(examId, gradeId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.DELETE,
     };
   }
 }

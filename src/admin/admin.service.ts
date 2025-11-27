@@ -21,6 +21,9 @@ import { UpdateExamDto } from './dto/update-exam.dto';
 import { Role, User } from '../users/entities/user.entity';
 import { Student } from './../students/entities/student.entity';
 import { Parent } from './../parents/entities/parent.entity';
+import { CreateGradeDto } from './dto/create-grades.dto';
+import { Grade } from './entities/grade.entity';
+import { UpdateGradeDto } from './dto/update-grades.dto';
 
 @Injectable()
 export class AdminService {
@@ -33,6 +36,8 @@ export class AdminService {
   private readonly studentRepository: Repository<Student>;
   @InjectRepository(Parent)
   private readonly parentRepository: Repository<Parent>;
+  @InjectRepository(Grade)
+  private readonly gradeRepository: Repository<Grade>;
 
   // 공지사항 생성
   async createNotice(userId: number, { title, content }: CreateNoticeDto) {
@@ -249,5 +254,108 @@ export class AdminService {
     await this.userRepository.save(user);
 
     return;
+  }
+
+  //시험점수 생성
+  async createGrade(
+    examId: number,
+    { studentId, subject, score }: CreateGradeDto,
+  ) {
+    //1.해당 시험 일정이 존재하는지
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    const existedStudent = await this.studentRepository.findOneBy({
+      studentId,
+    });
+    //2.DB에 등록되어있는 학생인지
+    if (!existedStudent) {
+      throw new NotFoundException(MESSAGES.ADMIN.STUDENT.NOT_EXISTED);
+    }
+    //3.시험점수가 이미 등록되어 있는 경우
+    const existdata = await this.gradeRepository.findOne({
+      where: { examId, studentId },
+    });
+    if (existdata) {
+      throw new BadRequestException(MESSAGES.ADMIN.GRADE.EXISTED);
+    }
+    const grade = await this.gradeRepository.save({
+      studentId,
+      subject,
+      score,
+      examId,
+    });
+    return grade;
+  }
+
+  //시험점수 조회
+  async getAllGrades(
+    examId: number,
+    options?: IPaginationOptions,
+  ): Promise<Pagination<Grade>> {
+    const grades = await paginate(this.gradeRepository, options, {
+      where: { examId },
+      order: { createdAt: 'DESC' },
+    });
+    return grades;
+  }
+
+  //시험점수 상세조회
+  async getGrade(examId: number, gradeId: number) {
+    const grade = await this.gradeRepository.findOne({
+      where: { examId, gradeId },
+    });
+    if (!grade) {
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+    }
+    return grade;
+  }
+
+  //시험점수 수정
+  async updateGrade(
+    examId: number,
+    gradeId: number,
+    { studentId, subject, score }: UpdateGradeDto,
+  ) {
+    //1.시험일정 존재하는지
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    //2.시험성적 존재하는지
+    const existedGrade = await this.gradeRepository.findOneBy({ gradeId });
+    if (!existedGrade) {
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+    }
+    //3.내용이 동일한 경우
+    const sameGrade =
+      existedGrade.studentId === studentId &&
+      existedGrade.subject === subject &&
+      existedGrade.score === score;
+    if (sameGrade) {
+      throw new BadRequestException(MESSAGES.ADMIN.GRADE.UPDATE.SAME);
+    }
+
+    await this.gradeRepository.update(
+      { gradeId },
+      { studentId, subject, score },
+    );
+    const updateGrade = await this.gradeRepository.findOneBy({ gradeId });
+    return updateGrade;
+  }
+
+  //시험점수 삭제
+  async deleteGrade(examId: number, gradeId: number) {
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    const existedGrade = await this.gradeRepository.findOneBy({ gradeId });
+    if (!existedGrade) {
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+    }
+    const grade = await this.gradeRepository.delete(gradeId);
+    return grade;
   }
 }

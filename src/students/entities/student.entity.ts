@@ -1,4 +1,4 @@
-import { Grade } from './grade.entity';
+import { Grade } from '../../admin/entities/grade.entity';
 import { Parent } from '../../parents/entities/parent.entity';
 import { User } from '../../users/entities/user.entity';
 import {
