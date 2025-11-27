@@ -361,7 +361,8 @@ export class AdminController {
    * 시험점수 전체조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Get('/exams/:examId/grades')
   async getAllGrades(
     @Param('examId') examId: number,
@@ -377,6 +378,25 @@ export class AdminController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.GRADE.GET.ALL,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험점수 상세조회
+   * @retuens
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/exams/:examId/grades/:gradeId')
+  async getGrade(
+    @Param('examId') examId: number,
+    @Param('gradeId') gradeId: number,
+  ) {
+    const data = await this.adminService.getGrade(examId, gradeId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.GET.ONE,
       data: data,
     };
   }

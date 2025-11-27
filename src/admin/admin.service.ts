@@ -299,4 +299,15 @@ export class AdminService {
     });
     return grades;
   }
+
+  //시험점수 상세조회
+  async getGrade(examId: number, gradeId: number) {
+    const grade = await this.gradeRepository.findOne({
+      where: { examId, gradeId },
+    });
+    if (!grade) {
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+    }
+    return grade;
+  }
 }
