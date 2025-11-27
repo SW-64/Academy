@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   IPaginationOptions,
   paginate,
@@ -8,6 +8,7 @@ import { Grade } from './entities/grade.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Student } from './entities/student.entity';
 import { Repository } from 'typeorm';
+import { MESSAGES } from '../constants/message.constant';
 
 @Injectable()
 export class StudentsService {
@@ -44,6 +45,10 @@ export class StudentsService {
 
   //성적 상세 조회
   async getGardeDetail(studentId: number, gradeId: number): Promise<Grade> {
+    const existGrade = await this.gradesRepository.findOneBy({ gradeId });
+    if (!existGrade) {
+      throw new NotFoundException(MESSAGES.GRADE.NOT_EXIST);
+    }
     const grade = await this.gradesRepository.findOne({
       where: { studentId: studentId, gradeId: gradeId },
       relations: ['exam'],
