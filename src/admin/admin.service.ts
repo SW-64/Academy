@@ -287,4 +287,16 @@ export class AdminService {
     });
     return grade;
   }
+
+  //시험점수 조회
+  async getAllGrades(
+    examId: number,
+    options?: IPaginationOptions,
+  ): Promise<Pagination<Grade>> {
+    const grades = await paginate(this.gradeRepository, options, {
+      where: { examId },
+      order: { createdAt: 'DESC' },
+    });
+    return grades;
+  }
 }

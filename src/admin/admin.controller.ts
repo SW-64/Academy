@@ -356,4 +356,28 @@ export class AdminController {
       data: data,
     };
   }
+
+  /**
+   * 시험점수 전체조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('/exams/:examId/grades')
+  async getAllGrades(
+    @Param('examId') examId: number,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Number(limit) || 10, 50);
+    const data = await this.adminService.getAllGrades(examId, {
+      page: _page,
+      limit: _limit,
+    });
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.GET.ALL,
+      data: data,
+    };
+  }
 }
