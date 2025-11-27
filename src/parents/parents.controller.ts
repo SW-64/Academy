@@ -1,25 +1,23 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ParentsService } from './parents.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Role } from '../users/entities/user.entity';
+import { UserInfo } from '../util/decorators/user-info.decorator';
+import { PartialUser } from '../users/interfaces/partial-user.entity';
 
 @Controller('parents')
 export class ParentsController {
   constructor(private readonly parentsService: ParentsService) {}
 
   // 자녀조회
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PARENT)
   @Get('/students')
-  async findMyStudents(@Req() req) {
-    const userId = req.user.id;
-    const parentId = await this.parentsService.getParentByUserId(userId);
-    const students = await this.parentsService.getMyStudents(parentId);
+  async findMyStudents(@UserInfo() user: PartialUser) {
+    const userId = user.userId;
+    const students = await this.parentsService.getMyStudents(userId);
     return students;
   }
 }
