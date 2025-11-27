@@ -139,4 +139,7 @@ export const MESSAGES = {
   USER: {
     NOT_FOUND: '유저를 찾을 수 없습니다.',
   },
+  GRADE: {
+    NOT_EXIST: '해당 시험 성적이 존재하지 않습니다.',
+  },
 };
