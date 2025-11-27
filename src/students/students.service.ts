@@ -4,7 +4,7 @@ import {
   paginate,
   Pagination,
 } from 'nestjs-typeorm-paginate';
-import { Grade } from './entities/grade.entity';
+import { Grade } from '../admin/entities/grade.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Student } from './entities/student.entity';
 import { Repository } from 'typeorm';
