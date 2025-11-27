@@ -10,6 +10,7 @@ import { Exam } from './entities/exam.entity';
 import { User } from '../users/entities/user.entity';
 import { Student } from '../students/entities/student.entity';
 import { Parent } from './../parents/entities/parent.entity';
+import { Grade } from './entities/grade.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -21,6 +22,7 @@ import { Parent } from './../parents/entities/parent.entity';
       User,
       Student,
       Parent,
+      Grade,
     ]),
   ],
   controllers: [AdminController],

@@ -47,7 +47,7 @@ export class StudentsService {
   async getGardeDetail(studentId: number, gradeId: number): Promise<Grade> {
     const existGrade = await this.gradesRepository.findOneBy({ gradeId });
     if (!existGrade) {
-      throw new NotFoundException(MESSAGES.GRADE.NOT_EXIST);
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
     }
     const grade = await this.gradesRepository.findOne({
       where: { studentId: studentId, gradeId: gradeId },

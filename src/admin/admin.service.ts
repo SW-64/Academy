@@ -21,6 +21,8 @@ import { UpdateExamDto } from './dto/update-exam.dto';
 import { Role, User } from '../users/entities/user.entity';
 import { Student } from './../students/entities/student.entity';
 import { Parent } from './../parents/entities/parent.entity';
+import { CreateGradeDto } from './dto/create-grades.dto';
+import { Grade } from './entities/grade.entity';
 
 @Injectable()
 export class AdminService {
@@ -33,6 +35,8 @@ export class AdminService {
   private readonly studentRepository: Repository<Student>;
   @InjectRepository(Parent)
   private readonly parentRepository: Repository<Parent>;
+  @InjectRepository(Grade)
+  private readonly gradeRepository: Repository<Grade>;
 
   // 공지사항 생성
   async createNotice(userId: number, { title, content }: CreateNoticeDto) {
@@ -249,5 +253,38 @@ export class AdminService {
     await this.userRepository.save(user);
 
     return;
+  }
+
+  //시험일정 생성
+  async createGrade(
+    examId: number,
+    { studentId, subject, score }: CreateGradeDto,
+  ) {
+    //1.시험이 존재하는지
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    const existedStudent = await this.studentRepository.findOneBy({
+      studentId,
+    });
+    //2.등록되어있는 학생인지
+    if (!existedStudent) {
+      throw new NotFoundException(MESSAGES.ADMIN.STUDENT.NOT_EXISTED);
+    }
+    //3.이미 등록되어 있는 경우
+    const existdata = await this.gradeRepository.findOne({
+      where: { examId, studentId },
+    });
+    if (existdata) {
+      throw new BadRequestException(MESSAGES.ADMIN.GRADE.EXISTED);
+    }
+    const grade = await this.gradeRepository.save({
+      studentId,
+      subject,
+      score,
+      examId,
+    });
+    return grade;
   }
 }

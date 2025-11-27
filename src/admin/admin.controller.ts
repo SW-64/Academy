@@ -23,7 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PartialUser } from '../users/interfaces/partial-user.entity';
-import { useContainer } from 'class-validator';
+import { CreateGradeDto } from './dto/create-grades.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -332,6 +332,28 @@ export class AdminController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.ACCOUNT.UPDATE.REJECT,
+    };
+  }
+
+  /**
+   * 시험점수 생성
+   * @param CreateGradeDto
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/exams/:examId/grades')
+  async createGrade(
+    @UserInfo() user: PartialUser,
+    @Param('examId') examId: number,
+    @Body()
+    createGradeDto: CreateGradeDto,
+  ) {
+    const data = await this.adminService.createGrade(examId, createGradeDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: MESSAGES.ADMIN.GRADE.CREATE.OK,
+      data: data,
     };
   }
 }
