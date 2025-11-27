@@ -23,6 +23,7 @@ import { Student } from './../students/entities/student.entity';
 import { Parent } from './../parents/entities/parent.entity';
 import { CreateGradeDto } from './dto/create-grades.dto';
 import { Grade } from './entities/grade.entity';
+import { UpdateGradeDto } from './dto/update-grades.dto';
 
 @Injectable()
 export class AdminService {
@@ -308,6 +309,53 @@ export class AdminService {
     if (!grade) {
       throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
     }
+    return grade;
+  }
+
+  //시험점수 수정
+  async updateGrade(
+    examId: number,
+    gradeId: number,
+    { studentId, subject, score }: UpdateGradeDto,
+  ) {
+    //1.시험일정 존재하는지
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    //2.시험성적 존재하는지
+    const existedGrade = await this.gradeRepository.findOneBy({ gradeId });
+    if (!existedGrade) {
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+    }
+    //3.내용이 동일한 경우
+    const sameGrade =
+      existedGrade.studentId === studentId &&
+      existedGrade.subject === subject &&
+      existedGrade.score === score;
+    if (sameGrade) {
+      throw new BadRequestException(MESSAGES.ADMIN.GRADE.UPDATE.SAME);
+    }
+
+    await this.gradeRepository.update(
+      { gradeId },
+      { studentId, subject, score },
+    );
+    const updateGrade = await this.gradeRepository.findOneBy({ gradeId });
+    return updateGrade;
+  }
+
+  //시험점수 삭제
+  async deleteGrade(examId: number, gradeId: number) {
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+    const existedGrade = await this.gradeRepository.findOneBy({ gradeId });
+    if (!existedGrade) {
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+    }
+    const grade = await this.gradeRepository.delete(gradeId);
     return grade;
   }
 }

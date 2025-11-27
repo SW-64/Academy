@@ -155,7 +155,7 @@ export const MESSAGES = {
       EXISTED: '이미 점수가 등록된 시험입니다.',
       UPDATE: {
         OK: '시험일정이 수정되었습니다.',
-        STUDENTIDR: '수정할 학생아이드를 입력해주세요.',
+        STUDENTID: '수정할 학생아이드를 입력해주세요.',
         SUBJECT: '수정할 시험 과목을 입력해주세요.',
         SCORE: '수정할 시험 점수를 입력해주세요.',
         SAME: '변경된 정보가 없습니다.',

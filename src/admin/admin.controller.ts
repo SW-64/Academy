@@ -24,6 +24,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { PartialUser } from '../users/interfaces/partial-user.entity';
 import { CreateGradeDto } from './dto/create-grades.dto';
+import { UpdateGradeDto } from './dto/update-grades.dto';
 
 @Controller('admin')
 export class AdminController {
@@ -398,6 +399,49 @@ export class AdminController {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.GRADE.GET.ONE,
       data: data,
+    };
+  }
+
+  /**
+   * 시험점수 수정
+   * @param updateGradeDto
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('/exams/:examId/grades/:gradeId')
+  async updateGrade(
+    @Param('examId') examId: number,
+    @Param('gradeId') gradeId: number,
+    @Body() updategradeDto: UpdateGradeDto,
+  ) {
+    const data = await this.adminService.updateGrade(
+      examId,
+      gradeId,
+      updategradeDto,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.UPDATE.OK,
+      data: data,
+    };
+  }
+
+  /**
+   * 시험점수 삭제
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Delete('/exams/:examId/grades/:gradeId')
+  async deleteGrade(
+    @Param('examId') examId: number,
+    @Param('gradeId') gradeId: number,
+  ) {
+    await this.adminService.deleteGrade(examId, gradeId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.DELETE,
     };
   }
 }
