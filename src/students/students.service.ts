@@ -4,7 +4,7 @@ import {
   paginate,
   Pagination,
 } from 'nestjs-typeorm-paginate';
-import { Grade } from './entities/grade.entity';
+import { Grade } from '../admin/entities/grade.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Student } from './entities/student.entity';
 import { Repository } from 'typeorm';
@@ -50,6 +50,10 @@ export class StudentsService {
 
   //성적 상세 조회
   async getGardeDetail(studentId: number, gradeId: number): Promise<Grade> {
+    const existGrade = await this.gradesRepository.findOneBy({ gradeId });
+    if (!existGrade) {
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+    }
     const grade = await this.gradesRepository.findOne({
       where: { studentId: studentId, gradeId: gradeId },
       relations: ['exam'],

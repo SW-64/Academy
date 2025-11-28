@@ -16,15 +16,10 @@ export class ParentsService {
     private readonly configService: ConfigService,
   ) {}
 
-  async getParentByUserId(userId: number) {
-    const parent = await this.parentRepository.findOne({
-      where: { userId },
-      select: ['parentId'],
+  async getMyStudents(userId: number) {
+    const { parentId } = await this.parentRepository.findOneBy({
+      userId,
     });
-    return parent ? parent.parentId : null;
-  }
-
-  async getMyStudents(parentId: number) {
     const students = await this.parentRepository.find({
       where: { parentId },
       relations: ['user', 'student'],

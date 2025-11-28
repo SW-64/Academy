@@ -25,12 +25,13 @@ export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 
   //성적 목록 조회
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT, Role.PARENT)
   @Get('/:studentId/grades')
-  async getGrades(
+  async getAllGrades(
     @Param('studentId', ParseIntPipe) studentId: number,
     @Query('page') page = 1,
     @Query('limit') limit = 10, //한 페이지에 보여줄 갯수
-    @Req() req,
   ) {
     const _page = Number(page) || 1;
     const _limit = Math.min(Number(limit) || 10, 50);
@@ -43,13 +44,13 @@ export class StudentsController {
   }
 
   //성적 상세 조회
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT, Role.PARENT)
   @Get('/:studentId/grades/:gradeId')
-  async getGradeDetail(
+  async getGrade(
     @Param('studentId', ParseIntPipe) studentId: number,
     @Param('gradeId', ParseIntPipe) gradeId: number,
-    @Req() req,
   ) {
-    // const userId = req.user.userId;
     const grade = await this.studentsService.getGardeDetail(studentId, gradeId);
     return grade;
   }

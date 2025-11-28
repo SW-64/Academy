@@ -8,7 +8,7 @@ import {
   DeleteDateColumn,
   JoinColumn,
 } from 'typeorm';
-import { Student } from '../entities/student.entity';
+import { Student } from '../../students/entities/student.entity';
 import { Exam } from '../../admin/entities/exam.entity';
 
 @Entity()

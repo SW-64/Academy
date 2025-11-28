@@ -25,11 +25,12 @@ export class ParentsController {
   constructor(private readonly parentsService: ParentsService) {}
 
   // 자녀조회
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PARENT)
   @Get('/students')
-  async findMyStudents(@Req() req) {
-    const userId = req.user.id;
-    const parentId = await this.parentsService.getParentByUserId(userId);
-    const students = await this.parentsService.getMyStudents(parentId);
+  async getMyStudents(@UserInfo() user: PartialUser) {
+    const userId = user.userId;
+    const students = await this.parentsService.getMyStudents(userId);
     return students;
   }
 

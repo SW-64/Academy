@@ -7,7 +7,7 @@ import {
   DeleteDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Grade } from '../../students/entities/grade.entity';
+import { Grade } from '../entities/grade.entity';
 
 @Entity()
 export class Exam {
