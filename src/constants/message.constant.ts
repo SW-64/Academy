@@ -139,4 +139,17 @@ export const MESSAGES = {
   USER: {
     NOT_FOUND: '유저를 찾을 수 없습니다.',
   },
+  PARENTS: {
+    STUDENT_LINK: {
+      REQUESTED: '자녀 연동 요청이 성공적으로 전송되었습니다.',
+    },
+  },
+  STUDENT: {
+    PARENT_LINK: {
+      SUCCEED: '부모 연동이 성공적으로 완료되었습니다.',
+      INVALID_CODE: '유효하지 않은 부모 연동 코드입니다.',
+      UNLINKED: '부모 연동이 성공적으로 해제되었습니다.',
+    },
+    NOT_EXISTED: '해당 학생이 존재하지 않습니다.',
+  },
 };
