@@ -4,9 +4,10 @@ import { ParentsController } from './parents.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Parent } from './entities/parent.entity';
 import { Student } from '../students/entities/student.entity';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Parent, Student])],
+  imports: [TypeOrmModule.forFeature([Parent, Student]), RedisModule],
   controllers: [ParentsController],
   providers: [ParentsService],
 })
