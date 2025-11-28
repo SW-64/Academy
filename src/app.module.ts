@@ -9,6 +9,7 @@ import { ParentsModule } from './parents/parents.module';
 import { AdminModule } from './admin/admin.module';
 import { UsersModule } from './users/users.module';
 import { configModuleValidationSchema } from './configs/env-validation.config';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { configModuleValidationSchema } from './configs/env-validation.config';
     ParentsModule,
     AdminModule,
     UsersModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [AppService],
