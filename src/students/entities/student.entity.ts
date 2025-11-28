@@ -22,7 +22,12 @@ export class Student {
   @Column({ name: 'user_id', unique: true, comment: '유저 id' })
   userId: number;
 
-  @Column({ name: 'parent_id', nullable: true, comment: '부모 id' })
+  @Column({
+    name: 'parent_id',
+    unique: true,
+    nullable: true,
+    comment: '부모 id',
+  })
   parentId: number | null;
 
   @Column({ comment: '학년' })
