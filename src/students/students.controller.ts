@@ -5,8 +5,20 @@ import {
   Req,
   ParseIntPipe,
   Query,
+  Post,
+  UseGuards,
+  Body,
+  HttpStatus,
+  Delete,
 } from '@nestjs/common';
 import { StudentsService } from './students.service';
+import { JwtAuthGuard } from './../auth/guards/jwt-auth.guard';
+import { RolesGuard } from './../auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { Role } from 'src/users/entities/user.entity';
+import { MESSAGES } from './../constants/message.constant';
+import { UserInfo } from '../util/decorators/user-info.decorator';
+import { PartialUser } from './../users/interfaces/partial-user.entity';
 
 @Controller('students')
 export class StudentsController {
@@ -40,5 +52,34 @@ export class StudentsController {
     // const userId = req.user.userId;
     const grade = await this.studentsService.getGardeDetail(studentId, gradeId);
     return grade;
+  }
+
+  // 부모 연동 연결
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @Post('/link')
+  async linkParent(@Body('code') code: string, @UserInfo() user: PartialUser) {
+    const userId = user.userId;
+    await this.studentsService.linkParentByCode(code, userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.STUDENT.PARENT_LINK.SUCCEED,
+    };
+  }
+
+  // 부모 연동 해제
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @Delete('/linked-parents/:parentId')
+  async unlinkParent(
+    @Param('parentId', ParseIntPipe) parentId: number,
+    @UserInfo() user: PartialUser,
+  ) {
+    const userId = user.userId;
+    await this.studentsService.unlinkParentById(parentId, userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.STUDENT.PARENT_LINK.UNLINKED,
+    };
   }
 }
