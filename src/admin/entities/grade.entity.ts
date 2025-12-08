@@ -10,7 +10,13 @@ import {
 } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
 import { Exam } from '../../admin/entities/exam.entity';
-
+export enum Level {
+  A = 'A',
+  B = 'B',
+  C = 'C',
+  D = 'D',
+  F = 'F',
+}
 @Entity()
 export class Grade {
   @PrimaryGeneratedColumn({ comment: '성적 id' })
@@ -22,11 +28,14 @@ export class Grade {
   @Column({ name: 'student_id', comment: '학생 id' })
   studentId: number;
 
-  @Column({ comment: '과목명' })
-  subject: string;
-
   @Column({ comment: '점수' })
   score: number;
+
+  @Column({ comment: '등급' })
+  level: Level;
+
+  @Column('text', { nullable: true, comment: '코멘트' })
+  comment: string;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;

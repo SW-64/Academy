@@ -17,11 +17,14 @@ export class Exam {
   @Column({ comment: '해당년도' })
   year: number;
 
-  @Column({ comment: '학기' })
-  semester: number;
+  @Column({ comment: '시험 이름' })
+  exam_title: string;
 
   @Column({ name: 'exam_date', type: 'date', comment: '시험 날짜' })
   exam_date: Date;
+
+  @Column({ comment: '학생 평균' })
+  student_average: number;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;
