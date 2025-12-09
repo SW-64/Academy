@@ -460,4 +460,23 @@ export class AdminController {
       message: MESSAGES.ADMIN.GRADE.DELETE,
     };
   }
+
+  /**
+   * 전체 학생 평균 생성
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/exams/:examId/grades/:gradeId')
+  async createExamAverage(
+    @Param('examId') examId: number,
+    @Param('gradeId') gradeId: number,
+  ) {
+    const data = await this.adminService.createExamAverage(examId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.GRADE.CREATE.EXAM_AVERAGE,
+      data: data,
+    };
+  }
 }

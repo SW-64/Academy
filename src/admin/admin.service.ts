@@ -393,4 +393,24 @@ export class AdminService {
     const grade = await this.gradeRepository.delete(gradeId);
     return grade;
   }
+
+  // 전체 학생 평균 생성
+  async createExamAverage(examId: number) {
+    const existedExam = await this.examRepository.findOneBy({ examId });
+    if (!existedExam) {
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+    }
+
+    // 점수 합산 및 평균 계산
+    let totalScore = 0;
+    const grades = await this.gradeRepository.find({ where: { examId } });
+    if (grades.length === 0) {
+      throw new BadRequestException(MESSAGES.ADMIN.GRADE.NO_GRADES);
+    }
+    totalScore += grades.reduce((sum, grade) => sum + grade.score, 0);
+    const average = parseFloat((totalScore / grades.length).toFixed(2));
+    existedExam.student_average = average;
+    await this.examRepository.save(existedExam);
+    return existedExam;
+  }
 }
