@@ -24,6 +24,9 @@ export class Notice {
   @Column({ type: 'text', comment: '내용' })
   content: string;
 
+  @Column({ type: 'boolean', default: false, comment: '고정 여부' })
+  pinned: boolean;
+
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;
 
