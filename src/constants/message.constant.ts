@@ -141,6 +141,7 @@ export const MESSAGES = {
         STUDENTID: '학생아이디는 필수 입력 항목입니다.',
         SUBJECT: '시험 과목은 필수 입력 항목입니다.',
         SCORE: '시험 점수는 필수 입력 항목입니다.',
+        EXAM_AVERAGE: '시험 평균 점수가 생성되었습니다.',
       },
       UNAUTHORIZED: {
         CREATED: '시험점수 생성 권한이 없습니다.',
@@ -161,9 +162,20 @@ export const MESSAGES = {
         SAME: '변경된 정보가 없습니다.',
       },
       DELETE: '시험점수가 삭제되었습니다.',
+      NO_GRADES: '해당 시험에 등록된 점수가 없습니다.',
     },
   },
   USER: {
     NOT_FOUND: '유저를 찾을 수 없습니다.',
+  },
+  STUDENTS: {
+    GRADE: {
+      SUMMARY: {
+        SUCCEED: '나의 성적 현황 조회에 성공했습니다.',
+      },
+      LEVEL_DISTRIBUTION: {
+        SUCCEED: '나의 등급 분포 조회에 성공했습니다.',
+      },
+    },
   },
 };
