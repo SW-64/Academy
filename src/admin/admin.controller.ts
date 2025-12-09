@@ -72,6 +72,22 @@ export class AdminController {
   }
 
   /**
+   * 고정 공지사항 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('/notices/pinned')
+  async getPinnedNotices() {
+    const data = await this.adminService.findPinnedNotices();
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.NOTICE.GET,
+      data: data,
+    };
+  }
+
+  /**
    * 공지사항 상세조회
    * @returns
    */
