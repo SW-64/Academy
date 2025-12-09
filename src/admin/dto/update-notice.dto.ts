@@ -15,4 +15,11 @@ export class UpdateNoticeDto {
    */
   @IsOptional({ message: MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.CONTENT })
   content: string;
+
+  /**
+   * 고정여부
+   * @example "false"
+   */
+  @IsOptional()
+  pinned?: boolean;
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty } from 'class-validator';
+import { IsBoolean, IsNotEmpty } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 
 export class CreateNoticeDto {
@@ -15,4 +15,11 @@ export class CreateNoticeDto {
    */
   @IsNotEmpty({ message: MESSAGES.ADMIN.NOTICE.COMMON.CREATE.CONTENT })
   content: string;
+
+  /**
+   * 고정여부
+   * @example "false"
+   */
+  @IsBoolean({})
+  pinned?: boolean;
 }
