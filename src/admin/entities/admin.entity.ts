@@ -12,7 +12,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Material } from './material.entity';
 import { Video } from './video.entity';
-import { Notice } from './notice.entity';
+import { Notice } from '../../notices/entities/notice.entity';
 
 @Entity()
 export class Admin {

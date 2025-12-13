@@ -1,5 +1,5 @@
-import { Student } from 'src/students/entities/student.entity';
-import { User } from 'src/users/entities/user.entity';
+import { Student } from '../../students/entities/student.entity';
+import { User } from '../../users/entities/user.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,

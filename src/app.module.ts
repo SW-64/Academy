@@ -1,14 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
+import { configModuleValidationSchema } from './configs/env-validation.config';
+
 import { AuthModule } from './auth/auth.module';
 import { StudentsModule } from './students/students.module';
 import { ParentsModule } from './parents/parents.module';
 import { AdminModule } from './admin/admin.module';
 import { UsersModule } from './users/users.module';
-import { configModuleValidationSchema } from './configs/env-validation.config';
+import { NoticesModule } from './notices/notices.module';
+import { ExamModule } from './exam/exam.module';
+import { GradesModule } from './grades/grades.module';
 
 @Module({
   imports: [
@@ -35,6 +41,9 @@ import { configModuleValidationSchema } from './configs/env-validation.config';
     ParentsModule,
     AdminModule,
     UsersModule,
+    NoticesModule,
+    ExamModule,
+    GradesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,7 +8,7 @@ import {
   DeleteDateColumn,
   JoinColumn,
 } from 'typeorm';
-import { Admin } from './admin.entity';
+import { Admin } from '../../admin/entities/admin.entity';
 
 @Entity()
 export class Notice {

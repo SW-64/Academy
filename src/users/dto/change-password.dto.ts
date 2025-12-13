@@ -1,4 +1,3 @@
-import { PartialType } from '@nestjs/mapped-types';
 import { IsNotEmpty, IsStrongPassword } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 

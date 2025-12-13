@@ -7,14 +7,14 @@ export class UpdateNoticeDto {
    * @example "수정한 제목입니다."
    */
   @IsOptional({ message: MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.TITLE })
-  title: string;
+  title?: string;
 
   /**
    * 내용
    * @example "수정한 내용입니다."
    */
   @IsOptional({ message: MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.CONTENT })
-  content: string;
+  content?: string;
 
   /**
    * 고정여부

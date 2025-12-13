@@ -8,10 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { StudentsService } from './students.service';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/entities/user.entity';
+
 import { MESSAGES } from './../constants/message.constant';
 
 @Controller('students')
@@ -67,6 +69,51 @@ export class StudentsController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.STUDENTS.GRADE.SUMMARY.SUCCEED,
+      data: data,
+    };
+  }
+
+  /**
+   * 학생 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/students')
+  async getAllStudents(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('status') status?: string,
+  ) {
+    const _page = Math.max(Number(page) || 1, 1);
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
+
+    const data = await this.studentsService.findAllStudents(
+      {
+        page: _page,
+        limit: _limit,
+      },
+      status,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.STUDENT.GET.ALL,
+      data: data,
+    };
+  }
+
+  /**
+   * 학생 상세 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/students/:studentId')
+  async getStudent(@Param('studentId', ParseIntPipe) studentId: number) {
+    const data = await this.studentsService.findOneStudent(studentId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.STUDENT.GET.ONE,
       data: data,
     };
   }
