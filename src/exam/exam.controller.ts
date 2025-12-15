@@ -55,11 +55,12 @@ export class ExamController {
    * 시험일정 전체조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Get('/exams')
   async getExamsAll(@Query('page') page = 1, @Query('limit') limit = 10) {
-    const _page = Number(page) || 1;
-    const _limit = Math.min(Number(limit) || 10, 50);
+    const _page = Math.max(Number(page) || 1, 1);
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
     const data = await this.examService.findAllExams({
       page: _page,
       limit: _limit,
@@ -75,7 +76,8 @@ export class ExamController {
    * 시험일정 상세조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Get('/exams/:examId')
   async getExamOne(@Param('examId', ParseIntPipe) examId: number) {
     const data = await this.examService.findExam(examId);
@@ -83,7 +85,7 @@ export class ExamController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.GET.ONE,
-      date: data,
+      data: data,
     };
   }
 
@@ -99,11 +101,10 @@ export class ExamController {
     @Param('examId', ParseIntPipe) examId: number,
     @Body() updateExamDto: UpdateExamDto,
   ) {
-    const data = await this.examService.updateExam(examId, updateExamDto);
+    await this.examService.updateExam(examId, updateExamDto);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.UPDATE.OK,
-      data: data,
     };
   }
 
@@ -128,11 +129,8 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/exams/:examId/grades/:gradeId')
-  async createExamAverage(
-    @Param('examId', ParseIntPipe) examId: number,
-    @Param('gradeId', ParseIntPipe) gradeId: number,
-  ) {
+  @Post('/exams/:examId/average')
+  async createExamAverage(@Param('examId', ParseIntPipe) examId: number) {
     const data = await this.examService.createExamAverage(examId);
     return {
       statusCode: HttpStatus.OK,

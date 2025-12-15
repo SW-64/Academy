@@ -102,7 +102,7 @@ export const MESSAGES = {
       CREATE: {
         OK: '시험일정이 생성되었습니다.',
         YEAR: '시험 해당년도는 필수 입력 항목입니다.',
-        SEMESTER: '시험 학기는 필수 입력 항목입니다.',
+        EXAM_TITLE: '시험명은 필수 입력 항목입니다.',
         EXAM_DATE: '시험 날짜는 필수 입력 항목입니다.',
       },
       UNAUTHORIZED: {
@@ -119,7 +119,7 @@ export const MESSAGES = {
       UPDATE: {
         OK: '시험일정이 수정되었습니다.',
         YEAR: '수정할 해당년도를 입력해주세요.',
-        SEMESTER: '수정할 학기를 입력해주세요.',
+        EXAM_TITLE: '수정할 시험명을 입력해주세요.',
         EXAM_DATE: '수정할 시험 날짜를 입력해주세요.',
         SAME: '변경된 정보가 없습니다.',
       },

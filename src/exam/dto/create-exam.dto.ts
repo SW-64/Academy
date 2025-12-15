@@ -1,4 +1,4 @@
-import { IsNotEmpty } from 'class-validator';
+import { IsDateString, IsNotEmpty } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 
 export class CreateExamDto {
@@ -10,16 +10,16 @@ export class CreateExamDto {
   year: number;
 
   /**
-   * 학기
-   * @example "2"
+   * 시험명
+   * @example "2학기"
    */
-  @IsNotEmpty({ message: MESSAGES.ADMIN.EXAM.CREATE.SEMESTER })
-  semester: number;
+  @IsNotEmpty({ message: MESSAGES.ADMIN.EXAM.CREATE.EXAM_TITLE })
+  exam_title: string;
 
   /**
    * 시험날짜
    * @example "09.08"
    */
-  @IsNotEmpty({ message: MESSAGES.ADMIN.EXAM.CREATE.EXAM_DATE })
-  exam_date: Date;
+  @IsDateString({}, { message: MESSAGES.ADMIN.EXAM.CREATE.EXAM_DATE })
+  exam_date: string;
 }
