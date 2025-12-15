@@ -12,7 +12,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MESSAGES } from '../../constants/message.constant';
 import { User } from '../../users/entities/user.entity';
-import { PartialUser } from 'src/users/interfaces/partial-user.entity';
+import { PartialUser } from '../../users/interfaces/partial-user.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()

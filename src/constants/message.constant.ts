@@ -91,6 +91,12 @@ export const MESSAGES = {
         APPROVE: '유저 계정이 승인되었습니다.',
         REJECT: '유저 계정이 거부되었습니다.',
       },
+      GET: {
+        ALL: '유저 계정 전체가 조회되었습니다.',
+        ONE: '유저 계정이 조회되었습니다.',
+        NOT_FOUND: '유저 계정이 없습니다.',
+        NON_APPROVED: '승인 대기중인 유저 계정이 조회되었습니다.',
+      },
     },
     EXAM: {
       CREATE: {

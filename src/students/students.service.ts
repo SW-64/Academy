@@ -1,13 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Grade } from '../admin/entities/grade.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Student } from './entities/student.entity';
-import { Between, Repository } from 'typeorm';
+import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
+import { FindOptionsWhere, Repository } from 'typeorm';
+
 import { MESSAGES } from '../constants/message.constant';
+
 import { startOfMonth, endOfMonth } from 'date-fns';
+
+import { Role, User } from '../users/entities/user.entity';
+import { Grade } from '../grades/entities/grade.entity';
+import { Student } from './entities/student.entity';
 @Injectable()
 export class StudentsService {
   constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     @InjectRepository(Student)
     private readonly studentsRepository: Repository<Student>,
     @InjectRepository(Grade)
@@ -103,5 +110,34 @@ export class StudentsService {
       studentName: existStudent.user.name,
       grades: grades.map((grade) => grade.level),
     };
+  }
+
+  // 학생 목록 조회
+  async findAllStudents(options?: IPaginationOptions, status?: string) {
+    const where: FindOptionsWhere<User> = {
+      role: Role.STUDENT,
+    };
+
+    if (status === 'approved') {
+      where.isApproved = true;
+    } else if (status === 'pending') {
+      where.isApproved = false;
+    }
+
+    return paginate(this.userRepository, options, {
+      order: { createdAt: 'DESC' },
+      where,
+    });
+  }
+
+  // 학생 상세 조회
+  async findOneStudent(studentId: number) {
+    const student = await this.studentsRepository.findOneBy({
+      studentId: studentId,
+    });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+    }
+    return student;
   }
 }

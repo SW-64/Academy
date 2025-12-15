@@ -3,17 +3,26 @@ import {
   Controller,
   Get,
   HttpStatus,
+  Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { UpdateUserDto } from './dto/update-user.dto';
+
+import { MESSAGES } from './../constants/message.constant';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserInfo } from '../util/decorators/user-info.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+
+import { Role } from './entities/user.entity';
 import { PartialUser } from './interfaces/partial-user.entity';
-import { MESSAGES } from './../constants/message.constant';
+
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
@@ -65,6 +74,61 @@ export class UsersController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.AUTH.PASSWORD_CHANGE.SUCCEED,
+    };
+  }
+
+  /**
+   * 비승인 유저 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/users/pending')
+  async getNonApprovedUsers(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('status') status?: string,
+  ) {
+    const _page = Math.max(Number(page) || 1, 1);
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
+
+    const data = await this.usersService.getNonApprovedUsers({
+      page: _page,
+      limit: _limit,
+    });
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.GET.NON_APPROVED,
+      data: data,
+    };
+  }
+  /**
+   * 유저 계정 승인
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/users/:userId/approve')
+  async approveUserAccount(@Param('userId') userId: number) {
+    await this.usersService.approveUserAccount(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.UPDATE.APPROVE,
+    };
+  }
+
+  /**
+   * 유저 계정 거절
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/users/:userId/reject')
+  async rejectUserAccount(@Param('userId') userId: number) {
+    await this.usersService.rejectUserAccount(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.UPDATE.REJECT,
     };
   }
 }

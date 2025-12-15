@@ -8,8 +8,10 @@ import {
   DeleteDateColumn,
   JoinColumn,
 } from 'typeorm';
+
 import { Student } from '../../students/entities/student.entity';
-import { Exam } from '../../admin/entities/exam.entity';
+import { Exam } from '../../exam/entities/exam.entity';
+
 export enum Level {
   A = 'A',
   B = 'B',
