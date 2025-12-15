@@ -33,11 +33,11 @@ export class Grade {
   @Column({ comment: '점수' })
   score: number;
 
-  @Column({ comment: '등급' })
+  @Column({ type: 'enum', enum: Level, comment: '등급' })
   level: Level;
 
   @Column('text', { nullable: true, comment: '코멘트' })
-  comment: string;
+  comment: string | null;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;

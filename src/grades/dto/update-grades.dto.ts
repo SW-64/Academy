@@ -1,25 +1,41 @@
-import { IsOptional } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
+import { Level } from '../entities/grade.entity';
 
 export class UpdateGradeDto {
   /**
    * 학생아이디
-   * @example "24"
+   * @example 24
    */
-  @IsOptional({ message: MESSAGES.ADMIN.GRADE.UPDATE.STUDENTID })
-  studentId: number;
+  @IsOptional()
+  @IsInt({ message: MESSAGES.ADMIN.GRADE.UPDATE.STUDENTID })
+  @Min(1, { message: MESSAGES.ADMIN.GRADE.UPDATE.STUDENTID })
+  studentId?: number;
 
   /**
-   * 시험 과목
-   * @example "공통수학"
+   * 시험 점수 (0~100)
+   * @example 89
    */
-  @IsOptional({ message: MESSAGES.ADMIN.GRADE.UPDATE.SUBJECT })
-  subject: string;
+  @IsOptional()
+  @IsInt({ message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
+  @Min(0, { message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
+  @Max(100, { message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
+  score?: number;
 
   /**
-   * 시험 점수
-   * @example "89"
+   * 코멘트
+   * @example "잘했어요"
    */
-  @IsOptional({ message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
-  score: number;
+  @IsOptional()
+  @IsString({ message: MESSAGES.ADMIN.GRADE.CREATE.COMMENT })
+  @MaxLength(500, { message: MESSAGES.ADMIN.GRADE.CREATE.COMMENT })
+  comment?: string;
 }

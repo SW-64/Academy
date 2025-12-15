@@ -148,6 +148,8 @@ export const MESSAGES = {
         SUBJECT: '시험 과목은 필수 입력 항목입니다.',
         SCORE: '시험 점수는 필수 입력 항목입니다.',
         EXAM_AVERAGE: '시험 평균 점수가 생성되었습니다.',
+        LEVEL: '등급은 A 이상 F 이하의 값이어야 합니다.',
+        COMMENT: '코멘트는 필수 입력 항목입니다.',
       },
       UNAUTHORIZED: {
         CREATED: '시험점수 생성 권한이 없습니다.',
@@ -166,6 +168,7 @@ export const MESSAGES = {
         SUBJECT: '수정할 시험 과목을 입력해주세요.',
         SCORE: '수정할 시험 점수를 입력해주세요.',
         SAME: '변경된 정보가 없습니다.',
+        LEVEL: '등급은 A 이상 F 이하의 값이어야 합니다.',
       },
       DELETE: '시험점수가 삭제되었습니다.',
       NO_GRADES: '해당 시험에 등록된 점수가 없습니다.',
