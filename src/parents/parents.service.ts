@@ -64,7 +64,7 @@ export class ParentsService {
       parentId: parentId,
     });
     if (!parent) {
-      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
     return parent;
   }

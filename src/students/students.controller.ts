@@ -68,7 +68,7 @@ export class StudentsController {
     const data = await this.studentsService.getCurrentGrades(studentId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.STUDENTS.GRADE.SUMMARY.SUCCEED,
+      message: MESSAGES.STUDENTS.GRADE.SUCCESS.SUMMARY,
       data: data,
     };
   }
@@ -97,7 +97,7 @@ export class StudentsController {
     );
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.STUDENT.GET.ALL,
+      message: MESSAGES.ADMIN.STUDENT.SUCCESS.LIST,
       data: data,
     };
   }
@@ -113,7 +113,7 @@ export class StudentsController {
     const data = await this.studentsService.findOneStudent(studentId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.STUDENT.GET.ONE,
+      message: MESSAGES.ADMIN.STUDENT.SUCCESS.GET,
       data: data,
     };
   }
