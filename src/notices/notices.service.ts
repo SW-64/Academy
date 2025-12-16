@@ -42,7 +42,7 @@ export class NoticesService {
   async createNotice(userId: number, { title, content }: CreateNoticeDto) {
     const { adminId } = await this.adminRepository.findOneBy({ userId });
     if (!adminId) {
-      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
     const notice = await this.noticeRepository.save({
       title,
@@ -67,9 +67,7 @@ export class NoticesService {
   async findNotice(noticeId: number) {
     const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
     if (!existedNotice) {
-      throw new NotFoundException(
-        MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.NOT_EXISTED,
-      );
+      throw new NotFoundException(MESSAGES.ADMIN.NOTICE.ERROR.NOT_FOUND);
     }
     return this.isNew([existedNotice])[0];
   }
@@ -91,9 +89,7 @@ export class NoticesService {
     //1. 해당 공지사항이 존재하는지 검증
     const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
     if (!existedNotice) {
-      throw new NotFoundException(
-        MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.NOT_EXISTED,
-      );
+      throw new NotFoundException(MESSAGES.ADMIN.NOTICE.ERROR.NOT_FOUND);
     }
     //2. 변경된 내용이 있는지 체크
     const titleChange = title !== undefined && existedNotice.title !== title;
@@ -103,7 +99,9 @@ export class NoticesService {
       pinned !== undefined && existedNotice.pinned !== pinned;
 
     if (!titleChange && !contentChange && !pinnedChange) {
-      throw new BadRequestException(MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.SAME);
+      throw new BadRequestException(
+        MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.NO_CHANGES,
+      );
     }
     //3. undefined 제외하고 업데이트
     const patch: Partial<Notice> = {}; // 수정된 내용 담을 객체 만들기
@@ -122,9 +120,7 @@ export class NoticesService {
   async deleteNotice(noticeId: number) {
     const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
     if (!existedNotice) {
-      throw new NotFoundException(
-        MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.NOT_EXISTED,
-      );
+      throw new NotFoundException(MESSAGES.ADMIN.NOTICE.ERROR.NOT_FOUND);
     }
     await this.noticeRepository.delete(noticeId);
     return;

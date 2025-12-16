@@ -56,7 +56,7 @@ export class ParentsController {
     );
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.PARENT.GET.ALL,
+      message: MESSAGES.ADMIN.PARENT.SUCCESS.LIST,
       data: data,
     };
   }
@@ -72,7 +72,7 @@ export class ParentsController {
     const data = await this.parentsService.findOneParent(parentId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.PARENT.GET.ONE,
+      message: MESSAGES.ADMIN.PARENT.SUCCESS.GET,
       data: data,
     };
   }

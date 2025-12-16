@@ -35,18 +35,18 @@ export class AuthService {
     // 기존 이메일로 가입된 이력이 있을 경우 False
     const existedEmail = await this.userRepository.findOneBy({ email });
     if (existedEmail)
-      throw new BadRequestException(MESSAGES.AUTH.COMMON.DUPLICATED);
+      throw new BadRequestException(MESSAGES.AUTH.ERROR.DUPLICATED_EMAIL);
 
     // 2. phone
     // 기존 연락처로 가입된 이력이 있을 경우 False
     const existedPhone = await this.userRepository.findOneBy({ phone });
     if (existedPhone)
-      throw new BadRequestException(MESSAGES.AUTH.COMMON.DUPLICATED);
+      throw new BadRequestException(MESSAGES.AUTH.ERROR.DUPLICATED_PHONE);
 
     // 3. password confirm
     if (password !== passwordConfirm) {
       throw new BadRequestException(
-        MESSAGES.AUTH.COMMON.PASSWORD_CONFIRM.NOT_MATCHED_WITH_PASSWORD,
+        MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NOT_MATCHED,
       );
     }
 
@@ -55,7 +55,7 @@ export class AuthService {
     if (role === Role.STUDENT) {
       if (!signupGrade || !signupSchool) {
         throw new BadRequestException(
-          MESSAGES.AUTH.SIGN_UP.STUDENT.SCHOOL_GRADE_REQUIRED,
+          MESSAGES.AUTH.VALIDATION.SIGN_UP.STUDENT_SCHOOL_GRADE_REQUIRED,
         );
       }
 
@@ -63,7 +63,7 @@ export class AuthService {
       if (role !== Role.STUDENT) {
         if (signupGrade || signupSchool) {
           throw new BadRequestException(
-            MESSAGES.AUTH.SIGN_UP.PARENT.SCHOOL_GRADE_FORBIDDEN,
+            MESSAGES.AUTH.VALIDATION.SIGN_UP.PARENT_SCHOOL_GRADE_FORBIDDEN,
           );
         }
       }

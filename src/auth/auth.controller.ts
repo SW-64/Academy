@@ -33,7 +33,7 @@ export class AuthController {
 
     return {
       statusCode: HttpStatus.CREATED,
-      message: MESSAGES.AUTH.SIGN_UP.SUCCEED,
+      message: MESSAGES.AUTH.SUCCESS.SIGN_UP,
       data: data,
     };
   }
@@ -54,7 +54,7 @@ export class AuthController {
 
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.AUTH.SIGN_IN.SUCCEED,
+      message: MESSAGES.AUTH.SUCCESS.SIGN_IN,
       data: data,
     };
   }
@@ -72,7 +72,7 @@ export class AuthController {
     await this.authService.signOut(userId, res);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.AUTH.SIGN_OUT.SUCCEED,
+      message: MESSAGES.AUTH.SUCCESS.SIGN_OUT,
     };
   }
 
@@ -93,7 +93,7 @@ export class AuthController {
 
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.AUTH.REFRESH.SUCCEED,
+      message: MESSAGES.AUTH.SUCCESS.REFRESH,
       data: data,
     };
   }
