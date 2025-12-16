@@ -13,16 +13,16 @@ export class UpdateUserDto {
    * @example "홍길동"
    */
   @IsOptional()
-  @Length(2, 20, { message: MESSAGES.AUTH.COMMON.NAME.INVALID_LENGTH })
-  name: string;
+  @Length(2, 20, { message: MESSAGES.AUTH.VALIDATION.NAME.INVALID_LENGTH })
+  name?: string;
 
   /**
    * 이메일
    * @example "test@example.com"
    */
   @IsOptional()
-  @IsEmail({}, { message: MESSAGES.AUTH.COMMON.EMAIL.INVALID_FORMAT })
-  email: string;
+  @IsEmail({}, { message: MESSAGES.AUTH.VALIDATION.EMAIL.INVALID_FORMAT })
+  email?: string;
 
   /**
    * 연락처
@@ -30,7 +30,7 @@ export class UpdateUserDto {
    */
   @IsOptional()
   @Matches(/^010\d{8}$/, {
-    message: MESSAGES.AUTH.COMMON.PHONE.INVALID_FORMAT,
+    message: MESSAGES.AUTH.VALIDATION.PHONE.INVALID_FORMAT,
   })
-  phone: string;
+  phone?: string;
 }
