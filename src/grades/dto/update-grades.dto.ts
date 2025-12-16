@@ -15,8 +15,12 @@ export class UpdateGradeDto {
    * @example 24
    */
   @IsOptional()
-  @IsInt({ message: MESSAGES.ADMIN.GRADE.UPDATE.STUDENTID })
-  @Min(1, { message: MESSAGES.ADMIN.GRADE.UPDATE.STUDENTID })
+  @IsInt({
+    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.STUDENT_ID_INVALID,
+  })
+  @Min(1, {
+    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.STUDENT_ID_INVALID,
+  })
   studentId?: number;
 
   /**
@@ -24,9 +28,9 @@ export class UpdateGradeDto {
    * @example 89
    */
   @IsOptional()
-  @IsInt({ message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
-  @Min(0, { message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
-  @Max(100, { message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
+  @IsInt({ message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.SCORE_INVALID })
+  @Min(0, { message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.SCORE_RANGE })
+  @Max(100, { message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.SCORE_RANGE })
   score?: number;
 
   /**
@@ -34,7 +38,11 @@ export class UpdateGradeDto {
    * @example "잘했어요"
    */
   @IsOptional()
-  @IsString({ message: MESSAGES.ADMIN.GRADE.CREATE.COMMENT })
-  @MaxLength(500, { message: MESSAGES.ADMIN.GRADE.CREATE.COMMENT })
+  @IsString({
+    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.COMMENT_INVALID,
+  })
+  @MaxLength(500, {
+    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.COMMENT_MAX_LENGTH,
+  })
   comment?: string;
 }

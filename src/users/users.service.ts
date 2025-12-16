@@ -43,7 +43,9 @@ export class UsersService {
       changePasswordDto;
 
     if (newPassword !== newPasswordConfirm) {
-      MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NOT_MATCHED;
+      throw new Error(
+        MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NEW_NOT_MATCHED,
+      );
     }
 
     const user = await this.userRepository.findOne({

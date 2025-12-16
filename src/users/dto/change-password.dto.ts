@@ -6,12 +6,13 @@ export class ChangePasswordDto {
    * 기존 비밀번호
    * @example "Example1!"
    */
-  @IsNotEmpty({ message: MESSAGES.AUTH.COMMON.PASSWORD.REQUIRED })
+  @IsNotEmpty({ message: MESSAGES.AUTH.VALIDATION.PASSWORD.CURRENT_REQUIRED })
   currentPassword: string;
   /**
    * 새 비밀번호
    * @example "Example1!"
    */
+  @IsNotEmpty({ message: MESSAGES.AUTH.VALIDATION.PASSWORD.NEW_REQUIRED })
   @IsStrongPassword(
     {
       minLength: 8,
@@ -20,7 +21,7 @@ export class ChangePasswordDto {
       minNumbers: 1,
       minSymbols: 1,
     },
-    { message: MESSAGES.AUTH.COMMON.PASSWORD.INVALID_FORMAT },
+    { message: MESSAGES.AUTH.VALIDATION.PASSWORD.INVALID_FORMAT },
   )
   newPassword: string;
 
@@ -28,6 +29,8 @@ export class ChangePasswordDto {
    * 새 비밀번호 확인
    * @example "Example1!"
    */
-  @IsNotEmpty({ message: MESSAGES.AUTH.COMMON.PASSWORD.REQUIRED })
+  @IsNotEmpty({
+    message: MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NEW_REQUIRED,
+  })
   newPasswordConfirm: string;
 }

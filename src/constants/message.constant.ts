@@ -39,11 +39,15 @@ export const MESSAGES = {
         REQUIRED: '비밀번호는 필수 입력 항목입니다.',
         INVALID_FORMAT:
           '비밀번호는 영문자, 숫자, 특수문자를 포함한 8자 이상이어야 합니다.',
+        CURRENT_REQUIRED: '기존 비밀번호는 필수 입력 항목입니다.',
+        NEW_REQUIRED: '새 비밀번호는 필수 입력 항목입니다.',
       },
 
       PASSWORD_CONFIRM: {
         REQUIRED: '비밀번호 확인은 필수 입력 항목입니다.',
         NOT_MATCHED: '비밀번호 확인이 비밀번호와 일치하지 않습니다.',
+        NEW_REQUIRED: '새 비밀번호 확인은 필수 입력 항목입니다.',
+        NEW_NOT_MATCHED: '새 비밀번호와 새 비밀번호 확인이 일치하지 않습니다.',
       },
 
       ROLE: {
@@ -184,15 +188,21 @@ export const MESSAGES = {
       VALIDATION: {
         CREATE: {
           STUDENT_ID_REQUIRED: '학생 아이디는 필수 입력 항목입니다.',
+          STUDENT_ID_INVALID: '학생 아이디는 1 이상의 정수여야 합니다.',
           SCORE_REQUIRED: '점수는 필수 입력 항목입니다.',
-          LEVEL_REQUIRED: '등급은 필수 입력 항목입니다.',
-          COMMENT_REQUIRED: '코멘트는 필수 입력 항목입니다.',
+          SCORE_INVALID: '점수는 정수여야 합니다.',
+          SCORE_RANGE: '점수는 0~100 사이여야 합니다.',
+          COMMENT_INVALID: '코멘트는 문자열이어야 합니다.',
+          COMMENT_MAX_LENGTH: '코멘트는 500자 이하여야 합니다.',
         },
         UPDATE: {
           STUDENT_ID_REQUIRED: '수정할 학생 아이디를 입력해주세요.',
+          STUDENT_ID_INVALID: '학생 아이디는 1 이상의 정수여야 합니다.',
           SCORE_REQUIRED: '수정할 시험 점수를 입력해주세요.',
-          LEVEL_REQUIRED: '수정할 등급을 입력해주세요.',
-          COMMENT_REQUIRED: '수정할 코멘트를 입력해주세요.',
+          SCORE_INVALID: '점수는 정수여야 합니다.',
+          SCORE_RANGE: '점수는 0~100 사이여야 합니다.',
+          COMMENT_INVALID: '코멘트는 문자열이어야 합니다.',
+          COMMENT_MAX_LENGTH: '코멘트는 500자 이하여야 합니다.',
           NO_CHANGES: '변경된 정보가 없습니다.',
         },
       },

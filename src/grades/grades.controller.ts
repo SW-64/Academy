@@ -46,7 +46,7 @@ export class GradesController {
     const data = await this.gradeService.createGrade(examId, createGradeDto);
     return {
       statusCode: HttpStatus.CREATED,
-      message: MESSAGES.ADMIN.GRADE.CREATE.OK,
+      message: MESSAGES.ADMIN.GRADE.SUCCESS.CREATE,
       data: data,
     };
   }
@@ -71,7 +71,7 @@ export class GradesController {
     });
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.GET.ALL,
+      message: MESSAGES.ADMIN.GRADE.SUCCESS.LIST,
       data: data,
     };
   }
@@ -90,7 +90,7 @@ export class GradesController {
     const data = await this.gradeService.getGrade(examId, gradeId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.GET.ONE,
+      message: MESSAGES.ADMIN.GRADE.SUCCESS.GET,
       data: data,
     };
   }
@@ -111,7 +111,7 @@ export class GradesController {
     await this.gradeService.updateGrade(examId, gradeId, updateGradeDto);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.UPDATE.OK,
+      message: MESSAGES.ADMIN.GRADE.SUCCESS.UPDATE,
     };
   }
 
@@ -129,7 +129,7 @@ export class GradesController {
     await this.gradeService.deleteGrade(examId, gradeId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.DELETE,
+      message: MESSAGES.ADMIN.GRADE.SUCCESS.DELETE,
     };
   }
 }
