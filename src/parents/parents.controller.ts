@@ -25,11 +25,15 @@ export class ParentsController {
   // 자녀조회
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PARENT)
-  @Get('/students')
+  @Get('/me/students')
   async getMyStudents(@UserInfo() user: PartialUser) {
     const userId = user.userId;
-    const students = await this.parentsService.getMyStudents(userId);
-    return students;
+    const data = await this.parentsService.getMyStudents(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.PARENTS.SUCCESS.LIST,
+      data: data,
+    };
   }
 
   /**
@@ -38,7 +42,7 @@ export class ParentsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/parents')
+  @Get('')
   async getAllParents(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
@@ -67,7 +71,7 @@ export class ParentsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/parents/:parentId')
+  @Get('/:parentId')
   async getParent(@Param('parentId', ParseIntPipe) parentId: number) {
     const data = await this.parentsService.findOneParent(parentId);
     return {

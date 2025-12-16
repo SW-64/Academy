@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
@@ -17,26 +21,25 @@ export class ParentsService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  // 자녀조회
   async getMyStudents(userId: number) {
-    const { parentId } = await this.parentRepository.findOneBy({
-      userId,
-    });
-    const students = await this.parentRepository.find({
-      where: { parentId },
-      relations: ['user', 'student'],
+    const parent = await this.parentRepository.findOne({
+      where: { userId },
+      relations: { student: { user: true } },
       select: {
+        parentId: true,
         student: {
           studentId: true,
-        },
-        user: {
-          userId: true,
-          name: true,
-          email: true,
+          user: {
+            userId: true,
+            name: true,
+          },
         },
       },
     });
+    if (!parent) throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
 
-    return students;
+    return parent.student;
   }
 
   // 학부모 목록 조회
@@ -44,7 +47,12 @@ export class ParentsService {
     const where: FindOptionsWhere<User> = {
       role: Role.PARENT,
     };
-
+    const allowed = new Set(['approved', 'pending']);
+    if (status && !allowed.has(status)) {
+      throw new BadRequestException(
+        MESSAGES.ADMIN.PARENT.ERROR.LIST.INVALID_STATUS,
+      );
+    }
     if (status === 'approved') {
       where.isApproved = true;
     } else if (status === 'pending') {
@@ -60,8 +68,14 @@ export class ParentsService {
 
   // 학부모 상세 조회
   async findOneParent(parentId: number) {
-    const parent = await this.parentRepository.findOneBy({
-      parentId: parentId,
+    const parent = await this.parentRepository.findOne({
+      where: { parentId },
+      relations: { user: true, student: true },
+      select: {
+        parentId: true,
+        user: { userId: true, name: true, email: true, isApproved: true },
+        student: { studentId: true, user: { userId: true, name: true } },
+      },
     });
     if (!parent) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
