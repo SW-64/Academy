@@ -37,7 +37,7 @@ export class User {
   })
   role: Role;
 
-  @Column({ unique: true, comment: '연락처처' })
+  @Column({ unique: true, comment: '연락처' })
   phone: string;
 
   @Column({ comment: '비밀번호', select: false })
@@ -47,10 +47,10 @@ export class User {
   isApproved: boolean;
 
   @Column({ comment: '임시 학교', nullable: true })
-  signupSchool: string;
+  signupSchool: string | null;
 
   @Column({ comment: '임시 학년', nullable: true })
-  signupGrade: number;
+  signupGrade: number | null;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;

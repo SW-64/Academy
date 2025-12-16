@@ -4,6 +4,7 @@ import {
   Get,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -83,7 +84,7 @@ export class UsersController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/users/pending')
+  @Get('/pending')
   async getNonApprovedUsers(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
@@ -108,8 +109,8 @@ export class UsersController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/users/:userId/approve')
-  async approveUserAccount(@Param('userId') userId: number) {
+  @Post('/:userId/approve')
+  async approveUserAccount(@Param('userId', ParseIntPipe) userId: number) {
     await this.usersService.approveUserAccount(userId);
     return {
       statusCode: HttpStatus.OK,
@@ -123,8 +124,8 @@ export class UsersController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/users/:userId/reject')
-  async rejectUserAccount(@Param('userId') userId: number) {
+  @Post('/:userId/reject')
+  async rejectUserAccount(@Param('userId', ParseIntPipe) userId: number) {
     await this.usersService.rejectUserAccount(userId);
     return {
       statusCode: HttpStatus.OK,

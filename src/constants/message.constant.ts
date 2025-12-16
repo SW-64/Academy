@@ -151,6 +151,9 @@ export const MESSAGES = {
       },
       ERROR: {
         NOT_FOUND: '학부모가 존재하지 않습니다.',
+        LIST: {
+          INVALID_STATUS: 'status는 approved | pending만 허용됩니다.',
+        },
       },
     },
 
@@ -161,6 +164,9 @@ export const MESSAGES = {
       },
       ERROR: {
         NOT_FOUND: '학생이 존재하지 않습니다.',
+        LIST: {
+          INVALID_STATUS: 'status는 approved | pending만 허용됩니다.',
+        },
       },
     },
 
@@ -221,6 +227,15 @@ export const MESSAGES = {
         SUMMARY: '나의 성적 현황 조회에 성공했습니다.',
         LEVEL_DISTRIBUTION: '나의 등급 분포 조회에 성공했습니다.',
       },
+    },
+  },
+
+  PARENTS: {
+    SUCCESS: {
+      LIST: '나의 자녀 목록 조회에 성공했습니다.',
+    },
+    ERROR: {
+      NOT_FOUND: '자녀가 존재하지 않습니다.',
     },
   },
 } as const;

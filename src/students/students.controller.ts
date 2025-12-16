@@ -15,6 +15,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/entities/user.entity';
 
 import { MESSAGES } from './../constants/message.constant';
+import { StudentOrParentOwnsStudentGuard } from './../auth/guards/student-or-parent-owns-student.guard';
 
 @Controller('students')
 export class StudentsController {
@@ -23,21 +24,24 @@ export class StudentsController {
    * 성적 목록 조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, StudentOrParentOwnsStudentGuard)
   @Roles(Role.STUDENT, Role.PARENT)
   @Get('/:studentId/grades')
   async getAllGrades(
     @Param('studentId', ParseIntPipe) studentId: number,
-    @Query('year') year,
-    @Query('month') month, //한 페이지에 보여줄 갯수
+    @Query('year') year?: string,
+    @Query('month') month?: string, //한 페이지에 보여줄 갯수
   ) {
-    const _year = Number(year) || 2026;
-    const _month = Number(month) || 1;
-
+    const now = new Date();
+    const _year = year ? Number(year) : now.getFullYear();
+    const _month = month ? Number(month) : now.getMonth() + 1;
+    // 월 범위 방어(1~12)
+    const safeMonth = Math.min(Math.max(_month || 1, 1), 12);
+    const safeYear = Math.max(_year || now.getFullYear(), 1970);
     const grades = await this.studentsService.getAllGrades(
       studentId,
-      _year,
-      _month,
+      safeYear,
+      safeMonth,
     );
     return grades;
   }
@@ -46,7 +50,7 @@ export class StudentsController {
    * 성적 상세 조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, StudentOrParentOwnsStudentGuard)
   @Roles(Role.STUDENT, Role.PARENT)
   @Get('/:studentId/grades/:gradeId')
   async getOneGrade(
@@ -61,7 +65,7 @@ export class StudentsController {
    * 성적 현황 조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, StudentOrParentOwnsStudentGuard)
   @Roles(Role.STUDENT)
   @Get('/:studentId/grades/summary')
   async getCurrentGrades(@Param('studentId', ParseIntPipe) studentId: number) {
@@ -79,7 +83,7 @@ export class StudentsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/students')
+  @Get()
   async getAllStudents(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
@@ -108,7 +112,7 @@ export class StudentsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/students/:studentId')
+  @Get('/:studentId')
   async getStudent(@Param('studentId', ParseIntPipe) studentId: number) {
     const data = await this.studentsService.findOneStudent(studentId);
     return {
