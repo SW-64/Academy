@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -43,7 +47,9 @@ export class UsersService {
       changePasswordDto;
 
     if (newPassword !== newPasswordConfirm) {
-      MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NOT_MATCHED;
+      throw new BadRequestException(
+        MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NOT_MATCHED,
+      );
     }
 
     const user = await this.userRepository.findOne({

@@ -12,7 +12,7 @@ export class UpdateUserDto {
    * 이름
    * @example "홍길동"
    */
-  @IsOptional({ message: MESSAGES.AUTH.COMMON.NAME.REQUIRED })
+  @IsOptional()
   @Length(2, 20, { message: MESSAGES.AUTH.COMMON.NAME.INVALID_LENGTH })
   name: string;
 
@@ -20,7 +20,7 @@ export class UpdateUserDto {
    * 이메일
    * @example "test@example.com"
    */
-  @IsOptional({ message: MESSAGES.AUTH.COMMON.EMAIL.REQUIRED })
+  @IsOptional()
   @IsEmail({}, { message: MESSAGES.AUTH.COMMON.EMAIL.INVALID_FORMAT })
   email: string;
 
@@ -28,7 +28,7 @@ export class UpdateUserDto {
    * 연락처
    * @example "01012345678"
    */
-  @IsOptional({ message: MESSAGES.AUTH.COMMON.PHONE.REQUIRED })
+  @IsOptional()
   @Matches(/^010\d{8}$/, {
     message: MESSAGES.AUTH.COMMON.PHONE.INVALID_FORMAT,
   })
