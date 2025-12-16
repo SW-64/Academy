@@ -43,7 +43,7 @@ export class UsersService {
       changePasswordDto;
 
     if (newPassword !== newPasswordConfirm) {
-      MESSAGES.AUTH.COMMON.PASSWORD_CONFIRM.NOT_MATCHED_WITH_PASSWORD;
+      MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NOT_MATCHED;
     }
 
     const user = await this.userRepository.findOne({
@@ -92,7 +92,7 @@ export class UsersService {
   async approveUserAccount(userId: number) {
     const user = await this.userRepository.findOneBy({ userId });
     if (!user) {
-      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
     user.isApproved = true;
     await this.userRepository.save(user);
@@ -121,7 +121,7 @@ export class UsersService {
   async rejectUserAccount(userId: number) {
     const user = await this.userRepository.findOneBy({ userId });
     if (!user) {
-      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
     user.isApproved = false;
     await this.userRepository.save(user);

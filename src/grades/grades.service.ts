@@ -19,6 +19,7 @@ import { Grade, Level } from './entities/grade.entity';
 
 import { CreateGradeDto } from './dto/create-grades.dto';
 import { UpdateGradeDto } from './dto/update-grades.dto';
+import e from 'express';
 
 @Injectable()
 export class GradesService {
@@ -37,21 +38,21 @@ export class GradesService {
     //1.해당 시험 일정이 존재하는지
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
     const existedStudent = await this.studentRepository.findOneBy({
       studentId,
     });
     //2.DB에 등록되어있는 학생인지
     if (!existedStudent) {
-      throw new NotFoundException(MESSAGES.ADMIN.STUDENT.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.STUDENT.ERROR.NOT_FOUND);
     }
     //3.시험점수가 이미 등록되어 있는 경우
     const existedGrade = await this.gradeRepository.findOne({
       where: { examId, studentId },
     });
     if (existedGrade) {
-      throw new BadRequestException(MESSAGES.ADMIN.GRADE.EXISTED);
+      throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.ALREADY_EXISTS);
     }
 
     //4. 시험점수 생성
@@ -84,7 +85,7 @@ export class GradesService {
       where: { examId, gradeId },
     });
     if (!grade) {
-      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
     return grade;
   }
@@ -98,14 +99,14 @@ export class GradesService {
     //1.시험일정 존재하는지
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
     //2.시험성적 존재하는지
     const existedGrade = await this.gradeRepository.findOne({
       where: { examId, gradeId },
     });
     if (!existedGrade) {
-      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
     //3.내용이 동일한 경우
     const patch: Partial<Grade> = {};
@@ -117,7 +118,9 @@ export class GradesService {
     }
 
     if (Object.keys(patch).length === 0)
-      throw new BadRequestException(MESSAGES.ADMIN.GRADE.UPDATE.SAME);
+      throw new BadRequestException(
+        MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.NO_CHANGES,
+      );
 
     await this.gradeRepository.update({ examId, gradeId }, patch);
 
@@ -128,13 +131,13 @@ export class GradesService {
   async deleteGrade(examId: number, gradeId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
     const existedGrade = await this.gradeRepository.findOne({
       where: { examId, gradeId },
     });
     if (!existedGrade) {
-      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
     const grade = await this.gradeRepository.delete({ examId, gradeId });
     return grade;

@@ -6,14 +6,18 @@ export class UpdateNoticeDto {
    * 제목
    * @example "수정한 제목입니다."
    */
-  @IsOptional({ message: MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.TITLE })
+  @IsOptional({
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.TITLE_REQUIRED,
+  })
   title?: string;
 
   /**
    * 내용
    * @example "수정한 내용입니다."
    */
-  @IsOptional({ message: MESSAGES.ADMIN.NOTICE.COMMON.UPDATE.CONTENT })
+  @IsOptional({
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.CONTENT_REQUIRED,
+  })
   content?: string;
 
   /**

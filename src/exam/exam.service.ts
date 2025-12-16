@@ -60,7 +60,7 @@ export class ExamService {
   async findExam(examId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
     return existedExam;
   }
@@ -73,7 +73,7 @@ export class ExamService {
     //1.존재하는 시험일정인지
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
 
     const patch: Partial<Exam> = {};
@@ -82,7 +82,9 @@ export class ExamService {
     if (exam_date !== undefined) patch.exam_date = exam_date;
 
     if (Object.keys(patch).length === 0) {
-      throw new BadRequestException(MESSAGES.ADMIN.EXAM.UPDATE.SAME);
+      throw new BadRequestException(
+        MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.NO_CHANGES,
+      );
     }
     await this.examRepository.update({ examId }, patch);
 
@@ -93,7 +95,7 @@ export class ExamService {
   async deleteExam(examId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
     const exam = await this.examRepository.delete(examId);
     return exam;
@@ -103,7 +105,7 @@ export class ExamService {
   async createExamAverage(examId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
 
     // 점수 합산 및 평균 계산
@@ -111,7 +113,7 @@ export class ExamService {
     const grades = await this.gradeRepository.find({ where: { examId } });
     // 추후 쿼리빌더로 수정.
     if (grades.length === 0) {
-      throw new BadRequestException(MESSAGES.ADMIN.GRADE.NO_GRADES);
+      throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.NO_GRADES);
     }
     totalScore += grades.reduce((sum, grade) => sum + grade.score, 0);
     const average = (totalScore / grades.length).toFixed(2);

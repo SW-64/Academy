@@ -46,7 +46,7 @@ export class ExamController {
     const data = await this.examService.createExam(userId, createExamDto);
     return {
       statusCode: HttpStatus.CREATED,
-      message: MESSAGES.ADMIN.EXAM.CREATE.OK,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.CREATE,
       data: data,
     };
   }
@@ -67,7 +67,7 @@ export class ExamController {
     });
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.EXAM.GET.ALL,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.LIST,
       data: data,
     };
   }
@@ -84,8 +84,8 @@ export class ExamController {
 
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.EXAM.GET.ONE,
-      data: data,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.GET,
+      date: data,
     };
   }
 
@@ -104,7 +104,7 @@ export class ExamController {
     await this.examService.updateExam(examId, updateExamDto);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.EXAM.UPDATE.OK,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.UPDATE,
     };
   }
 
@@ -119,7 +119,7 @@ export class ExamController {
     await this.examService.deleteExam(examId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.EXAM.DELETE,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.DELETE,
     };
   }
 
@@ -134,7 +134,7 @@ export class ExamController {
     const data = await this.examService.createExamAverage(examId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.CREATE.EXAM_AVERAGE,
+      message: MESSAGES.ADMIN.GRADE.SUCCESS.CREATE_EXAM_AVERAGE,
       data: data,
     };
   }

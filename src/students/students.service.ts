@@ -81,7 +81,7 @@ export class StudentsService {
   async getOneGrade(studentId: number, gradeId: number): Promise<Grade> {
     const existGrade = await this.gradesRepository.findOneBy({ gradeId });
     if (!existGrade) {
-      throw new NotFoundException(MESSAGES.ADMIN.GRADE.NOT_EXISTED);
+      throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
     const grade = await this.gradesRepository.findOne({
       where: { studentId: studentId, gradeId: gradeId },
@@ -95,7 +95,7 @@ export class StudentsService {
     // 학생 이름 추출
     const existStudent = await this.studentsRepository.findOneBy({ studentId });
     if (!existStudent) {
-      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
 
     // 학생 등급 추출
@@ -136,7 +136,7 @@ export class StudentsService {
       studentId: studentId,
     });
     if (!student) {
-      throw new NotFoundException(MESSAGES.USER.NOT_FOUND);
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
     return student;
   }

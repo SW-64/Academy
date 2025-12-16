@@ -11,6 +11,14 @@ import {
 import { MESSAGES } from '../../constants/message.constant';
 import { Level } from '../entities/grade.entity';
 
+export enum Level {
+  A = 'A',
+  B = 'B',
+  C = 'C',
+  D = 'D',
+  F = 'F',
+}
+
 export class CreateGradeDto {
   /**
    * 학생아이디

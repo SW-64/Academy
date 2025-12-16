@@ -6,20 +6,35 @@ export class CreateExamDto {
    * 해당년도
    * @example "2024"
    */
-  @IsNotEmpty({ message: MESSAGES.ADMIN.EXAM.CREATE.YEAR })
+  @IsNotEmpty({ message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.YEAR_REQUIRED })
   year: number;
 
   /**
-   * 시험명
-   * @example "2학기"
+   * 시험이름
+   * @example "미적분"
    */
-  @IsNotEmpty({ message: MESSAGES.ADMIN.EXAM.CREATE.EXAM_TITLE })
+  @IsNotEmpty({
+    message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_TITLE_REQUIRED,
+  })
   exam_title: string;
 
   /**
    * 시험날짜
    * @example "09.08"
    */
-  @IsDateString({}, { message: MESSAGES.ADMIN.EXAM.CREATE.EXAM_DATE })
+
+  @IsDateString(
+    {},
+    { message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_DATE_REQUIRED },
+  )
   exam_date: string;
+
+  /**
+   * 학생평균
+   * @example "86.5"
+   */
+  @IsNotEmpty({
+    message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.STUDENT_AVERAGE_REQUIRED,
+  })
+  student_average: number;
 }

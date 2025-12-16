@@ -8,7 +8,6 @@ import {
   Min,
 } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
-import { Level } from '../entities/grade.entity';
 
 export class UpdateGradeDto {
   /**

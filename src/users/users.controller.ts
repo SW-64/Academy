@@ -38,7 +38,7 @@ export class UsersController {
     const data = await this.usersService.getMyInfo(userId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.AUTH.USER_INFO.SUCCEED,
+      message: MESSAGES.AUTH.SUCCESS.USER_INFO,
       data: data,
     };
   }
@@ -56,7 +56,7 @@ export class UsersController {
     await this.usersService.updateMyInfo(userId, updateUserDto);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.AUTH.USER_UPDATE.SUCCEED,
+      message: MESSAGES.AUTH.SUCCESS.USER_UPDATE,
     };
   }
 
@@ -73,7 +73,7 @@ export class UsersController {
     await this.usersService.updateMyPassword(userId, changePasswordDto);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.AUTH.PASSWORD_CHANGE.SUCCEED,
+      message: MESSAGES.AUTH.SUCCESS.PASSWORD_CHANGE,
     };
   }
 
@@ -98,7 +98,7 @@ export class UsersController {
     });
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.ACCOUNT.GET.NON_APPROVED,
+      message: MESSAGES.ADMIN.ACCOUNT.SUCCESS.LIST_NON_APPROVED,
       data: data,
     };
   }
@@ -113,7 +113,7 @@ export class UsersController {
     await this.usersService.approveUserAccount(userId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.ACCOUNT.UPDATE.APPROVE,
+      message: MESSAGES.ADMIN.ACCOUNT.SUCCESS.APPROVE,
     };
   }
 
@@ -128,7 +128,7 @@ export class UsersController {
     await this.usersService.rejectUserAccount(userId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.ACCOUNT.UPDATE.REJECT,
+      message: MESSAGES.ADMIN.ACCOUNT.SUCCESS.REJECT,
     };
   }
 }

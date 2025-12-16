@@ -6,14 +6,16 @@ export class UpdateExamDto {
    * 해당년도
    * @example "2024"
    */
-  @IsOptional({ message: MESSAGES.ADMIN.EXAM.UPDATE.YEAR })
+  @IsOptional({ message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.YEAR_REQUIRED })
   year?: number;
 
   /**
-   * 학기
-   * @example "2"
+   * 시험이름
+   * @example "미적분"
    */
-  @IsOptional({ message: MESSAGES.ADMIN.EXAM.UPDATE.EXAM_TITLE })
+  @IsOptional({
+    message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_TITLE_REQUIRED,
+  })
   exam_title?: string;
 
   /**
@@ -21,6 +23,18 @@ export class UpdateExamDto {
    * @example "10.12"
    */
   @IsOptional()
-  @IsDateString({}, { message: MESSAGES.ADMIN.EXAM.UPDATE.EXAM_DATE })
+  @IsDateString(
+    {},
+    { message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_DATE_REQUIRED },
+  )
   exam_date?: string;
+
+  /**
+   * 학생평균
+   * @example "86.5"
+   */
+  @IsOptional({
+    message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.STUDENT_AVERAGE_REQUIRED,
+  })
+  student_average?: number;
 }

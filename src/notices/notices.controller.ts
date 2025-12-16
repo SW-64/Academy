@@ -48,7 +48,7 @@ export class NoticesController {
     );
     return {
       statusCode: HttpStatus.CREATED,
-      message: MESSAGES.ADMIN.NOTICE.CREATED,
+      message: MESSAGES.ADMIN.NOTICE.SUCCESS.CREATE,
       data: data,
     };
   }
@@ -68,7 +68,7 @@ export class NoticesController {
     });
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.NOTICE.GET_ALL,
+      message: MESSAGES.ADMIN.NOTICE.SUCCESS.LIST,
       data: data,
     };
   }
@@ -84,7 +84,7 @@ export class NoticesController {
 
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.NOTICE.GET,
+      message: MESSAGES.ADMIN.NOTICE.SUCCESS.PINNED_LIST,
       data: data,
     };
   }
@@ -100,7 +100,7 @@ export class NoticesController {
 
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.NOTICE.GET,
+      message: MESSAGES.ADMIN.NOTICE.SUCCESS.GET,
       data: data,
     };
   }
@@ -123,7 +123,7 @@ export class NoticesController {
     );
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.NOTICE.UPDATED,
+      message: MESSAGES.ADMIN.NOTICE.SUCCESS.UPDATE,
       data: data,
     };
   }
@@ -140,7 +140,7 @@ export class NoticesController {
     await this.noticesService.deleteNotice(noticeId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.NOTICE.DELETED,
+      message: MESSAGES.ADMIN.NOTICE.SUCCESS.DELETE,
     };
   }
 }
