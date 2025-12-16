@@ -160,6 +160,9 @@ export const MESSAGES = {
       },
       ERROR: {
         NOT_FOUND: '학생이 존재하지 않습니다.',
+        LIST: {
+          INVALID_STATUS: 'status는 approved | pending만 허용됩니다.',
+        },
       },
     },
 
