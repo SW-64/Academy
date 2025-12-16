@@ -15,7 +15,7 @@ import { MESSAGES } from '../constants/message.constant';
 
 import { Exam } from '../exam/entities/exam.entity';
 import { Student } from '../students/entities/student.entity';
-import { Grade } from './entities/grade.entity';
+import { Grade, Level } from './entities/grade.entity';
 
 import { CreateGradeDto } from './dto/create-grades.dto';
 import { UpdateGradeDto } from './dto/update-grades.dto';
@@ -33,7 +33,7 @@ export class GradesService {
   //시험점수 생성
   async createGrade(
     examId: number,
-    { studentId, score, level, comment }: CreateGradeDto,
+    { studentId, score, comment }: CreateGradeDto,
   ) {
     //1.해당 시험 일정이 존재하는지
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -48,18 +48,21 @@ export class GradesService {
       throw new NotFoundException(MESSAGES.ADMIN.STUDENT.ERROR.NOT_FOUND);
     }
     //3.시험점수가 이미 등록되어 있는 경우
-    const existdata = await this.gradeRepository.findOne({
+    const existedGrade = await this.gradeRepository.findOne({
       where: { examId, studentId },
     });
-    if (existdata) {
+    if (existedGrade) {
       throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.ALREADY_EXISTS);
     }
+
+    //4. 시험점수 생성
+    const level = this.calculateLevel(score);
     const grade = await this.gradeRepository.save({
+      examId,
       studentId,
       score,
       level,
-      comment,
-      examId,
+      comment: comment ?? null,
     });
     return grade;
   }
@@ -91,7 +94,7 @@ export class GradesService {
   async updateGrade(
     examId: number,
     gradeId: number,
-    { studentId, score, level, comment }: UpdateGradeDto,
+    { studentId, score, comment }: UpdateGradeDto,
   ) {
     //1.시험일정 존재하는지
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -99,25 +102,29 @@ export class GradesService {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
     //2.시험성적 존재하는지
-    const existedGrade = await this.gradeRepository.findOneBy({ gradeId });
+    const existedGrade = await this.gradeRepository.findOne({
+      where: { examId, gradeId },
+    });
     if (!existedGrade) {
       throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
     //3.내용이 동일한 경우
-    const sameGrade =
-      existedGrade.studentId === studentId &&
-      existedGrade.score === score &&
-      existedGrade.level === level &&
-      existedGrade.comment === comment;
-    if (sameGrade) {
+    const patch: Partial<Grade> = {};
+    if (studentId !== undefined) patch.studentId = studentId;
+    if (comment !== undefined) patch.comment = comment;
+    if (score !== undefined) {
+      patch.score = score;
+      patch.level = this.calculateLevel(score);
+    }
+
+    if (Object.keys(patch).length === 0)
       throw new BadRequestException(
         MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.NO_CHANGES,
       );
-    }
 
-    await this.gradeRepository.update({ gradeId }, { studentId, score });
-    const updateGrade = await this.gradeRepository.findOneBy({ gradeId });
-    return updateGrade;
+    await this.gradeRepository.update({ examId, gradeId }, patch);
+
+    return;
   }
 
   //시험점수 삭제
@@ -126,11 +133,28 @@ export class GradesService {
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
-    const existedGrade = await this.gradeRepository.findOneBy({ gradeId });
+    const existedGrade = await this.gradeRepository.findOne({
+      where: { examId, gradeId },
+    });
     if (!existedGrade) {
       throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
-    const grade = await this.gradeRepository.delete(gradeId);
+    const grade = await this.gradeRepository.delete({ examId, gradeId });
     return grade;
+  }
+
+  // 등급계산
+  calculateLevel(score: number): Level {
+    if (score >= 90) {
+      return Level.A;
+    } else if (score >= 80) {
+      return Level.B;
+    } else if (score >= 70) {
+      return Level.C;
+    } else if (score >= 60) {
+      return Level.D;
+    } else {
+      return Level.F;
+    }
   }
 }

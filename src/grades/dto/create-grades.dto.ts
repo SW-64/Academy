@@ -1,5 +1,15 @@
-import { IsNotEmpty } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
+import { Level } from '../entities/grade.entity';
 
 export enum Level {
   A = 'A',
@@ -14,35 +24,25 @@ export class CreateGradeDto {
    * 학생아이디
    * @example "2"
    */
-  @IsNotEmpty({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.CREATE.STUDENT_ID_REQUIRED,
-  })
+  @IsInt({ message: MESSAGES.ADMIN.GRADE.CREATE.STUDENTID })
+  @Min(1, { message: MESSAGES.ADMIN.GRADE.CREATE.STUDENTID })
   studentId: number;
 
   /**
-   * 점수
+   * 시험 점수
    * @example "78"
    */
-  @IsNotEmpty({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.CREATE.SCORE_REQUIRED,
-  })
+  @IsInt({ message: MESSAGES.ADMIN.GRADE.CREATE.SCORE })
+  @Min(0, { message: MESSAGES.ADMIN.GRADE.CREATE.SCORE })
+  @Max(100, { message: MESSAGES.ADMIN.GRADE.CREATE.SCORE })
   score: number;
-
-  /**
-   * 등급
-   * @example "A"
-   */
-  @IsNotEmpty({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.CREATE.LEVEL_REQUIRED,
-  })
-  level: Level;
 
   /**
    * 코멘트
    * @example "잘했어요"
    */
-  @IsNotEmpty({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.CREATE.COMMENT_REQUIRED,
-  })
-  comment: string;
+  @IsOptional()
+  @IsString({ message: MESSAGES.ADMIN.GRADE.CREATE.COMMENT })
+  @MaxLength(500, { message: MESSAGES.ADMIN.GRADE.CREATE.COMMENT })
+  comment?: string;
 }

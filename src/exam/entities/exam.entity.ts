@@ -21,10 +21,16 @@ export class Exam {
   exam_title: string;
 
   @Column({ name: 'exam_date', type: 'date', comment: '시험 날짜' })
-  exam_date: Date;
+  exam_date: string;
 
-  @Column({ comment: '학생 평균' })
-  student_average: number;
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+    comment: '시험 평균',
+  })
+  student_average: string | null;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   createdAt: Date;

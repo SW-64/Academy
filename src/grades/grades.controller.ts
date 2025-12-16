@@ -39,7 +39,6 @@ export class GradesController {
   @Roles(Role.ADMIN)
   @Post('/exams/:examId/grades')
   async createGrade(
-    @UserInfo() user: PartialUser,
     @Param('examId', ParseIntPipe) examId: number,
     @Body()
     createGradeDto: CreateGradeDto,
@@ -64,8 +63,8 @@ export class GradesController {
     @Query('page') page = 1,
     @Query('limit') limit = 10,
   ) {
-    const _page = Number(page) || 1;
-    const _limit = Math.min(Number(limit) || 10, 50);
+    const _page = Math.max(Number(page) || 1, 1);
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
     const data = await this.gradeService.getAllGrades(examId, {
       page: _page,
       limit: _limit,
@@ -79,7 +78,7 @@ export class GradesController {
 
   /**
    * 시험점수 상세조회
-   * @retuens
+   * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
@@ -109,15 +108,10 @@ export class GradesController {
     @Param('gradeId', ParseIntPipe) gradeId: number,
     @Body() updateGradeDto: UpdateGradeDto,
   ) {
-    const data = await this.gradeService.updateGrade(
-      examId,
-      gradeId,
-      updateGradeDto,
-    );
+    await this.gradeService.updateGrade(examId, gradeId, updateGradeDto);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.GRADE.UPDATE.OK,
-      data: data,
     };
   }
 

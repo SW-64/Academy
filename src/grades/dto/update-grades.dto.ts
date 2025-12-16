@@ -1,48 +1,40 @@
-import { IsOptional } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
-
-export enum Level {
-  A = 'A',
-  B = 'B',
-  C = 'C',
-  D = 'D',
-  F = 'F',
-}
 
 export class UpdateGradeDto {
   /**
    * 학생아이디
-   * @example "2"
+   * @example 24
    */
-  @IsOptional({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.STUDENT_ID_REQUIRED,
-  })
-  studentId: number;
+  @IsOptional()
+  @IsInt({ message: MESSAGES.ADMIN.GRADE.UPDATE.STUDENTID })
+  @Min(1, { message: MESSAGES.ADMIN.GRADE.UPDATE.STUDENTID })
+  studentId?: number;
 
   /**
-   * 점수
-   * @example "78"
+   * 시험 점수 (0~100)
+   * @example 89
    */
-  @IsOptional({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.SCORE_REQUIRED,
-  })
-  score: number;
-
-  /**
-   * 등급
-   * @example "A"
-   */
-  @IsOptional({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.LEVEL_REQUIRED,
-  })
-  level: Level;
+  @IsOptional()
+  @IsInt({ message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
+  @Min(0, { message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
+  @Max(100, { message: MESSAGES.ADMIN.GRADE.UPDATE.SCORE })
+  score?: number;
 
   /**
    * 코멘트
    * @example "잘했어요"
    */
-  @IsOptional({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.COMMENT_REQUIRED,
-  })
-  comment: string;
+  @IsOptional()
+  @IsString({ message: MESSAGES.ADMIN.GRADE.CREATE.COMMENT })
+  @MaxLength(500, { message: MESSAGES.ADMIN.GRADE.CREATE.COMMENT })
+  comment?: string;
 }

@@ -1,4 +1,4 @@
-import { IsOptional } from 'class-validator';
+import { IsDateString, IsOptional } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 
 export class UpdateExamDto {
@@ -7,7 +7,7 @@ export class UpdateExamDto {
    * @example "2024"
    */
   @IsOptional({ message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.YEAR_REQUIRED })
-  year: number;
+  year?: number;
 
   /**
    * 시험이름
@@ -16,16 +16,18 @@ export class UpdateExamDto {
   @IsOptional({
     message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_TITLE_REQUIRED,
   })
-  exam_title: string;
+  exam_title?: string;
 
   /**
    * 시험날짜
    * @example "10.12"
    */
-  @IsOptional({
-    message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_DATE_REQUIRED,
-  })
-  exam_date: Date;
+  @IsOptional()
+  @IsDateString(
+    {},
+    { message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_DATE_REQUIRED },
+  )
+  exam_date?: string;
 
   /**
    * 학생평균
@@ -34,5 +36,5 @@ export class UpdateExamDto {
   @IsOptional({
     message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.STUDENT_AVERAGE_REQUIRED,
   })
-  student_average: number;
+  student_average?: number;
 }
