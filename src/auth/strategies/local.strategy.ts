@@ -42,7 +42,7 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
     if (!comparePassword) return null; // 비번 틀림 → null → Guard가 401
 
     if (!user.isApproved) {
-      throw new ForbiddenException(MESSAGES.AUTH.SIGN_IN.NOT_APPROVED);
+      throw new ForbiddenException(MESSAGES.AUTH.ERROR.NOT_APPROVED);
     }
     // 여기서 컨트롤러에 넘겨줄 최소 정보만 리턴
     const partialUser: PartialUser = {
