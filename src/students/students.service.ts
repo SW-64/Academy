@@ -136,10 +136,29 @@ export class StudentsService {
     } else if (status === 'pending') {
       where.isApproved = false;
     }
-
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.student', 'student')
+      .orderBy('user.createdAt', 'DESC')
+      .where(where);
     return paginate(this.userRepository, options, {
       order: { createdAt: 'DESC' },
+      relations: { student: true },
       where,
+      select: {
+        userId: true,
+        email: true,
+        name: true,
+        role: true,
+        phone: true,
+        isApproved: true,
+        createdAt: true,
+        student: {
+          studentId: true,
+          grade: true,
+          school: true,
+        },
+      },
     });
   }
 

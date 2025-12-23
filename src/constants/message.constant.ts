@@ -226,6 +226,8 @@ export const MESSAGES = {
       SUCCESS: {
         SUMMARY: '나의 성적 현황 조회에 성공했습니다.',
         LEVEL_DISTRIBUTION: '나의 등급 분포 조회에 성공했습니다.',
+        LIST: '나의 성적 목록 조회에 성공했습니다.',
+        ONE: '나의 성적 상세 조회에 성공했습니다.',
       },
     },
   },
