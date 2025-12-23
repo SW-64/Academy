@@ -10,6 +10,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToOne,
+  Index,
 } from 'typeorm';
 
 export enum Role {
@@ -18,6 +19,7 @@ export enum Role {
   ADMIN = 'ADMIN',
 }
 
+@Index(['role', 'isApproved', 'createdAt'])
 @Entity()
 export class User {
   @PrimaryGeneratedColumn({ name: 'user_id', comment: '유저 아이디' })

@@ -7,10 +7,12 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Admin } from '../../admin/entities/admin.entity';
 
 @Entity()
+@Index(['pinned', 'createdAt']) // 고정 공지 최신순 조회용
 export class Notice {
   @PrimaryGeneratedColumn({ comment: '공지 id' })
   noticeId: number;
@@ -28,6 +30,7 @@ export class Notice {
   pinned: boolean;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
+  @Index()
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at', comment: '수정날짜' })

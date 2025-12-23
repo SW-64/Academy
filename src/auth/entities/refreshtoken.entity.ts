@@ -6,6 +6,7 @@ import {
   DeleteDateColumn,
   OneToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
@@ -15,6 +16,7 @@ export class RefreshToken {
   refreshtokenId: number;
 
   @Column({ name: 'user_id', comment: '유저 id' })
+  @Index()
   userId: number;
 
   @Column({ comment: '리프레시 토큰(SHA256)', nullable: true })

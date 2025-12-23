@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { Grade } from '../../grades/entities/grade.entity';
 
@@ -33,6 +34,7 @@ export class Exam {
   student_average: string | null;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
+  @Index()
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at', comment: '수정날짜' })
