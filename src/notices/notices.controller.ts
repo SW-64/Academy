@@ -36,7 +36,7 @@ export class NoticesController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/notices')
+  @Post('')
   async createNotice(
     @UserInfo() user: PartialUser,
     @Body() createNoticeDto: CreateNoticeDto,
@@ -57,8 +57,9 @@ export class NoticesController {
    * 공지사항 전체조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard)
-  @Get('/notices')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
+  @Get('')
   async getNoticesAll(@Query('page') page = 1, @Query('limit') limit = 10) {
     const _page = Number(page) || 1;
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
@@ -78,7 +79,7 @@ export class NoticesController {
    * @returns
    */
   @UseGuards(JwtAuthGuard)
-  @Get('/notices/pinned')
+  @Get('/pinned')
   async getPinnedNotices() {
     const data = await this.noticesService.findPinnedNotices();
 
@@ -94,7 +95,7 @@ export class NoticesController {
    * @returns
    */
   @UseGuards(JwtAuthGuard)
-  @Get('/notices/:noticeId')
+  @Get('/:noticeId')
   async getNoticeOne(@Param('noticeId', ParseIntPipe) noticeId: number) {
     const data = await this.noticesService.findNotice(noticeId);
 
@@ -112,19 +113,15 @@ export class NoticesController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch('/notices/:noticeId')
+  @Patch('/:noticeId')
   async updateNotice(
     @Param('noticeId', ParseIntPipe) noticeId: number,
     @Body() updateNoticeDto: UpdateNoticeDto,
   ) {
-    const data = await this.noticesService.updateNotice(
-      noticeId,
-      updateNoticeDto,
-    );
+    await this.noticesService.updateNotice(noticeId, updateNoticeDto);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.SUCCESS.UPDATE,
-      data: data,
     };
   }
 
@@ -135,7 +132,7 @@ export class NoticesController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Delete('/notices/:noticeId')
+  @Delete('/:noticeId')
   async deleteNotice(@Param('noticeId', ParseIntPipe) noticeId: number) {
     await this.noticesService.deleteNotice(noticeId);
     return {

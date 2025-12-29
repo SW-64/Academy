@@ -9,7 +9,7 @@ import { FindOptionsWhere, Repository } from 'typeorm';
 
 import { MESSAGES } from '../constants/message.constant';
 
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfMonth, addMonths } from 'date-fns';
 
 import { Role, User } from '../users/entities/user.entity';
 import { Grade, Level } from '../grades/entities/grade.entity';
@@ -26,18 +26,19 @@ export class StudentsService {
   ) {}
 
   async getAllGrades(studentId: number, year?: number, month?: number) {
-    const start = format(startOfMonth(new Date(year, month - 1)), 'yyyy-MM-dd');
-    const end = format(endOfMonth(new Date(year, month - 1)), 'yyyy-MM-dd');
+    const now = new Date();
+    const y = year ?? now.getFullYear();
+    const m = month ?? now.getMonth() + 1; // 1~12
 
+    const start = startOfMonth(new Date(y, m - 1));
+    const nextStart = startOfMonth(addMonths(start, 1));
     // 1. 성적 목록 조회
     const grades = await this.gradesRepository
       .createQueryBuilder('grade')
       .leftJoinAndSelect('grade.exam', 'exam')
       .where('grade.student_id = :studentId', { studentId })
-      .andWhere('exam.exam_date BETWEEN :startDate AND :endDate', {
-        startDate: start,
-        endDate: end,
-      })
+      .andWhere('exam.exam_date >= :start', { start })
+      .andWhere('exam.exam_date < :nextStart', { nextStart })
       .orderBy('exam.exam_date', 'DESC')
       .select([
         'grade.gradeId',
@@ -54,14 +55,12 @@ export class StudentsService {
     // 2. 등급 분포 계산
     const rawDistribution = await this.gradesRepository
       .createQueryBuilder('grade')
-      .select('grade.level', 'level') // 등급 필드가 level인 경우
+      .select('grade.level', 'level')
       .addSelect('COUNT(*)', 'count')
       .leftJoin('grade.exam', 'exam')
       .where('grade.student_id = :studentId', { studentId })
-      .andWhere('exam.exam_date BETWEEN :startDate AND :endDate', {
-        startDate: start,
-        endDate: end,
-      })
+      .andWhere('exam.exam_date >= :start', { start })
+      .andWhere('exam.exam_date < :nextStart', { nextStart })
       .groupBy('grade.level')
       .getRawMany();
 
@@ -136,11 +135,7 @@ export class StudentsService {
     } else if (status === 'pending') {
       where.isApproved = false;
     }
-    const queryBuilder = this.userRepository
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.student', 'student')
-      .orderBy('user.createdAt', 'DESC')
-      .where(where);
+
     return paginate(this.userRepository, options, {
       order: { createdAt: 'DESC' },
       relations: { student: true },

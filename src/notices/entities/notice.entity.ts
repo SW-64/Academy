@@ -14,7 +14,7 @@ import { Admin } from '../../admin/entities/admin.entity';
 @Entity()
 @Index(['pinned', 'createdAt']) // 고정 공지 최신순 조회용
 export class Notice {
-  @PrimaryGeneratedColumn({ comment: '공지 id' })
+  @PrimaryGeneratedColumn({ name: 'notice_id', comment: '공지 id' })
   noticeId: number;
 
   @Column({ name: 'admin_id', nullable: true, comment: '관리자 id' })

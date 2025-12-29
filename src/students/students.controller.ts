@@ -26,7 +26,7 @@ export class StudentsController {
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard, StudentOrParentOwnsStudentGuard)
-  @Roles(Role.STUDENT)
+  @Roles(Role.STUDENT, Role.PARENT)
   @Get('/:studentId/grades/summary')
   async getCurrentGrades(@Param('studentId', ParseIntPipe) studentId: number) {
     const data = await this.studentsService.getCurrentGrades(studentId);

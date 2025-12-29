@@ -1,4 +1,11 @@
-import { IsDateString, IsNotEmpty } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 
 export class CreateExamDto {
@@ -6,7 +13,9 @@ export class CreateExamDto {
    * 해당년도
    * @example "2024"
    */
-  @IsNotEmpty({ message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.YEAR_REQUIRED })
+
+  @IsInt({ message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.YEAR_INVALID_FORMAT })
+  @Min(2000)
   year: number;
 
   /**
@@ -16,25 +25,19 @@ export class CreateExamDto {
   @IsNotEmpty({
     message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_TITLE_REQUIRED,
   })
-  exam_title: string;
+  @IsString({
+    message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_INVALID_FORMAT,
+  })
+  @MinLength(1)
+  examTitle: string;
 
   /**
    * 시험날짜
-   * @example "09.08"
+   * @example "2025-09-08"
    */
-
   @IsDateString(
     {},
     { message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_DATE_REQUIRED },
   )
-  exam_date: string;
-
-  /**
-   * 학생평균
-   * @example "86.5"
-   */
-  @IsNotEmpty({
-    message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.STUDENT_AVERAGE_REQUIRED,
-  })
-  student_average: number;
+  examDate: string;
 }

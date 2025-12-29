@@ -39,15 +39,19 @@ export class NoticesService {
   }
 
   // 공지사항 생성
-  async createNotice(userId: number, { title, content }: CreateNoticeDto) {
-    const { adminId } = await this.adminRepository.findOneBy({ userId });
-    if (!adminId) {
+  async createNotice(
+    userId: number,
+    { title, content, pinned }: CreateNoticeDto,
+  ) {
+    const admin = await this.adminRepository.findOneBy({ userId });
+    if (!admin) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
     const notice = await this.noticeRepository.save({
       title,
       content,
-      adminId,
+      pinned: pinned ?? false,
+      adminId: admin.adminId,
     });
     return notice;
   }
@@ -109,11 +113,11 @@ export class NoticesService {
     if (content !== undefined) patch.content = content;
     if (pinned !== undefined) patch.pinned = pinned;
 
-    await this.noticeRepository.update({ noticeId }, patch); // 업데이트 쿼리만 실행
+    const result = await this.noticeRepository.update({ noticeId }, patch); // 업데이트 쿼리만 실행
+    if (result.affected === 0)
+      throw new NotFoundException(MESSAGES.ADMIN.NOTICE.ERROR.NOT_FOUND);
 
-    //4. 업데이트된 값 조회해서 리턴
-    const updateNotice = await this.noticeRepository.findOneBy({ noticeId });
-    return updateNotice;
+    return;
   }
 
   // 공지사항 삭제

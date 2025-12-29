@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 
 export class CreateNoticeDto {
@@ -24,6 +24,7 @@ export class CreateNoticeDto {
    * 고정여부
    * @example "false"
    */
-  @IsBoolean({})
+  @IsBoolean()
+  @IsOptional()
   pinned?: boolean;
 }

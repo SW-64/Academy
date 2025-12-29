@@ -22,11 +22,10 @@ export enum Level {
 }
 @Index(['examId']) // 시험별 성적 목록 조회
 @Index(['examId', 'studentId'], { unique: true }) // 시험+학생 복합 (중복 방지 & 성적 조회)
-@Index(['examId', 'gradeId']) // 상세 조회 최적화
 @Index(['deletedAt']) // 소프트 삭제 조건
 @Entity()
 export class Grade {
-  @PrimaryGeneratedColumn({ comment: '성적 id' })
+  @PrimaryGeneratedColumn({ name: 'grade_id', comment: '성적 id' })
   gradeId: number;
 
   @Column({ name: 'exam_id', comment: '시험 id' })

@@ -1,4 +1,11 @@
-import { IsDateString, IsOptional } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 
 export class UpdateExamDto {
@@ -6,17 +13,21 @@ export class UpdateExamDto {
    * 해당년도
    * @example "2024"
    */
-  @IsOptional({ message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.YEAR_REQUIRED })
+  @IsOptional()
+  @IsInt({ message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.YEAR_INVALID_FORMAT })
+  @Min(2000)
   year?: number;
 
   /**
    * 시험이름
    * @example "미적분"
    */
-  @IsOptional({
-    message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_TITLE_REQUIRED,
+  @IsOptional()
+  @IsString({
+    message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_INVALID_FORMAT,
   })
-  exam_title?: string;
+  @MinLength(1)
+  examTitle?: string;
 
   /**
    * 시험날짜
@@ -27,14 +38,12 @@ export class UpdateExamDto {
     {},
     { message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_DATE_REQUIRED },
   )
-  exam_date?: string;
+  examDate?: string;
 
   /**
    * 학생평균
    * @example "86.5"
    */
-  @IsOptional({
-    message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.STUDENT_AVERAGE_REQUIRED,
-  })
-  student_average?: number;
+  @IsOptional()
+  studentAverage?: number;
 }

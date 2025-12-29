@@ -104,7 +104,7 @@ export class ParentsService {
       },
     });
     if (!parent) {
-      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
     }
     return parent;
   }
