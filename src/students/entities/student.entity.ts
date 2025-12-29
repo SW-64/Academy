@@ -16,7 +16,7 @@ import {
 
 @Entity()
 export class Student {
-  @PrimaryGeneratedColumn({ comment: '학생 id' })
+  @PrimaryGeneratedColumn({ name: 'student_id', comment: '학생 id' })
   studentId: number;
 
   @Column({ name: 'user_id', unique: true, comment: '유저 id' })
@@ -44,7 +44,10 @@ export class Student {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Parent, (parent) => parent.student, { onDelete: 'SET NULL' })
+  @ManyToOne(() => Parent, (parent) => parent.student, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
   @JoinColumn({ name: 'parent_id' })
   parent: Parent | null;
 

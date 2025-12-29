@@ -88,7 +88,6 @@ export class UsersController {
   async getNonApprovedUsers(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
-    @Query('status') status?: string,
   ) {
     const _page = Math.max(Number(page) || 1, 1);
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
@@ -109,7 +108,7 @@ export class UsersController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/:userId/approve')
+  @Patch('/:userId/approve')
   async approveUserAccount(@Param('userId', ParseIntPipe) userId: number) {
     await this.usersService.approveUserAccount(userId);
     return {
@@ -124,7 +123,7 @@ export class UsersController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/:userId/reject')
+  @Patch('/:userId/reject')
   async rejectUserAccount(@Param('userId', ParseIntPipe) userId: number) {
     await this.usersService.rejectUserAccount(userId);
     return {

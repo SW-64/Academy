@@ -11,19 +11,6 @@ import { MESSAGES } from '../../constants/message.constant';
 
 export class UpdateGradeDto {
   /**
-   * 학생아이디
-   * @example 24
-   */
-  @IsOptional()
-  @IsInt({
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.STUDENT_ID_INVALID,
-  })
-  @Min(1, {
-    message: MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.STUDENT_ID_INVALID,
-  })
-  studentId?: number;
-
-  /**
    * 시험 점수 (0~100)
    * @example 89
    */

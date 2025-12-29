@@ -19,16 +19,17 @@ import { Grade, Level } from './entities/grade.entity';
 
 import { CreateGradeDto } from './dto/create-grades.dto';
 import { UpdateGradeDto } from './dto/update-grades.dto';
-import e from 'express';
 
 @Injectable()
 export class GradesService {
-  @InjectRepository(Exam)
-  private readonly examRepository: Repository<Exam>;
-  @InjectRepository(Student)
-  private readonly studentRepository: Repository<Student>;
-  @InjectRepository(Grade)
-  private readonly gradeRepository: Repository<Grade>;
+  constructor(
+    @InjectRepository(Exam)
+    private readonly examRepository: Repository<Exam>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Grade)
+    private readonly gradeRepository: Repository<Grade>,
+  ) {}
 
   //시험점수 생성
   async createGrade(
@@ -40,12 +41,20 @@ export class GradesService {
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
-    const existedStudent = await this.studentRepository.findOneBy({
-      studentId,
-    });
     //2.DB에 등록되어있는 학생인지
+    const existedStudent = await this.studentRepository.findOne({
+      where: { studentId },
+      relations: { user: true },
+      select: { studentId: true, user: { isApproved: true } },
+    });
+
     if (!existedStudent) {
       throw new NotFoundException(MESSAGES.ADMIN.STUDENT.ERROR.NOT_FOUND);
+    }
+    if (existedStudent.user.isApproved === false) {
+      throw new BadRequestException(
+        MESSAGES.ADMIN.GRADE.ERROR.STUDENT_NOT_APPROVED,
+      );
     }
     //3.시험점수가 이미 등록되어 있는 경우
     const existedGrade = await this.gradeRepository.findOne({
@@ -67,16 +76,49 @@ export class GradesService {
     return grade;
   }
 
-  //시험점수 조회
+  //시험점수 전체조회
   async getAllGrades(
     examId: number,
+    sortOption: 'score_desc' | 'name_asc',
     options?: IPaginationOptions,
   ): Promise<Pagination<Grade>> {
-    const grades = await paginate(this.gradeRepository, options, {
-      where: { examId },
-      order: { createdAt: 'DESC' },
-    });
-    return grades;
+    const qb = this.gradeRepository
+      .createQueryBuilder('grade')
+      .where('grade.exam_id = :examId', { examId });
+
+    // 공통: 필요한 컬럼만 선택 (성능/보안)
+    // 여기서 필요한 컬럼은 너 UI에 맞게 조절해.
+    qb.select([
+      'grade.gradeId',
+      'grade.examId',
+      'grade.studentId',
+      'grade.score',
+      'grade.level',
+    ]);
+
+    switch (sortOption) {
+      case 'score_desc': {
+        qb.orderBy('grade.score', 'DESC').addOrderBy('grade.gradeId', 'DESC'); // 동점일 때 정렬 안정화
+        break;
+      }
+
+      case 'name_asc': {
+        qb.leftJoin('grade.student', 'student').leftJoin(
+          'student.user',
+          'user',
+        );
+
+        qb.addSelect(['student.studentId', 'user.userId', 'user.name']);
+
+        qb.orderBy('user.name', 'ASC').addOrderBy('grade.gradeId', 'DESC'); // 동명이인/동일이름 안정화
+        break;
+      }
+
+      default:
+        qb.orderBy('grade.gradeId', 'DESC');
+    }
+
+    return paginate<Grade>(qb, options);
   }
 
   //시험점수 상세조회
@@ -94,7 +136,7 @@ export class GradesService {
   async updateGrade(
     examId: number,
     gradeId: number,
-    { studentId, score, comment }: UpdateGradeDto,
+    { score, comment }: UpdateGradeDto,
   ) {
     //1.시험일정 존재하는지
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -110,7 +152,6 @@ export class GradesService {
     }
     //3.내용이 동일한 경우
     const patch: Partial<Grade> = {};
-    if (studentId !== undefined) patch.studentId = studentId;
     if (comment !== undefined) patch.comment = comment;
     if (score !== undefined) {
       patch.score = score;
@@ -139,12 +180,12 @@ export class GradesService {
     if (!existedGrade) {
       throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
-    const grade = await this.gradeRepository.delete({ examId, gradeId });
-    return grade;
+    await this.gradeRepository.delete({ examId, gradeId });
+    return;
   }
 
   // 등급계산
-  calculateLevel(score: number): Level {
+  private calculateLevel(score: number): Level {
     if (score >= 90) {
       return Level.A;
     } else if (score >= 80) {

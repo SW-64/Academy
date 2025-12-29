@@ -20,6 +20,22 @@ import { StudentOrParentOwnsStudentGuard } from './../auth/guards/student-or-par
 @Controller('students')
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
+
+  /**
+   * 성적 현황 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard, StudentOrParentOwnsStudentGuard)
+  @Roles(Role.STUDENT, Role.PARENT)
+  @Get('/:studentId/grades/summary')
+  async getCurrentGrades(@Param('studentId', ParseIntPipe) studentId: number) {
+    const data = await this.studentsService.getCurrentGrades(studentId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.STUDENTS.GRADE.SUCCESS.SUMMARY,
+      data: data,
+    };
+  }
   /**
    * 성적 목록 조회
    * @returns
@@ -38,12 +54,16 @@ export class StudentsController {
     // 월 범위 방어(1~12)
     const safeMonth = Math.min(Math.max(_month || 1, 1), 12);
     const safeYear = Math.max(_year || now.getFullYear(), 1970);
-    const grades = await this.studentsService.getAllGrades(
+    const data = await this.studentsService.getAllGrades(
       studentId,
       safeYear,
       safeMonth,
     );
-    return grades;
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.STUDENTS.GRADE.SUCCESS.LIST,
+      data: data,
+    };
   }
 
   /**
@@ -57,22 +77,10 @@ export class StudentsController {
     @Param('studentId', ParseIntPipe) studentId: number,
     @Param('gradeId', ParseIntPipe) gradeId: number,
   ) {
-    const grade = await this.studentsService.getOneGrade(studentId, gradeId);
-    return grade;
-  }
-
-  /**
-   * 성적 현황 조회
-   * @returns
-   */
-  @UseGuards(JwtAuthGuard, RolesGuard, StudentOrParentOwnsStudentGuard)
-  @Roles(Role.STUDENT)
-  @Get('/:studentId/grades/summary')
-  async getCurrentGrades(@Param('studentId', ParseIntPipe) studentId: number) {
-    const data = await this.studentsService.getCurrentGrades(studentId);
+    const data = await this.studentsService.getOneGrade(studentId, gradeId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.STUDENTS.GRADE.SUCCESS.SUMMARY,
+      message: MESSAGES.STUDENTS.GRADE.SUCCESS.ONE,
       data: data,
     };
   }

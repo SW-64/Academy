@@ -14,7 +14,7 @@ import {
 
 @Entity()
 export class Parent {
-  @PrimaryGeneratedColumn({ comment: '부모 id' })
+  @PrimaryGeneratedColumn({ name: 'parent_id', comment: '부모 id' })
   parentId: number;
 
   @Column({ name: 'user_id', unique: true, comment: '유저 id' })

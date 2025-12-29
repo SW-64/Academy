@@ -10,6 +10,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   OneToOne,
+  Index,
 } from 'typeorm';
 
 export enum Role {
@@ -18,6 +19,7 @@ export enum Role {
   ADMIN = 'ADMIN',
 }
 
+@Index(['role', 'isApproved', 'createdAt'])
 @Entity()
 export class User {
   @PrimaryGeneratedColumn({ name: 'user_id', comment: '유저 아이디' })
@@ -43,13 +45,13 @@ export class User {
   @Column({ comment: '비밀번호', select: false })
   password: string;
 
-  @Column({ default: false, comment: '승인 여부' })
+  @Column({ name: 'is_approved', default: false, comment: '승인 여부' })
   isApproved: boolean;
 
-  @Column({ comment: '임시 학교', nullable: true })
+  @Column({ name: 'signup_school', comment: '임시 학교', nullable: true })
   signupSchool: string | null;
 
-  @Column({ comment: '임시 학년', nullable: true })
+  @Column({ name: 'signup_grade', comment: '임시 학년', nullable: true })
   signupGrade: number | null;
 
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })

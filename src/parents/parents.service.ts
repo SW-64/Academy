@@ -30,6 +30,8 @@ export class ParentsService {
         parentId: true,
         student: {
           studentId: true,
+          school: true,
+          grade: true,
           user: {
             userId: true,
             name: true,
@@ -63,6 +65,15 @@ export class ParentsService {
     return paginate(this.userRepository, options, {
       order: { createdAt: 'DESC' },
       where,
+      select: {
+        userId: true,
+        email: true,
+        name: true,
+        isApproved: true,
+        role: true,
+        phone: true,
+        createdAt: true,
+      },
     });
   }
 
@@ -70,15 +81,30 @@ export class ParentsService {
   async findOneParent(parentId: number) {
     const parent = await this.parentRepository.findOne({
       where: { parentId },
-      relations: { user: true, student: true },
+      relations: {
+        user: true,
+        student: {
+          user: true,
+        },
+      },
       select: {
         parentId: true,
         user: { userId: true, name: true, email: true, isApproved: true },
-        student: { studentId: true, user: { userId: true, name: true } },
+        student: {
+          studentId: true,
+          userId: true,
+          grade: true,
+          school: true,
+          createdAt: true,
+          user: {
+            name: true,
+            phone: true,
+          },
+        },
       },
     });
     if (!parent) {
-      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
     }
     return parent;
   }

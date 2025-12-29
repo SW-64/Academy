@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   JoinColumn,
+  Index,
 } from 'typeorm';
 
 import { Student } from '../../students/entities/student.entity';
@@ -19,9 +20,12 @@ export enum Level {
   D = 'D',
   F = 'F',
 }
+@Index(['examId']) // 시험별 성적 목록 조회
+@Index(['examId', 'studentId'], { unique: true }) // 시험+학생 복합 (중복 방지 & 성적 조회)
+@Index(['deletedAt']) // 소프트 삭제 조건
 @Entity()
 export class Grade {
-  @PrimaryGeneratedColumn({ comment: '성적 id' })
+  @PrimaryGeneratedColumn({ name: 'grade_id', comment: '성적 id' })
   gradeId: number;
 
   @Column({ name: 'exam_id', comment: '시험 id' })

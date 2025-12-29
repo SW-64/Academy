@@ -22,27 +22,21 @@ import { MESSAGES } from '../constants/message.constant';
 
 @Injectable()
 export class ExamService {
-  @InjectRepository(Admin)
-  private readonly adminRepository: Repository<Admin>;
-  @InjectRepository(Exam)
-  private readonly examRepository: Repository<Exam>;
-  @InjectRepository(Grade)
-  private readonly gradeRepository: Repository<Grade>;
+  constructor(
+    @InjectRepository(Admin)
+    private readonly adminRepository: Repository<Admin>,
+    @InjectRepository(Exam)
+    private readonly examRepository: Repository<Exam>,
+    @InjectRepository(Grade)
+    private readonly gradeRepository: Repository<Grade>,
+  ) {}
 
   //시험일정 생성
-  async createExam(
-    userId: number,
-    { year, exam_title, exam_date }: CreateExamDto,
-  ) {
-    const admin = await this.adminRepository.findOneBy({ userId });
-    if (!admin) throw new NotFoundException('관리자 정보를 찾을 수 없습니다.');
-    const adminId = admin.adminId;
-
+  async createExam({ year, examTitle, examDate }: CreateExamDto) {
     const exam = await this.examRepository.save({
       year,
-      exam_title,
-      exam_date,
-      adminId,
+      examTitle,
+      examDate,
     });
 
     return exam;
@@ -68,7 +62,7 @@ export class ExamService {
   //시험일정 수정
   async updateExam(
     examId: number,
-    { year, exam_title, exam_date }: UpdateExamDto,
+    { year, examTitle, examDate }: UpdateExamDto,
   ) {
     //1.존재하는 시험일정인지
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -78,8 +72,8 @@ export class ExamService {
 
     const patch: Partial<Exam> = {};
     if (year !== undefined) patch.year = year;
-    if (exam_title !== undefined) patch.exam_title = exam_title;
-    if (exam_date !== undefined) patch.exam_date = exam_date;
+    if (examTitle !== undefined) patch.examTitle = examTitle;
+    if (examDate !== undefined) patch.examDate = examDate;
 
     if (Object.keys(patch).length === 0) {
       throw new BadRequestException(
@@ -97,8 +91,8 @@ export class ExamService {
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
-    const exam = await this.examRepository.delete(examId);
-    return exam;
+    await this.examRepository.delete(examId);
+    return;
   }
 
   // 전체 학생 평균 생성
@@ -108,17 +102,28 @@ export class ExamService {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
 
-    // 점수 합산 및 평균 계산
-    let totalScore = 0;
-    const grades = await this.gradeRepository.find({ where: { examId } });
-    // 추후 쿼리빌더로 수정.
-    if (grades.length === 0) {
+    // DB에서 평균/개수만 계산해서 가져오기
+    const row = await this.gradeRepository
+      .createQueryBuilder('g')
+      .select('COUNT(g.grade_id)', 'cnt')
+      .addSelect('AVG(g.score)', 'avg')
+      .where('g.exam_id = :examId', { examId })
+      // 소프트딜리트 쓸 거면 아래 조건도 같이
+      // .andWhere('g.deleted_at IS NULL')
+      .getRawOne<{ cnt: string; avg: string | null }>();
+
+    const cnt = Number(row?.cnt ?? 0);
+    if (cnt === 0) {
       throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.NO_GRADES);
     }
-    totalScore += grades.reduce((sum, grade) => sum + grade.score, 0);
-    const average = (totalScore / grades.length).toFixed(2);
-    existedExam.student_average = average;
-    await this.examRepository.save(existedExam);
+
+    // AVG는 DB/드라이버에 따라 문자열로 올 수 있어서 숫자 변환/반올림 처리
+    const avgNumber = Number(row.avg);
+    const average = avgNumber.toFixed(2); // "86.50"
+
+    existedExam.studentAverage = average;
+    await this.examRepository.update({ examId }, { studentAverage: average });
+
     return existedExam;
   }
 }

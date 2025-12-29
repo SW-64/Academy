@@ -41,6 +41,7 @@ export const MESSAGES = {
           '비밀번호는 영문자, 숫자, 특수문자를 포함한 8자 이상이어야 합니다.',
         CURRENT_REQUIRED: '기존 비밀번호는 필수 입력 항목입니다.',
         NEW_REQUIRED: '새 비밀번호는 필수 입력 항목입니다.',
+        CURRENT_INCORRECT: '기존 비밀번호가 올바르지 않습니다.',
       },
 
       PASSWORD_CONFIRM: {
@@ -130,8 +131,10 @@ export const MESSAGES = {
       VALIDATION: {
         CREATE: {
           YEAR_REQUIRED: '시험 연도는 필수 입력 항목입니다.',
+          YEAR_INVALID_FORMAT: '시험 연도는 정수여야 합니다.',
           EXAM_TITLE_REQUIRED: '시험 이름은 필수 입력 항목입니다.',
           EXAM_DATE_REQUIRED: '시험 날짜는 필수 입력 항목입니다.',
+          EXAM_INVALID_FORMAT: '시험 이름은 문자열이어야 합니다.',
           STUDENT_AVERAGE_REQUIRED: '학생 평균은 필수 입력 항목입니다.',
         },
         UPDATE: {
@@ -140,6 +143,8 @@ export const MESSAGES = {
           EXAM_DATE_REQUIRED: '수정할 시험 날짜를 입력해주세요.',
           STUDENT_AVERAGE_REQUIRED: '수정할 학생 평균을 입력해주세요.',
           NO_CHANGES: '변경된 정보가 없습니다.',
+          YEAR_INVALID_FORMAT: '시험 연도는 정수여야 합니다.',
+          EXAM_INVALID_FORMAT: '시험 이름은 문자열이어야 합니다.',
         },
       },
     },
@@ -189,6 +194,7 @@ export const MESSAGES = {
         NOT_FOUND: '해당 시험 점수를 찾을 수 없습니다.',
         ALREADY_EXISTS: '이미 점수가 등록된 시험입니다.',
         NO_GRADES: '해당 시험에 등록된 점수가 없습니다.',
+        STUDENT_NOT_APPROVED: '승인되지 않은 학생의 점수는 등록할 수 없습니다.',
       },
 
       VALIDATION: {
@@ -218,6 +224,10 @@ export const MESSAGES = {
   USER: {
     ERROR: {
       NOT_FOUND: '유저를 찾을 수 없습니다.',
+      VALIDATION: {
+        PASSWORD_CONFIRM_NOT_MATCH:
+          '비밀번호 확인이 비밀번호와 일치하지 않습니다.',
+      },
     },
   },
 
@@ -226,6 +236,8 @@ export const MESSAGES = {
       SUCCESS: {
         SUMMARY: '나의 성적 현황 조회에 성공했습니다.',
         LEVEL_DISTRIBUTION: '나의 등급 분포 조회에 성공했습니다.',
+        LIST: '나의 성적 목록 조회에 성공했습니다.',
+        ONE: '나의 성적 상세 조회에 성공했습니다.',
       },
     },
   },

@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsStrongPassword } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
+import { Match } from 'src/common/validators/match.decorator';
 
 export class ChangePasswordDto {
   /**
@@ -31,6 +32,9 @@ export class ChangePasswordDto {
    */
   @IsNotEmpty({
     message: MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NEW_REQUIRED,
+  })
+  @Match('newPassword', {
+    message: MESSAGES.USER.ERROR.VALIDATION.PASSWORD_CONFIRM_NOT_MATCH,
   })
   newPasswordConfirm: string;
 }

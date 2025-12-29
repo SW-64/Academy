@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
@@ -17,28 +17,46 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 import { MESSAGES } from './../constants/message.constant';
+import { RefreshToken } from 'src/auth/entities/refreshtoken.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
+    private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Student)
-    private readonly studentRepository: Repository<Student>,
-    @InjectRepository(Parent)
-    private readonly parentRepository: Repository<Parent>,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>,
   ) {}
   // 내 정보 조회
   async getMyInfo(userId: number) {
-    const user = await this.userRepository.findOneBy({ userId });
+    const user = await this.userRepository.findOne({
+      where: { userId },
+      select: {
+        userId: true,
+        email: true,
+        name: true,
+        role: true,
+        phone: true,
+        isApproved: true,
+        signupGrade: true,
+        signupSchool: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+    }
     return user;
   }
 
   // 내 정보 수정
   async updateMyInfo(userId: number, updateUserDto: UpdateUserDto) {
-    await this.userRepository.update({ userId }, updateUserDto);
-    return this.userRepository.findOneBy({ userId });
+    const user = await this.userRepository.update({ userId }, updateUserDto);
+    if (user.affected === 0) {
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+    }
+    return;
   }
 
   // 비밀번호 변경
@@ -55,27 +73,26 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { userId },
       select: {
+        userId: true,
         password: true,
       },
     });
-    if (!user) return null; // 아이디 없음 → null → Guard가 401
-
-    const comparePassword = await bcrypt.compare(
-      currentPassword,
-      user.password,
-    );
-    if (!comparePassword) return null; // 비번 틀림 → null → Guard가 401
+    if (!user) {
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+    }
 
     // 비밀번호 암호화
-    const hashRounds = this.configService.get<number>('PASSWORD_HASH');
+    const hashRounds = Number(
+      this.configService.get<number>('PASSWORD_HASH') ?? 10,
+    );
     const hashedPassword = await bcrypt.hash(newPassword, hashRounds);
 
-    await this.userRepository.update(
-      { userId },
-      {
-        password: hashedPassword,
-      },
-    );
+    await this.dataSource.transaction(async (manager) => {
+      await manager
+        .getRepository(User)
+        .update({ userId }, { password: hashedPassword });
+      await manager.getRepository(RefreshToken).delete({ userId });
+    });
 
     return;
   }
@@ -96,31 +113,38 @@ export class UsersService {
 
   // 유저 계정 승인
   async approveUserAccount(userId: number) {
-    const user = await this.userRepository.findOneBy({ userId });
-    if (!user) {
-      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
-    }
-    user.isApproved = true;
-    await this.userRepository.save(user);
+    await this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const studentRepo = manager.getRepository(Student);
+      const parentRepo = manager.getRepository(Parent);
 
-    const student = await this.studentRepository.findOneBy({ userId });
-    const parent = await this.parentRepository.findOneBy({ userId });
+      const user = await userRepo.findOne({ where: { userId } });
+      if (!user) throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
 
-    if (!student && user.role === Role.STUDENT) {
-      await this.studentRepository.save({
-        userId: user.userId,
-        grade: user.signupGrade,
-        school: user.signupSchool,
-      });
-    }
+      // 이미 승인된 경우 return
+      if (user.isApproved) return;
 
-    if (!parent && user.role === Role.PARENT) {
-      await this.parentRepository.save({
-        userId: user.userId,
-      });
-    }
+      user.isApproved = true;
+      await userRepo.save(user);
 
-    return;
+      if (user.role === Role.STUDENT) {
+        const student = await studentRepo.findOne({ where: { userId } });
+        if (!student) {
+          await studentRepo.save({
+            userId: user.userId,
+            grade: user.signupGrade,
+            school: user.signupSchool,
+          });
+        }
+      }
+
+      if (user.role === Role.PARENT) {
+        const parent = await parentRepo.findOne({ where: { userId } });
+        if (!parent) {
+          await parentRepo.save({ userId: user.userId });
+        }
+      }
+    });
   }
 
   // 유저 계정 거부

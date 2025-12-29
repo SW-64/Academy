@@ -27,7 +27,7 @@ import { ExamService } from './exam.service';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 
-@Controller('exam')
+@Controller('exams')
 export class ExamController {
   constructor(private readonly examService: ExamService) {}
   /**
@@ -37,13 +37,12 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/exams')
+  @Post('')
   async createExam(
     @UserInfo() user: PartialUser,
     @Body() createExamDto: CreateExamDto,
   ) {
-    const userId = user.userId;
-    const data = await this.examService.createExam(userId, createExamDto);
+    const data = await this.examService.createExam(createExamDto);
     return {
       statusCode: HttpStatus.CREATED,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.CREATE,
@@ -57,7 +56,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/exams')
+  @Get('')
   async getExamsAll(@Query('page') page = 1, @Query('limit') limit = 10) {
     const _page = Math.max(Number(page) || 1, 1);
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
@@ -78,14 +77,14 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/exams/:examId')
+  @Get('/:examId')
   async getExamOne(@Param('examId', ParseIntPipe) examId: number) {
     const data = await this.examService.findExam(examId);
 
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.GET,
-      date: data,
+      data: data,
     };
   }
 
@@ -96,7 +95,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch('/exams/:examId')
+  @Patch('/:examId')
   async updateExam(
     @Param('examId', ParseIntPipe) examId: number,
     @Body() updateExamDto: UpdateExamDto,
@@ -114,7 +113,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Delete('/exams/:examId')
+  @Delete('/:examId')
   async deleteExam(@Param('examId', ParseIntPipe) examId: number) {
     await this.examService.deleteExam(examId);
     return {
@@ -129,7 +128,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/exams/:examId/average')
+  @Post('/:examId/average')
   async createExamAverage(@Param('examId', ParseIntPipe) examId: number) {
     const data = await this.examService.createExamAverage(examId);
     return {

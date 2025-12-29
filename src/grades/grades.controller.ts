@@ -62,10 +62,16 @@ export class GradesController {
     @Param('examId', ParseIntPipe) examId: number,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
+    @Query('sort') sort?: string,
   ) {
     const _page = Math.max(Number(page) || 1, 1);
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const data = await this.gradeService.getAllGrades(examId, {
+
+    // 정렬방식 지정
+    // score_desc = 점수 내림차순
+    // name_asc = 이름 오름차순
+    const sortOption = sort === 'score_desc' ? 'score_desc' : 'name_asc';
+    const data = await this.gradeService.getAllGrades(examId, sortOption, {
       page: _page,
       limit: _limit,
     });
