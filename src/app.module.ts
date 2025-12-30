@@ -17,12 +17,13 @@ import { ExamModule } from './exam/exam.module';
 import { GradesModule } from './grades/grades.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { UserIdThrottlerGuard } from './auth/guards/userid-throttler.guard';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
       {
         ttl: 60,
-        limit: 60,
+        limit: 120,
       },
     ]),
     ConfigModule.forRoot({
@@ -57,7 +58,7 @@ import { APP_GUARD } from '@nestjs/core';
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: UserIdThrottlerGuard,
     },
   ],
 })

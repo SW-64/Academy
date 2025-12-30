@@ -17,6 +17,7 @@ import { PartialUser } from '../users/interfaces/partial-user.entity';
 import { Response } from 'express';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshAuthGuard } from './guards/jwt-refresh-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 @ApiTags('인증')
 @Controller('auth')
 export class AuthController {
@@ -28,6 +29,7 @@ export class AuthController {
    * @returns
    */
   @Post('/sign-up')
+  @Throttle({ default: { ttl: 60, limit: 10 } })
   async signUp(@Body() signUpDto: SignUpDto) {
     const data = await this.authService.signUp(signUpDto);
 
@@ -44,6 +46,7 @@ export class AuthController {
    * @returns
    */
   @UseGuards(LocalAuthGuard)
+  @Throttle({ default: { ttl: 60, limit: 20 } })
   @Post('/sign-in')
   async signIn(
     @UserInfo() user: PartialUser,
@@ -80,6 +83,7 @@ export class AuthController {
    * 토큰 재발급
    */
   @UseGuards(JwtRefreshAuthGuard)
+  @Throttle({ default: { ttl: 60, limit: 30 } })
   @Post('/token')
   async getAccessToken(
     @UserInfo() user: PartialUser,
