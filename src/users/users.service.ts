@@ -11,7 +11,7 @@ import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
 
 import { Student } from '../students/entities/student.entity';
 import { Parent } from './../parents/entities/parent.entity';
-import { Role, User } from './entities/user.entity';
+import { Role, Status, User } from './entities/user.entity';
 
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -39,7 +39,7 @@ export class UsersService {
         name: true,
         role: true,
         phone: true,
-        isApproved: true,
+        status: true,
         signupGrade: true,
         signupSchool: true,
       },
@@ -102,7 +102,7 @@ export class UsersService {
     const where: FindOptionsWhere<User> = {
       role: In([Role.STUDENT, Role.PARENT]),
     };
-    where.isApproved = false;
+    where.status = Status.pending;
 
     // paginate 사용
     return paginate(this.userRepository, options, {
@@ -122,9 +122,9 @@ export class UsersService {
       if (!user) throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
 
       // 이미 승인된 경우 return
-      if (user.isApproved) return;
+      if (user.status === Status.approved) return;
 
-      user.isApproved = true;
+      user.status = Status.approved;
       await userRepo.save(user);
 
       if (user.role === Role.STUDENT) {
@@ -153,7 +153,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
-    user.isApproved = false;
+    user.status = Status.rejected;
     await this.userRepository.save(user);
 
     return;

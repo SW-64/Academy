@@ -6,9 +6,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Student } from '../students/entities/student.entity';
 import { Parent } from '../parents/entities/parent.entity';
+import { RefreshToken } from '../auth/entities/refreshtoken.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Student, Parent])],
+  imports: [TypeOrmModule.forFeature([User, Student, Parent, RefreshToken])],
   controllers: [UsersController],
   providers: [UsersService],
 })
