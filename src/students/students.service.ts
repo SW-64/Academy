@@ -11,7 +11,7 @@ import { MESSAGES } from '../constants/message.constant';
 
 import { startOfMonth, addMonths } from 'date-fns';
 
-import { Role, User } from '../users/entities/user.entity';
+import { Role, Status, User } from '../users/entities/user.entity';
 import { Grade, Level } from '../grades/entities/grade.entity';
 import { Student } from './entities/student.entity';
 @Injectable()
@@ -120,21 +120,11 @@ export class StudentsService {
   }
 
   // 학생 목록 조회
-  async findAllStudents(options?: IPaginationOptions, status?: string) {
+  async findAllStudents(options?: IPaginationOptions) {
     const where: FindOptionsWhere<User> = {
       role: Role.STUDENT,
+      status: Status.approved,
     };
-    const allowed = new Set(['approved', 'pending']);
-    if (status && !allowed.has(status)) {
-      throw new BadRequestException(
-        MESSAGES.ADMIN.STUDENT.ERROR.LIST.INVALID_STATUS,
-      );
-    }
-    if (status === 'approved') {
-      where.isApproved = true;
-    } else if (status === 'pending') {
-      where.isApproved = false;
-    }
 
     return paginate(this.userRepository, options, {
       order: { createdAt: 'DESC' },
@@ -146,7 +136,7 @@ export class StudentsService {
         name: true,
         role: true,
         phone: true,
-        isApproved: true,
+        status: true,
         createdAt: true,
         student: {
           studentId: true,
@@ -167,7 +157,7 @@ export class StudentsService {
         grade: true,
         school: true,
         parentId: true,
-        user: { userId: true, name: true, email: true, isApproved: true },
+        user: { userId: true, name: true, email: true, status: true },
       },
     });
     if (!student) {

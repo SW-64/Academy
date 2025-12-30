@@ -19,6 +19,7 @@ import { Grade, Level } from './entities/grade.entity';
 
 import { CreateGradeDto } from './dto/create-grades.dto';
 import { UpdateGradeDto } from './dto/update-grades.dto';
+import { Status } from '../users/entities/user.entity';
 
 @Injectable()
 export class GradesService {
@@ -45,13 +46,13 @@ export class GradesService {
     const existedStudent = await this.studentRepository.findOne({
       where: { studentId },
       relations: { user: true },
-      select: { studentId: true, user: { isApproved: true } },
+      select: { studentId: true, user: { status: true } },
     });
 
     if (!existedStudent) {
       throw new NotFoundException(MESSAGES.ADMIN.STUDENT.ERROR.NOT_FOUND);
     }
-    if (existedStudent.user.isApproved === false) {
+    if (existedStudent.user.status !== Status.approved) {
       throw new BadRequestException(
         MESSAGES.ADMIN.GRADE.ERROR.STUDENT_NOT_APPROVED,
       );

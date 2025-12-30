@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
 
-import { Role, User } from '../users/entities/user.entity';
+import { Role, Status, User } from '../users/entities/user.entity';
 import { Parent } from './entities/parent.entity';
 
 import { MESSAGES } from '../constants/message.constant';
@@ -45,21 +45,11 @@ export class ParentsService {
   }
 
   // 학부모 목록 조회
-  async findAllParents(options?: IPaginationOptions, status?: string) {
+  async findAllParents(options?: IPaginationOptions) {
     const where: FindOptionsWhere<User> = {
       role: Role.PARENT,
+      status: Status.approved,
     };
-    const allowed = new Set(['approved', 'pending']);
-    if (status && !allowed.has(status)) {
-      throw new BadRequestException(
-        MESSAGES.ADMIN.PARENT.ERROR.LIST.INVALID_STATUS,
-      );
-    }
-    if (status === 'approved') {
-      where.isApproved = true;
-    } else if (status === 'pending') {
-      where.isApproved = false;
-    }
 
     // paginate 사용
     return paginate(this.userRepository, options, {
@@ -69,7 +59,7 @@ export class ParentsService {
         userId: true,
         email: true,
         name: true,
-        isApproved: true,
+        status: true,
         role: true,
         phone: true,
         createdAt: true,
@@ -89,7 +79,7 @@ export class ParentsService {
       },
       select: {
         parentId: true,
-        user: { userId: true, name: true, email: true, isApproved: true },
+        user: { userId: true, name: true, email: true, status: true },
         student: {
           studentId: true,
           userId: true,

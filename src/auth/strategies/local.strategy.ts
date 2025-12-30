@@ -6,12 +6,11 @@ import {
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-local';
-import { AuthService } from '../auth.service';
 import { Repository } from 'typeorm';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { MESSAGES } from '../../constants/message.constant';
-import { User } from '../../users/entities/user.entity';
+import { Status, User } from '../../users/entities/user.entity';
 import { PartialUser } from '../../users/interfaces/partial-user.entity';
 import * as bcrypt from 'bcrypt';
 
@@ -32,7 +31,7 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
       select: {
         userId: true,
         password: true,
-        isApproved: true,
+        status: true,
         role: true,
       },
     });
@@ -41,7 +40,7 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
     const comparePassword = await bcrypt.compare(password, user.password);
     if (!comparePassword) return null; // 비번 틀림 → null → Guard가 401
 
-    if (!user.isApproved) {
+    if (user.status !== Status.approved) {
       throw new ForbiddenException(MESSAGES.AUTH.ERROR.NOT_APPROVED);
     }
     // 여기서 컨트롤러에 넘겨줄 최소 정보만 리턴

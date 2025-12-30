@@ -92,21 +92,14 @@ export class StudentsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Get()
-  async getAllStudents(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-    @Query('status') status?: string,
-  ) {
+  async getAllStudents(@Query('page') page = 1, @Query('limit') limit = 10) {
     const _page = Math.max(Number(page) || 1, 1);
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
 
-    const data = await this.studentsService.findAllStudents(
-      {
-        page: _page,
-        limit: _limit,
-      },
-      status,
-    );
+    const data = await this.studentsService.findAllStudents({
+      page: _page,
+      limit: _limit,
+    });
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.STUDENT.SUCCESS.LIST,

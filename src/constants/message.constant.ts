@@ -103,6 +103,7 @@ export const MESSAGES = {
         LIST: '유저 계정 전체가 조회되었습니다.',
         GET: '유저 계정이 조회되었습니다.',
         LIST_NON_APPROVED: '승인 대기 중인 유저 계정 목록이 조회되었습니다.',
+        BLACKLIST: '블랙리스트 유저 계정 목록이 조회되었습니다.',
       },
 
       ERROR: {

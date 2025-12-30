@@ -19,7 +19,14 @@ export enum Role {
   ADMIN = 'ADMIN',
 }
 
-@Index(['role', 'isApproved', 'createdAt'])
+export enum Status {
+  pending = 'PENDING',
+  approved = 'APPROVED',
+  rejected = 'REJECTED',
+}
+
+@Index(['role', 'status', 'createdAt'])
+@Index(['status', 'createdAt'])
 @Entity()
 export class User {
   @PrimaryGeneratedColumn({ name: 'user_id', comment: '유저 아이디' })
@@ -45,8 +52,13 @@ export class User {
   @Column({ comment: '비밀번호', select: false })
   password: string;
 
-  @Column({ name: 'is_approved', default: false, comment: '승인 여부' })
-  isApproved: boolean;
+  @Column({
+    type: 'enum',
+    enum: Status,
+    default: Status.pending,
+    comment: '승인 여부',
+  })
+  status: Status;
 
   @Column({ name: 'signup_school', comment: '임시 학교', nullable: true })
   signupSchool: string | null;
