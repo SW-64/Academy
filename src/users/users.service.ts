@@ -158,4 +158,16 @@ export class UsersService {
 
     return;
   }
+
+  // 블랙리스트 유저 목록 조회
+  async getBlacklistUsers(options?: IPaginationOptions) {
+    const where: FindOptionsWhere<User> = {
+      status: Status.rejected,
+    };
+    // paginate 사용
+    return paginate(this.userRepository, options, {
+      order: { createdAt: 'DESC' },
+      where,
+    });
+  }
 }

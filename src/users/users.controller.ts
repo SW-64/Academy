@@ -131,4 +131,26 @@ export class UsersController {
       message: MESSAGES.ADMIN.ACCOUNT.SUCCESS.REJECT,
     };
   }
+
+  /**
+   * 블랙리스트 유저 목록
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/blacklist')
+  async getBlacklistUsers(@Query('page') page = 1, @Query('limit') limit = 10) {
+    const _page = Math.max(Number(page) || 1, 1);
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
+
+    const data = await this.usersService.getBlacklistUsers({
+      page: _page,
+      limit: _limit,
+    });
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.SUCCESS.BLACKLIST,
+      data: data,
+    };
+  }
 }

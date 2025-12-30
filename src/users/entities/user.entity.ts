@@ -26,6 +26,7 @@ export enum Status {
 }
 
 @Index(['role', 'status', 'createdAt'])
+@Index(['status', 'createdAt'])
 @Entity()
 export class User {
   @PrimaryGeneratedColumn({ name: 'user_id', comment: '유저 아이디' })
