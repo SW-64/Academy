@@ -241,6 +241,11 @@ export const MESSAGES = {
         ONE: '나의 성적 상세 조회에 성공했습니다.',
       },
     },
+    HOME: {
+      SUCCESS: {
+        GET: '학생 홈 정보 조회에 성공했습니다.',
+      },
+    },
   },
 
   PARENTS: {

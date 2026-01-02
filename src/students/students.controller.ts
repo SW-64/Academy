@@ -16,6 +16,8 @@ import { Role } from '../users/entities/user.entity';
 
 import { MESSAGES } from './../constants/message.constant';
 import { StudentOrParentOwnsStudentGuard } from './../auth/guards/student-or-parent-owns-student.guard';
+import { UserInfo } from '../util/decorators/user-info.decorator';
+import { PartialUser } from './../users/interfaces/partial-user.entity';
 
 @Controller('students')
 export class StudentsController {
@@ -119,6 +121,23 @@ export class StudentsController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.STUDENT.SUCCESS.GET,
+      data: data,
+    };
+  }
+
+  /**
+   * 학생 홈화면 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @Get('/home')
+  async getStudentHome(@UserInfo() user: PartialUser) {
+    const userId = user.userId;
+    const data = await this.studentsService.getStudentHome(userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.STUDENTS.HOME.SUCCESS.GET,
       data: data,
     };
   }

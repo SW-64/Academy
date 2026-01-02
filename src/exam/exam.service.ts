@@ -91,7 +91,7 @@ export class ExamService {
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
-    await this.examRepository.delete(examId);
+    await this.examRepository.softDelete(examId);
     return;
   }
 

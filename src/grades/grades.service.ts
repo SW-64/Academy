@@ -181,7 +181,7 @@ export class GradesService {
     if (!existedGrade) {
       throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
-    await this.gradeRepository.delete({ examId, gradeId });
+    await this.gradeRepository.softDelete({ examId, gradeId });
     return;
   }
 

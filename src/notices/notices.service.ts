@@ -126,7 +126,7 @@ export class NoticesService {
     if (!existedNotice) {
       throw new NotFoundException(MESSAGES.ADMIN.NOTICE.ERROR.NOT_FOUND);
     }
-    await this.noticeRepository.delete(noticeId);
+    await this.noticeRepository.softDelete(noticeId);
     return;
   }
 }
