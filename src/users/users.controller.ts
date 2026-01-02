@@ -53,8 +53,7 @@ export class UsersController {
     @UserInfo() user: PartialUser,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    const userId = user.userId;
-    await this.usersService.updateMyInfo(userId, updateUserDto);
+    await this.usersService.updateMyInfo(user, updateUserDto);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.AUTH.SUCCESS.USER_UPDATE,
@@ -70,8 +69,7 @@ export class UsersController {
     @UserInfo() user: PartialUser,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    const userId = user.userId;
-    await this.usersService.updateMyPassword(userId, changePasswordDto);
+    await this.usersService.updateMyPassword(user, changePasswordDto);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.AUTH.SUCCESS.PASSWORD_CHANGE,
@@ -109,8 +107,12 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Patch('/:userId/approve')
-  async approveUserAccount(@Param('userId', ParseIntPipe) userId: number) {
-    await this.usersService.approveUserAccount(userId);
+  async approveUserAccount(
+    @Param('userId', ParseIntPipe) userId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    const adminId = admin.userId;
+    await this.usersService.approveUserAccount(userId, adminId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.ACCOUNT.SUCCESS.APPROVE,
@@ -124,8 +126,12 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Patch('/:userId/reject')
-  async rejectUserAccount(@Param('userId', ParseIntPipe) userId: number) {
-    await this.usersService.rejectUserAccount(userId);
+  async rejectUserAccount(
+    @Param('userId', ParseIntPipe) userId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    const adminId = admin.userId;
+    await this.usersService.rejectUserAccount(userId, adminId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.ACCOUNT.SUCCESS.REJECT,

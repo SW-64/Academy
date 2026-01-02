@@ -17,13 +17,18 @@ import { Admin } from '../admin/entities/admin.entity';
 
 import { CreateNoticeDto } from './dto/create-notice.dto';
 import { UpdateNoticeDto } from '../notices/dto/update-notice.dto';
+import { ActionLog } from './../action-logs/entities/action-logs.entity';
 
 @Injectable()
 export class NoticesService {
-  @InjectRepository(Notice)
-  private readonly noticeRepository: Repository<Notice>;
-  @InjectRepository(Admin)
-  private readonly adminRepository: Repository<Admin>;
+  constructor(
+    @InjectRepository(Notice)
+    private readonly noticeRepository: Repository<Notice>,
+    @InjectRepository(Admin)
+    private readonly adminRepository: Repository<Admin>,
+    @InjectRepository(ActionLog)
+    private readonly actionLogRepository: Repository<ActionLog>,
+  ) {}
 
   //최신 글 계산 공통 유틸
   private static readonly NEW_DAYS = 3; //최근 3일
@@ -52,6 +57,17 @@ export class NoticesService {
       content,
       pinned: pinned ?? false,
       adminId: admin.adminId,
+    });
+
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: admin.userId,
+      actorType: 'admin',
+      action: 'CREATE_NOTICE',
+      targetType: 'notice',
+      targetId: notice.noticeId,
+      description: `Admin created a notice (noticeId: ${notice.noticeId})`,
+      createdAt: new Date(),
     });
     return notice;
   }
@@ -89,6 +105,7 @@ export class NoticesService {
   async updateNotice(
     noticeId: number,
     { title, content, pinned }: UpdateNoticeDto,
+    adminId: number,
   ) {
     //1. 해당 공지사항이 존재하는지 검증
     const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
@@ -117,16 +134,37 @@ export class NoticesService {
     if (result.affected === 0)
       throw new NotFoundException(MESSAGES.ADMIN.NOTICE.ERROR.NOT_FOUND);
 
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'UPDATE_NOTICE',
+      targetType: 'notice',
+      targetId: noticeId,
+      description: `Admin updated a notice (noticeId: ${noticeId})`,
+      changes: patch,
+      createdAt: new Date(),
+    });
     return;
   }
 
   // 공지사항 삭제
-  async deleteNotice(noticeId: number) {
+  async deleteNotice(noticeId: number, adminId: number) {
     const existedNotice = await this.noticeRepository.findOneBy({ noticeId });
     if (!existedNotice) {
       throw new NotFoundException(MESSAGES.ADMIN.NOTICE.ERROR.NOT_FOUND);
     }
     await this.noticeRepository.softDelete(noticeId);
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'DELETE_NOTICE',
+      targetType: 'notice',
+      targetId: noticeId,
+      description: `Admin deleted a notice (noticeId: ${noticeId})`,
+      createdAt: new Date(),
+    });
     return;
   }
 }

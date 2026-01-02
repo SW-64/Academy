@@ -39,10 +39,10 @@ export class ExamController {
   @Roles(Role.ADMIN)
   @Post('')
   async createExam(
-    @UserInfo() user: PartialUser,
+    @UserInfo() admin: PartialUser,
     @Body() createExamDto: CreateExamDto,
   ) {
-    const data = await this.examService.createExam(createExamDto);
+    const data = await this.examService.createExam(createExamDto, admin.userId);
     return {
       statusCode: HttpStatus.CREATED,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.CREATE,
@@ -99,8 +99,9 @@ export class ExamController {
   async updateExam(
     @Param('examId', ParseIntPipe) examId: number,
     @Body() updateExamDto: UpdateExamDto,
+    @UserInfo() admin: PartialUser,
   ) {
-    await this.examService.updateExam(examId, updateExamDto);
+    await this.examService.updateExam(examId, updateExamDto, admin.userId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.UPDATE,
@@ -114,8 +115,11 @@ export class ExamController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Delete('/:examId')
-  async deleteExam(@Param('examId', ParseIntPipe) examId: number) {
-    await this.examService.deleteExam(examId);
+  async deleteExam(
+    @Param('examId', ParseIntPipe) examId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    await this.examService.deleteExam(examId, admin.userId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.DELETE,
@@ -129,8 +133,11 @@ export class ExamController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Post('/:examId/average')
-  async createExamAverage(@Param('examId', ParseIntPipe) examId: number) {
-    const data = await this.examService.createExamAverage(examId);
+  async createExamAverage(
+    @Param('examId', ParseIntPipe) examId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    const data = await this.examService.createExamAverage(examId, admin.userId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.GRADE.SUCCESS.CREATE_EXAM_AVERAGE,

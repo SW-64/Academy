@@ -18,6 +18,7 @@ import { GradesModule } from './grades/grades.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { UserIdThrottlerGuard } from './auth/guards/userid-throttler.guard';
+import { ActionLogsModule } from './action-logs/action-logs.module';
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -52,6 +53,7 @@ import { UserIdThrottlerGuard } from './auth/guards/userid-throttler.guard';
     NoticesModule,
     ExamModule,
     GradesModule,
+    ActionLogsModule,
   ],
   controllers: [AppController],
   providers: [

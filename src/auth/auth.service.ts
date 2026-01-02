@@ -10,14 +10,18 @@ import { JwtService } from '@nestjs/jwt';
 import { RefreshToken } from './entities/refreshtoken.entity';
 import { Response } from 'express';
 import * as bcrypt from 'bcrypt';
+import { ActionLog } from './../action-logs/entities/action-logs.entity';
 @Injectable()
 export class AuthService {
   constructor(
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
-    @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(ActionLog)
+    private readonly actionLogRepository: Repository<ActionLog>,
   ) {}
   // 회원가입
   async signUp({
@@ -85,6 +89,14 @@ export class AuthService {
     });
     delete user.password;
 
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: user.userId,
+      actorType: role === Role.STUDENT ? 'user' : 'admin',
+      action: 'SIGN_UP',
+      description: 'User signed up',
+      createdAt: new Date(),
+    });
     return user;
   }
 
@@ -99,6 +111,14 @@ export class AuthService {
     res.cookie('Authentication', accessToken, accessOption);
     res.cookie('Refresh', refreshToken, refreshOption);
 
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: userId,
+      actorType: role === Role.STUDENT ? 'user' : 'admin',
+      action: 'SIGN_IN',
+      description: 'User signed in',
+      createdAt: new Date(),
+    });
     return { accessToken, refreshToken };
   }
 

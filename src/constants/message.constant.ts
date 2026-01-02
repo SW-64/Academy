@@ -220,6 +220,24 @@ export const MESSAGES = {
         },
       },
     },
+    ACTION_LOGS: {
+      SUCCESS: {
+        CREATE: '액션 로그가 성공적으로 생성되었습니다.',
+        LIST: '액션 로그 목록을 성공적으로 불러왔습니다.',
+        GET: '액션 로그를 성공적으로 불러왔습니다.',
+      },
+      VALIDATION: {
+        CREATE: {
+          ACTOR_ID_INVALID: '행위자 아이디는 숫자여야 합니다.',
+          ACTION_INVALID: '액션은 문자열이어야 합니다.',
+          TARGET_TYPE_INVALID: '대상 타입은 문자열이어야 합니다.',
+          TARGET_ID_INVALID: '대상 아이디는 숫자여야 합니다.',
+          DESCRIPTION_INVALID: '설명은 문자열이어야 합니다.',
+          CHANGES_INVALID: '변경 사항은 객체여야 합니다.',
+          ACTOR_TYPE_INVALID: '행위자 타입은 user 또는 admin이어야 합니다.',
+        },
+      },
+    },
   },
 
   USER: {
