@@ -165,4 +165,22 @@ export class StudentsService {
     }
     return student;
   }
+
+  // 학생 홈화면 조회
+  async getStudentHome(userId: number) {
+    const student = await this.studentsRepository.findOne({
+      where: { userId },
+      relations: { user: true },
+      select: {
+        studentId: true,
+        grade: true,
+        school: true,
+        user: { userId: true, name: true },
+      },
+    });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+    }
+    return student;
+  }
 }

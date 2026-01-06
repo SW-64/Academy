@@ -18,6 +18,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 
 import { MESSAGES } from './../constants/message.constant';
 import { RefreshToken } from 'src/auth/entities/refreshtoken.entity';
+import { ActionLog } from './../action-logs/entities/action-logs.entity';
+import { PartialUser } from './interfaces/partial-user.entity';
 
 @Injectable()
 export class UsersService {
@@ -28,6 +30,8 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(ActionLog)
+    private readonly actionLogRepository: Repository<ActionLog>,
   ) {}
   // 내 정보 조회
   async getMyInfo(userId: number) {
@@ -51,16 +55,34 @@ export class UsersService {
   }
 
   // 내 정보 수정
-  async updateMyInfo(userId: number, updateUserDto: UpdateUserDto) {
-    const user = await this.userRepository.update({ userId }, updateUserDto);
-    if (user.affected === 0) {
+  async updateMyInfo(user: PartialUser, updateUserDto: UpdateUserDto) {
+    const userId = user.userId;
+    const updatedUser = await this.userRepository.update(
+      { userId },
+      updateUserDto,
+    );
+    if (updatedUser.affected === 0) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: userId,
+      actorType: user.role === Role.STUDENT ? 'user' : 'admin',
+      action: 'UPDATE_INFO',
+      description: 'User updated their information',
+      changes: { updateUserDto },
+      createdAt: new Date(),
+    });
     return;
   }
 
   // 비밀번호 변경
-  async updateMyPassword(userId: number, changePasswordDto: ChangePasswordDto) {
+  async updateMyPassword(
+    user: PartialUser,
+    changePasswordDto: ChangePasswordDto,
+  ) {
+    const userId = user.userId;
+
     const { currentPassword, newPassword, newPasswordConfirm } =
       changePasswordDto;
 
@@ -70,14 +92,14 @@ export class UsersService {
       );
     }
 
-    const user = await this.userRepository.findOne({
+    const existedUser = await this.userRepository.findOne({
       where: { userId },
       select: {
         userId: true,
         password: true,
       },
     });
-    if (!user) {
+    if (!existedUser) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
 
@@ -94,6 +116,14 @@ export class UsersService {
       await manager.getRepository(RefreshToken).delete({ userId });
     });
 
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: userId,
+      actorType: user.role === Role.STUDENT ? 'user' : 'admin',
+      action: 'PASSWORD_CHANGE',
+      description: 'User changed their password',
+      createdAt: new Date(),
+    });
     return;
   }
 
@@ -112,7 +142,7 @@ export class UsersService {
   }
 
   // 유저 계정 승인
-  async approveUserAccount(userId: number) {
+  async approveUserAccount(userId: number, adminId: number) {
     await this.dataSource.transaction(async (manager) => {
       const userRepo = manager.getRepository(User);
       const studentRepo = manager.getRepository(Student);
@@ -144,11 +174,22 @@ export class UsersService {
           await parentRepo.save({ userId: user.userId });
         }
       }
+
+      // 로그 저장
+      await manager.getRepository(ActionLog).save({
+        actorId: adminId,
+        actorType: 'admin',
+        action: 'APPROVE_ACCOUNT',
+        targetId: userId,
+        targetType: 'user',
+        description: 'Admin approved user account',
+        createdAt: new Date(),
+      });
     });
   }
 
   // 유저 계정 거부
-  async rejectUserAccount(userId: number) {
+  async rejectUserAccount(userId: number, adminId: number) {
     const user = await this.userRepository.findOneBy({ userId });
     if (!user) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
@@ -156,6 +197,16 @@ export class UsersService {
     user.status = Status.rejected;
     await this.userRepository.save(user);
 
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'REJECT_ACCOUNT',
+      targetId: userId,
+      targetType: 'user',
+      description: 'Admin rejected user account',
+      createdAt: new Date(),
+    });
     return;
   }
 
@@ -169,5 +220,130 @@ export class UsersService {
       order: { createdAt: 'DESC' },
       where,
     });
+  }
+
+  // 유저 정보 수정
+  async updateUserInfo(
+    userId: number,
+    updateUserDto: UpdateUserDto,
+    adminId: number,
+  ) {
+    const updatedUser = await this.userRepository.update(
+      { userId },
+      updateUserDto,
+    );
+    if (updatedUser.affected === 0) {
+      throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
+    }
+
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'UPDATE_USER_INFO',
+      targetId: userId,
+      targetType: 'user',
+      description: 'Admin updated user information',
+      changes: { updateUserDto },
+      createdAt: new Date(),
+    });
+    return;
+  }
+
+  // 유저 비밀번호 초기화
+  async resetUserPassword(userId: number, adminId: number) {
+    const existedUser = await this.userRepository.findOne({
+      where: { userId },
+      select: {
+        userId: true,
+        email: true,
+      },
+    });
+    if (!existedUser) {
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+    }
+    // 비밀번호 암호화
+    const tempPassword = Math.random().toString(36).slice(-8);
+    const hashRounds = Number(
+      this.configService.get<number>('PASSWORD_HASH') ?? 10,
+    );
+    const hashedPassword = await bcrypt.hash(tempPassword, hashRounds);
+    await this.userRepository.update({ userId }, { password: hashedPassword });
+
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'RESET_USER_PASSWORD',
+      targetId: userId,
+      targetType: 'user',
+      description: 'Admin reset user password',
+      createdAt: new Date(),
+    });
+    return;
+  }
+
+  // 학생-부모 연동
+  async linkStudentParent(
+    studentId: number,
+    parentId: number,
+    adminId: number,
+  ) {
+    const student = await this.dataSource
+      .getRepository(Student)
+      .findOne({ where: { studentId } });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+    const parent = await this.dataSource
+      .getRepository(Parent)
+      .findOne({ where: { parentId } });
+    if (!parent) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+
+    if (student.parentId) {
+      throw new BadRequestException(MESSAGES.ADMIN.USER.ERROR.ALREADY_LINKED);
+    }
+    student.parentId = parentId;
+    await this.dataSource.getRepository(Student).save(student);
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'LINK_STUDENT_PARENT',
+      targetType: 'student-parent',
+      targetId: studentId,
+      description: `Admin linked student (studentId: ${studentId}) with parent (parentId: ${parentId})`,
+      createdAt: new Date(),
+    });
+    return;
+  }
+
+  // 학생-부모 연동 해제
+  async unlinkStudentParent(
+    studentId: number,
+    parentId: number,
+    adminId: number,
+  ) {
+    const student = await this.dataSource
+      .getRepository(Student)
+      .findOne({ where: { studentId, parentId } });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+    student.parentId = null;
+    await this.dataSource.getRepository(Student).save(student);
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'UNLINK_STUDENT_PARENT',
+      targetType: 'student-parent',
+      targetId: studentId,
+      description: `Admin unlinked student (studentId: ${studentId}) from parent (parentId: ${parentId})`,
+      createdAt: new Date(),
+    });
+    return;
   }
 }

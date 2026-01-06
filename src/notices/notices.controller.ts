@@ -117,8 +117,13 @@ export class NoticesController {
   async updateNotice(
     @Param('noticeId', ParseIntPipe) noticeId: number,
     @Body() updateNoticeDto: UpdateNoticeDto,
+    @UserInfo() admin: PartialUser,
   ) {
-    await this.noticesService.updateNotice(noticeId, updateNoticeDto);
+    await this.noticesService.updateNotice(
+      noticeId,
+      updateNoticeDto,
+      admin.userId,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.SUCCESS.UPDATE,
@@ -133,8 +138,11 @@ export class NoticesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Delete('/:noticeId')
-  async deleteNotice(@Param('noticeId', ParseIntPipe) noticeId: number) {
-    await this.noticesService.deleteNotice(noticeId);
+  async deleteNotice(
+    @Param('noticeId', ParseIntPipe) noticeId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    await this.noticesService.deleteNotice(noticeId, admin.userId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.SUCCESS.DELETE,

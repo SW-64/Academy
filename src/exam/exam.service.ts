@@ -9,7 +9,7 @@ import {
   Pagination,
 } from 'nestjs-typeorm-paginate';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { Admin } from '../admin/entities/admin.entity';
 import { Grade } from '../grades/entities/grade.entity';
@@ -19,6 +19,7 @@ import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 
 import { MESSAGES } from '../constants/message.constant';
+import { ActionLog } from './../action-logs/entities/action-logs.entity';
 
 @Injectable()
 export class ExamService {
@@ -29,16 +30,31 @@ export class ExamService {
     private readonly examRepository: Repository<Exam>,
     @InjectRepository(Grade)
     private readonly gradeRepository: Repository<Grade>,
+    @InjectRepository(ActionLog)
+    private readonly actionLogRepository: Repository<ActionLog>,
   ) {}
 
   //시험일정 생성
-  async createExam({ year, examTitle, examDate }: CreateExamDto) {
+  async createExam(
+    { year, examTitle, examDate }: CreateExamDto,
+    adminId: number,
+  ) {
     const exam = await this.examRepository.save({
       year,
       examTitle,
       examDate,
     });
 
+    // 로그 생성
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'CREATE_EXAM',
+      targetType: 'exam',
+      targetId: exam.examId,
+      description: `Admin created an exam (examId: ${exam.examId})`,
+      createdAt: new Date(),
+    });
     return exam;
   }
 
@@ -63,6 +79,7 @@ export class ExamService {
   async updateExam(
     examId: number,
     { year, examTitle, examDate }: UpdateExamDto,
+    adminId: number,
   ) {
     //1.존재하는 시험일정인지
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -82,21 +99,43 @@ export class ExamService {
     }
     await this.examRepository.update({ examId }, patch);
 
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'UPDATE_EXAM',
+      targetType: 'exam',
+      targetId: examId,
+      description: `Admin updated an exam (examId: ${examId})`,
+      changes: patch,
+      createdAt: new Date(),
+    });
     return;
   }
 
   //시험일정 삭제
-  async deleteExam(examId: number) {
+  async deleteExam(examId: number, adminId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
-    await this.examRepository.delete(examId);
+    await this.examRepository.softDelete(examId);
+
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'DELETE_EXAM',
+      targetType: 'exam',
+      targetId: examId,
+      description: `Admin deleted an exam (examId: ${examId})`,
+      createdAt: new Date(),
+    });
     return;
   }
 
   // 전체 학생 평균 생성
-  async createExamAverage(examId: number) {
+  async createExamAverage(examId: number, adminId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
@@ -124,6 +163,16 @@ export class ExamService {
     existedExam.studentAverage = average;
     await this.examRepository.update({ examId }, { studentAverage: average });
 
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'CREATE_EXAM_AVERAGE',
+      targetType: 'exam',
+      targetId: examId,
+      description: `Admin created exam average (examId: ${examId}, average: ${average})`,
+      createdAt: new Date(),
+    });
     return existedExam;
   }
 }

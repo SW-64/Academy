@@ -42,8 +42,13 @@ export class GradesController {
     @Param('examId', ParseIntPipe) examId: number,
     @Body()
     createGradeDto: CreateGradeDto,
+    @UserInfo() admin: PartialUser,
   ) {
-    const data = await this.gradeService.createGrade(examId, createGradeDto);
+    const data = await this.gradeService.createGrade(
+      examId,
+      createGradeDto,
+      admin.userId,
+    );
     return {
       statusCode: HttpStatus.CREATED,
       message: MESSAGES.ADMIN.GRADE.SUCCESS.CREATE,
@@ -113,8 +118,14 @@ export class GradesController {
     @Param('examId', ParseIntPipe) examId: number,
     @Param('gradeId', ParseIntPipe) gradeId: number,
     @Body() updateGradeDto: UpdateGradeDto,
+    @UserInfo() admin: PartialUser,
   ) {
-    await this.gradeService.updateGrade(examId, gradeId, updateGradeDto);
+    await this.gradeService.updateGrade(
+      examId,
+      gradeId,
+      updateGradeDto,
+      admin.userId,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.GRADE.SUCCESS.UPDATE,
@@ -131,8 +142,9 @@ export class GradesController {
   async deleteGrade(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('gradeId', ParseIntPipe) gradeId: number,
+    @UserInfo() admin: PartialUser,
   ) {
-    await this.gradeService.deleteGrade(examId, gradeId);
+    await this.gradeService.deleteGrade(examId, gradeId, admin.userId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.GRADE.SUCCESS.DELETE,

@@ -60,9 +60,12 @@ export const MESSAGES = {
         REQUIRED: '연락처는 필수 입력 항목입니다.',
         INVALID_FORMAT: '연락처는 010으로 시작하는 11자리 숫자여야 합니다.',
       },
+      SCHOOL: {
+        REQUIRED: '학교는 필수 입력 항목입니다.',
+        INVALID_FORMAT: '학교는 문자열이어야 합니다.',
+      },
     },
   },
-
   ADMIN: {
     NOTICE: {
       SUCCESS: {
@@ -220,6 +223,38 @@ export const MESSAGES = {
         },
       },
     },
+    ACTION_LOGS: {
+      SUCCESS: {
+        CREATE: '액션 로그가 성공적으로 생성되었습니다.',
+        LIST: '액션 로그 목록을 성공적으로 불러왔습니다.',
+        GET: '액션 로그를 성공적으로 불러왔습니다.',
+      },
+      VALIDATION: {
+        CREATE: {
+          ACTOR_ID_INVALID: '행위자 아이디는 숫자여야 합니다.',
+          ACTION_INVALID: '액션은 문자열이어야 합니다.',
+          TARGET_TYPE_INVALID: '대상 타입은 문자열이어야 합니다.',
+          TARGET_ID_INVALID: '대상 아이디는 숫자여야 합니다.',
+          DESCRIPTION_INVALID: '설명은 문자열이어야 합니다.',
+          CHANGES_INVALID: '변경 사항은 객체여야 합니다.',
+          ACTOR_TYPE_INVALID: '행위자 타입은 user 또는 admin이어야 합니다.',
+        },
+      },
+    },
+    USER: {
+      SUCCESS: {
+        LIST: '유저 계정 전체가 조회되었습니다.',
+        GET: '유저 계정이 조회되었습니다.',
+        UPDATE: '유저 계정이 수정되었습니다.',
+        RESET_PASSWORD: '유저 비밀번호가 초기화되었습니다.',
+        LINK_STUDENT_PARENT: '학생-부모 연동이 등록되었습니다.',
+        UNLINK_STUDENT_PARENT: '학생-부모 연동이 해제되었습니다.',
+      },
+      ERROR: {
+        NOT_FOUND: '유저 계정이 없습니다.',
+        ALREADY_LINKED: '이미 연동된 학생-부모 관계입니다.',
+      },
+    },
   },
 
   USER: {
@@ -230,6 +265,10 @@ export const MESSAGES = {
           '비밀번호 확인이 비밀번호와 일치하지 않습니다.',
       },
     },
+    SUCCESS: {
+      INFO: '유저 정보 조회에 성공했습니다.',
+      UPDATE: '유저 정보 수정에 성공했습니다.',
+    },
   },
 
   STUDENTS: {
@@ -239,6 +278,11 @@ export const MESSAGES = {
         LEVEL_DISTRIBUTION: '나의 등급 분포 조회에 성공했습니다.',
         LIST: '나의 성적 목록 조회에 성공했습니다.',
         ONE: '나의 성적 상세 조회에 성공했습니다.',
+      },
+    },
+    HOME: {
+      SUCCESS: {
+        GET: '학생 홈 정보 조회에 성공했습니다.',
       },
     },
   },

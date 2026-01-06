@@ -20,6 +20,7 @@ import { Grade, Level } from './entities/grade.entity';
 import { CreateGradeDto } from './dto/create-grades.dto';
 import { UpdateGradeDto } from './dto/update-grades.dto';
 import { Status } from '../users/entities/user.entity';
+import { ActionLog } from './../action-logs/entities/action-logs.entity';
 
 @Injectable()
 export class GradesService {
@@ -30,12 +31,15 @@ export class GradesService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(Grade)
     private readonly gradeRepository: Repository<Grade>,
+    @InjectRepository(ActionLog)
+    private readonly actionLogRepository: Repository<ActionLog>,
   ) {}
 
   //시험점수 생성
   async createGrade(
     examId: number,
     { studentId, score, comment }: CreateGradeDto,
+    adminId: number,
   ) {
     //1.해당 시험 일정이 존재하는지
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -74,6 +78,18 @@ export class GradesService {
       level,
       comment: comment ?? null,
     });
+
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'CREATE_GRADE',
+      targetType: 'grade',
+      targetId: grade.gradeId,
+      description: `Admin created a grade for student( studentId :  ${studentId})`,
+      createdAt: new Date(),
+    });
+
     return grade;
   }
 
@@ -138,6 +154,7 @@ export class GradesService {
     examId: number,
     gradeId: number,
     { score, comment }: UpdateGradeDto,
+    adminId: number,
   ) {
     //1.시험일정 존재하는지
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -166,11 +183,22 @@ export class GradesService {
 
     await this.gradeRepository.update({ examId, gradeId }, patch);
 
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'UPDATE_GRADE',
+      targetType: 'grade',
+      targetId: gradeId,
+      description: `Admin updated a grade (gradeId: ${gradeId})`,
+      changes: patch,
+      createdAt: new Date(),
+    });
     return;
   }
 
   //시험점수 삭제
-  async deleteGrade(examId: number, gradeId: number) {
+  async deleteGrade(examId: number, gradeId: number, adminId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
@@ -181,7 +209,17 @@ export class GradesService {
     if (!existedGrade) {
       throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
     }
-    await this.gradeRepository.delete({ examId, gradeId });
+    await this.gradeRepository.softDelete({ examId, gradeId });
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'DELETE_GRADE',
+      targetType: 'grade',
+      targetId: gradeId,
+      description: `Admin deleted a grade (gradeId: ${gradeId})`,
+      createdAt: new Date(),
+    });
     return;
   }
 
