@@ -60,9 +60,12 @@ export const MESSAGES = {
         REQUIRED: '연락처는 필수 입력 항목입니다.',
         INVALID_FORMAT: '연락처는 010으로 시작하는 11자리 숫자여야 합니다.',
       },
+      SCHOOL: {
+        REQUIRED: '학교는 필수 입력 항목입니다.',
+        INVALID_FORMAT: '학교는 문자열이어야 합니다.',
+      },
     },
   },
-
   ADMIN: {
     NOTICE: {
       SUCCESS: {
@@ -238,6 +241,20 @@ export const MESSAGES = {
         },
       },
     },
+    USER: {
+      SUCCESS: {
+        LIST: '유저 계정 전체가 조회되었습니다.',
+        GET: '유저 계정이 조회되었습니다.',
+        UPDATE: '유저 계정이 수정되었습니다.',
+        RESET_PASSWORD: '유저 비밀번호가 초기화되었습니다.',
+        LINK_STUDENT_PARENT: '학생-부모 연동이 등록되었습니다.',
+        UNLINK_STUDENT_PARENT: '학생-부모 연동이 해제되었습니다.',
+      },
+      ERROR: {
+        NOT_FOUND: '유저 계정이 없습니다.',
+        ALREADY_LINKED: '이미 연동된 학생-부모 관계입니다.',
+      },
+    },
   },
 
   USER: {
@@ -247,6 +264,10 @@ export const MESSAGES = {
         PASSWORD_CONFIRM_NOT_MATCH:
           '비밀번호 확인이 비밀번호와 일치하지 않습니다.',
       },
+    },
+    SUCCESS: {
+      INFO: '유저 정보 조회에 성공했습니다.',
+      UPDATE: '유저 정보 수정에 성공했습니다.',
     },
   },
 

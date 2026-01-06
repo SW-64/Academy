@@ -159,4 +159,87 @@ export class UsersController {
       data: data,
     };
   }
+
+  /**
+   * 유저 정보 수정
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('/:userId/info')
+  async updateUserInfo(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() updateUserDto: UpdateUserDto,
+    @UserInfo() admin: PartialUser,
+  ) {
+    await this.usersService.updateUserInfo(userId, updateUserDto, admin.userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.USER.SUCCESS.UPDATE,
+    };
+  }
+
+  /**
+   * 유저 비밀번호 초기화
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/:userId/reset-password')
+  async resetUserPassword(
+    @Param('userId', ParseIntPipe) userId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    await this.usersService.resetUserPassword(userId, admin.userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.USER.SUCCESS.RESET_PASSWORD,
+    };
+  }
+
+  /**
+   * 학생-부모 연동 등록
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('/:studentId/link-parent/:parentId')
+  async linkStudentParent(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Param('parentId', ParseIntPipe) parentId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    await this.usersService.linkStudentParent(
+      studentId,
+      parentId,
+      admin.userId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.USER.SUCCESS.LINK_STUDENT_PARENT,
+    };
+  }
+
+  /**
+   * 학생-부모 연동 해제
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('/:studentId/unlink-parent/:parentId')
+  async unlinkStudentParent(
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @Param('parentId', ParseIntPipe) parentId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    await this.usersService.unlinkStudentParent(
+      studentId,
+      parentId,
+      admin.userId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.USER.SUCCESS.UNLINK_STUDENT_PARENT,
+    };
+  }
 }

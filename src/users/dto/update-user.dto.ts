@@ -2,6 +2,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsOptional,
+  IsString,
   Length,
   Matches,
 } from 'class-validator';
@@ -33,4 +34,12 @@ export class UpdateUserDto {
     message: MESSAGES.AUTH.VALIDATION.PHONE.INVALID_FORMAT,
   })
   phone?: string;
+
+  /**
+   * 학교
+   * @example "01012345678"
+   */
+  @IsOptional()
+  @IsString({ message: MESSAGES.AUTH.VALIDATION.SCHOOL.INVALID_FORMAT })
+  school?: string;
 }

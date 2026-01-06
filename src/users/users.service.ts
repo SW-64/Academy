@@ -221,4 +221,129 @@ export class UsersService {
       where,
     });
   }
+
+  // 유저 정보 수정
+  async updateUserInfo(
+    userId: number,
+    updateUserDto: UpdateUserDto,
+    adminId: number,
+  ) {
+    const updatedUser = await this.userRepository.update(
+      { userId },
+      updateUserDto,
+    );
+    if (updatedUser.affected === 0) {
+      throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
+    }
+
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'UPDATE_USER_INFO',
+      targetId: userId,
+      targetType: 'user',
+      description: 'Admin updated user information',
+      changes: { updateUserDto },
+      createdAt: new Date(),
+    });
+    return;
+  }
+
+  // 유저 비밀번호 초기화
+  async resetUserPassword(userId: number, adminId: number) {
+    const existedUser = await this.userRepository.findOne({
+      where: { userId },
+      select: {
+        userId: true,
+        email: true,
+      },
+    });
+    if (!existedUser) {
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+    }
+    // 비밀번호 암호화
+    const tempPassword = Math.random().toString(36).slice(-8);
+    const hashRounds = Number(
+      this.configService.get<number>('PASSWORD_HASH') ?? 10,
+    );
+    const hashedPassword = await bcrypt.hash(tempPassword, hashRounds);
+    await this.userRepository.update({ userId }, { password: hashedPassword });
+
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'RESET_USER_PASSWORD',
+      targetId: userId,
+      targetType: 'user',
+      description: 'Admin reset user password',
+      createdAt: new Date(),
+    });
+    return;
+  }
+
+  // 학생-부모 연동
+  async linkStudentParent(
+    studentId: number,
+    parentId: number,
+    adminId: number,
+  ) {
+    const student = await this.dataSource
+      .getRepository(Student)
+      .findOne({ where: { studentId } });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+    const parent = await this.dataSource
+      .getRepository(Parent)
+      .findOne({ where: { parentId } });
+    if (!parent) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+
+    if (student.parentId) {
+      throw new BadRequestException(MESSAGES.ADMIN.USER.ERROR.ALREADY_LINKED);
+    }
+    student.parentId = parentId;
+    await this.dataSource.getRepository(Student).save(student);
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'LINK_STUDENT_PARENT',
+      targetType: 'student-parent',
+      targetId: studentId,
+      description: `Admin linked student (studentId: ${studentId}) with parent (parentId: ${parentId})`,
+      createdAt: new Date(),
+    });
+    return;
+  }
+
+  // 학생-부모 연동 해제
+  async unlinkStudentParent(
+    studentId: number,
+    parentId: number,
+    adminId: number,
+  ) {
+    const student = await this.dataSource
+      .getRepository(Student)
+      .findOne({ where: { studentId, parentId } });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+    student.parentId = null;
+    await this.dataSource.getRepository(Student).save(student);
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'UNLINK_STUDENT_PARENT',
+      targetType: 'student-parent',
+      targetId: studentId,
+      description: `Admin unlinked student (studentId: ${studentId}) from parent (parentId: ${parentId})`,
+      createdAt: new Date(),
+    });
+    return;
+  }
 }
