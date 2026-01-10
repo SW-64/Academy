@@ -12,7 +12,7 @@ import {
   Index,
 } from 'typeorm';
 import { Student } from '../../students/entities/student.entity';
-import { Homework } from './homework.entity';
+
 import { ProgressChapter } from './progress-chapter.entity';
 
 @Entity({ name: 'progress' })
@@ -25,6 +25,9 @@ export class Progress {
 
   @Column({ name: 'student_id', type: 'int' })
   studentId: number;
+
+  @Column({ name: 'class_textbook_id', type: 'int' })
+  classTextbookId: number;
 
   @Column({ name: 'homework_id', type: 'int' })
   homeworkId: number;
@@ -41,10 +44,6 @@ export class Progress {
   @ManyToOne(() => Student, (s) => s.progresses, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'student_id' })
   student: Student;
-
-  @ManyToOne(() => Homework, (h) => h.progresses, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'homework_id' })
-  homework: Homework;
 
   @OneToMany(() => ProgressChapter, (pc) => pc.progress)
   chapters: ProgressChapter[];

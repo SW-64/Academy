@@ -9,7 +9,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { TextbookChapter } from './textbook-chapter.entity';
-import { Homework } from '../../homework/entities/homework.entity';
+
 import { ClassTextbook } from '../../class-textbook/entities/class-textbook.entity';
 
 @Entity({ name: 'textbook' })
@@ -42,9 +42,6 @@ export class Textbook {
   // relations
   @OneToMany(() => TextbookChapter, (c) => c.textbook)
   chapters: TextbookChapter[];
-
-  @OneToMany(() => Homework, (h) => h.textbook)
-  homeworks: Homework[];
 
   @OneToMany(() => ClassTextbook, (ct) => ct.textbook)
   classTextbooks: ClassTextbook[];

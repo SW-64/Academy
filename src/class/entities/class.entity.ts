@@ -1,4 +1,3 @@
-import { Homework } from '../../homework/entities/homework.entity';
 import { ClassTextbook } from '../../class-textbook/entities/class-textbook.entity';
 import {
   Entity,
@@ -27,13 +26,6 @@ export class Class {
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'datetime', nullable: true })
   deletedAt: Date | null;
-
-  @ManyToOne(() => Homework, (h) => h.progresses, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'homework_id', referencedColumnName: 'homeworkId' })
-  homework: Homework;
-
-  @OneToMany(() => Homework, (h) => h.clazz)
-  homeworks: Homework[];
 
   @OneToMany(() => ClassTextbook, (ct) => ct.clazz)
   classTextbooks: ClassTextbook[];
