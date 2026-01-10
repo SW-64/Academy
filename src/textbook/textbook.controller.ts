@@ -20,7 +20,7 @@ import { PartialUser } from 'src/users/interfaces/partial-user.entity';
 import { CreateTextbookDto } from './dto/create-textbook.dto';
 import { MESSAGES } from './../constants/message.constant';
 
-@Controller('textbook')
+@Controller('textbooks')
 export class TextbookController {
   constructor(private readonly textbookService: TextbookService) {}
 
