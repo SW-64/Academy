@@ -19,9 +19,11 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { UserIdThrottlerGuard } from './auth/guards/userid-throttler.guard';
 import { ActionLogsModule } from './action-logs/action-logs.module';
-import { TextbooksModule } from './textbooks/textbooks.module';
-import { HomeworkProgressModule } from './homework-progress/homework-progress.module';
-import { ClassTextbooksModule } from './class-textbooks/class-textbooks.module';
+import { TextbookModule } from './textbook/textbook.module';
+import { ClassTextbookModule } from './class-textbook/class-textbook.module';
+import { HomeworkModule } from './homework/homework.module';
+import { ClassModule } from './class/class.module';
+
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -57,9 +59,10 @@ import { ClassTextbooksModule } from './class-textbooks/class-textbooks.module';
     ExamModule,
     GradesModule,
     ActionLogsModule,
-    TextbooksModule,
-    HomeworkProgressModule,
-    ClassTextbooksModule,
+    TextbookModule,
+    ClassTextbookModule,
+    HomeworkModule,
+    ClassModule,
   ],
   controllers: [AppController],
   providers: [
