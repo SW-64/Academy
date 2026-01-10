@@ -11,6 +11,8 @@ import {
   OneToMany,
   Index,
 } from 'typeorm';
+import { StudentClass } from './../../student-class/entities/student-class.entity';
+
 export class Class {
   @PrimaryGeneratedColumn({ name: 'class_id' })
   classId: number;
@@ -29,4 +31,7 @@ export class Class {
 
   @OneToMany(() => ClassTextbook, (ct) => ct.clazz)
   classTextbooks: ClassTextbook[];
+
+  @OneToMany(() => StudentClass, (sc) => sc.clazz)
+  studentClasses: StudentClass[];
 }

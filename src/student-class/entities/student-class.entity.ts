@@ -9,6 +9,7 @@ import {
   Index,
 } from 'typeorm';
 import { Class } from '../../class/entities/class.entity';
+import { Student } from './../../students/entities/student.entity';
 
 @Entity({ name: 'student_class' })
 @Index('uq_student_class', ['studentId', 'classId'], { unique: true })
@@ -31,4 +32,8 @@ export class StudentClass {
   @ManyToOne(() => Class, (c) => c.studentClasses, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'class_id', referencedColumnName: 'classId' })
   clazz: Class;
+
+  @ManyToOne(() => Student, (c) => c.studentClasses, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'student_id', referencedColumnName: 'studentId' })
+  students: Student[];
 }
