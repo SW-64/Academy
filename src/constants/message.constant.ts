@@ -98,7 +98,6 @@ export const MESSAGES = {
         },
       },
     },
-
     ACCOUNT: {
       SUCCESS: {
         APPROVE: '유저 계정이 승인되었습니다.',
@@ -113,7 +112,6 @@ export const MESSAGES = {
         NOT_FOUND: '유저 계정이 없습니다.',
       },
     },
-
     EXAM: {
       SUCCESS: {
         CREATE: '시험 일정이 생성되었습니다.',
@@ -152,7 +150,6 @@ export const MESSAGES = {
         },
       },
     },
-
     PARENT: {
       SUCCESS: {
         LIST: '학부모 전체가 조회되었습니다.',
@@ -165,7 +162,6 @@ export const MESSAGES = {
         },
       },
     },
-
     STUDENT: {
       SUCCESS: {
         LIST: '학생 전체가 조회되었습니다.',
@@ -178,7 +174,6 @@ export const MESSAGES = {
         },
       },
     },
-
     GRADE: {
       SUCCESS: {
         CREATE: '시험 점수가 생성되었습니다.',
@@ -253,6 +248,48 @@ export const MESSAGES = {
       ERROR: {
         NOT_FOUND: '유저 계정이 없습니다.',
         ALREADY_LINKED: '이미 연동된 학생-부모 관계입니다.',
+      },
+    },
+    TEXTBOOK: {
+      VALIDATION: {
+        CREATE: {
+          NAME_REQUIRED: '교재 이름은 필수 입력 항목입니다.',
+          GRADE_REQUIRED: '교재 학년은 필수 입력 항목입니다.',
+          LARGE_UNIT_REQUIRED: '대단원 개수는 필수 입력 항목입니다.',
+          SMALL_UNIT_REQUIRED: '소단원 개수는 필수 입력 항목입니다.',
+        },
+        UPDATE: {
+          NAME_INVALID_FORMAT: '교재 이름은 문자열이어야 합니다.',
+          GRADE_INVALID_FORMAT: '교재 학년은 정수여야 합니다.',
+        },
+      },
+      SUCCESS: {
+        CREATE: '교재가 성공적으로 생성되었습니다.',
+        GET_ALL: '교재 전체 조회에 성공했습니다.',
+        GET_ONE: '교재 상세 조회에 성공했습니다.',
+        UPDATE: '교재가 성공적으로 수정되었습니다.',
+        DELETE: '교재가 성공적으로 삭제되었습니다.',
+        GET_ALL_OF_CLASS: '반에 배정된 교재 전체 조회에 성공했습니다.',
+      },
+      ERROR: {
+        NOT_FOUND: '교재를 찾을 수 없습니다.',
+        NO_CHANGE: '변경된 정보가 없습니다.',
+      },
+    },
+    CLASS: {
+      ERROR: {
+        NOT_FOUND: '반을 찾을 수 없습니다.',
+      },
+    },
+    HOMEWORK: {
+      SUCCESS: {
+        GET_PROGRESS: '숙제 진도 조회에 성공했습니다.',
+        UPDATE_PROGRESS: '숙제 진도 수정에 성공했습니다.',
+      },
+      ERROR: {
+        CLASS_TEXTBOOK_NOT_FOUND: '해당 반에 배정된 교재가 없습니다.',
+        PROGRESS_NOT_FOUND: '해당 숙제 진도를 찾을 수 없습니다.',
+        NO_UPDATE_ITEMS: '수정할 항목이 없습니다.',
       },
     },
   },

@@ -1,6 +1,9 @@
 import { Grade } from '../../grades/entities/grade.entity';
 import { Parent } from '../../parents/entities/parent.entity';
 import { User } from '../../users/entities/user.entity';
+import { Progress } from './../../homework/entities/progress.entity';
+import { StudentClass } from './../../student-class/entities/student-class.entity';
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -53,4 +56,10 @@ export class Student {
 
   @OneToMany(() => Grade, (grade) => grade.student)
   grades: Grade[];
+
+  @OneToMany(() => Progress, (p) => p.student)
+  progresses: Progress[];
+
+  @OneToMany(() => StudentClass, (sc) => sc.clazz)
+  studentClasses: StudentClass[];
 }
