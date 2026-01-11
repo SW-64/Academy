@@ -161,6 +161,25 @@ export class UsersController {
   }
 
   /**
+   * 블랙리스트 유저 복구
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('/:userId/unblacklist')
+  async unBlacklistUser(
+    @Param('userId', ParseIntPipe) userId: number,
+    @UserInfo() admin: PartialUser,
+  ) {
+    const adminId = admin.userId;
+    await this.usersService.unBlacklistUser(userId, adminId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.ACCOUNT.SUCCESS.UNBLACKLIST,
+    };
+  }
+
+  /**
    * 유저 정보 수정
    * @returns
    */

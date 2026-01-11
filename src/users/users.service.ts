@@ -222,6 +222,27 @@ export class UsersService {
     });
   }
 
+  // 블랙리스트 유저 복구
+  async unBlacklistUser(userId: number, adminId: number) {
+    const user = await this.userRepository.findOneBy({ userId });
+    if (!user) {
+      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+    }
+    user.status = Status.pending;
+    await this.userRepository.save(user);
+
+    // 로그 저장
+    await this.actionLogRepository.save({
+      actorId: adminId,
+      actorType: 'admin',
+      action: 'UNBLACKLIST_USER',
+      targetId: userId,
+      targetType: 'user',
+      description: 'Admin unblacklisted user account',
+      createdAt: new Date(),
+    });
+    return;
+  }
   // 유저 정보 수정
   async updateUserInfo(
     userId: number,
