@@ -42,4 +42,11 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString({ message: MESSAGES.AUTH.VALIDATION.SCHOOL.INVALID_FORMAT })
   school?: string;
+
+  /**
+   * 학년
+   * @example "1"
+   */
+  @IsOptional()
+  grade?: number;
 }
