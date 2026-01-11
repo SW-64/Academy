@@ -277,8 +277,24 @@ export const MESSAGES = {
       },
     },
     CLASS: {
+      VALIDATION: {
+        CREATE: {
+          NAME_REQUIRED: '반 이름은 필수 입력 항목입니다.',
+          NAME_INVALID_FORMAT: '반 이름은 문자열이어야 합니다.',
+        },
+        UPDATE: {
+          NAME_INVALID_FORMAT: '반 이름은 문자열이어야 합니다.',
+        },
+      },
       ERROR: {
         NOT_FOUND: '반을 찾을 수 없습니다.',
+      },
+      SUCCESS: {
+        CREATE: '반이 성공적으로 생성되었습니다.',
+        GET_ALL: '반 전체 조회에 성공했습니다.',
+        UPDATE: '반이 성공적으로 수정되었습니다.',
+        DELETE: '반이 성공적으로 삭제되었습니다.',
+        GET_ALL_OF_CLASS: '반에 배정된 교재 전체 조회에 성공했습니다.',
       },
     },
     HOMEWORK: {
