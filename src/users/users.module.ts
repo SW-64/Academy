@@ -7,9 +7,12 @@ import { User } from './entities/user.entity';
 import { Student } from '../students/entities/student.entity';
 import { Parent } from '../parents/entities/parent.entity';
 import { RefreshToken } from '../auth/entities/refreshtoken.entity';
+import { ActionLog } from '../action-logs/entities/action-logs.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Student, Parent, RefreshToken])],
+  imports: [
+    TypeOrmModule.forFeature([User, Student, Parent, RefreshToken, ActionLog]),
+  ],
   controllers: [UsersController],
   providers: [UsersService],
 })

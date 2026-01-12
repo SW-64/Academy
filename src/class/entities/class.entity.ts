@@ -13,11 +13,12 @@ import {
 } from 'typeorm';
 import { StudentClass } from './../../student-class/entities/student-class.entity';
 
+@Entity()
 export class Class {
   @PrimaryGeneratedColumn({ name: 'class_id' })
   classId: number;
 
-  @Column({ name: 'class_name', type: 'string' })
+  @Column({ name: 'class_name' })
   className: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
