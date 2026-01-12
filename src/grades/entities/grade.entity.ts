@@ -2,16 +2,19 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
+  Unique,
 } from 'typeorm';
 
-import { Student } from '../../students/entities/student.entity';
 import { Exam } from '../../exam/entities/exam.entity';
+import { Student } from '../../students/entities/student.entity';
+import { GradeWrongAnswer } from './grade-wrong-answer.entity';
 
 export enum Level {
   A = 'A',
@@ -20,45 +23,55 @@ export enum Level {
   D = 'D',
   F = 'F',
 }
-@Index(['examId']) // 시험별 성적 목록 조회
-@Index(['examId', 'studentId'], { unique: true }) // 시험+학생 복합 (중복 방지 & 성적 조회)
-@Index(['deletedAt']) // 소프트 삭제 조건
-@Entity()
+
+@Entity({ name: 'grade' })
+@Unique('uq_grade_exam_student', ['examId', 'studentId'])
+@Index('idx_grade_exam', ['examId'])
+@Index('idx_grade_student', ['studentId'])
 export class Grade {
-  @PrimaryGeneratedColumn({ name: 'grade_id', comment: '성적 id' })
+  @PrimaryGeneratedColumn({ type: 'int', name: 'grade_id' })
   gradeId: number;
 
-  @Column({ name: 'exam_id', comment: '시험 id' })
+  @Column({ type: 'int', name: 'exam_id', comment: '시험 ID' })
   examId: number;
-
-  @Column({ name: 'student_id', comment: '학생 id' })
-  studentId: number;
-
-  @Column({ comment: '점수' })
-  score: number;
-
-  @Column({ type: 'enum', enum: Level, comment: '등급' })
-  level: Level;
-
-  @Column('text', { nullable: true, comment: '코멘트' })
-  comment: string | null;
-
-  @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at', comment: '수정날짜' })
-  updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'deleted_at', nullable: true, comment: '삭제날짜' })
-  deletedAt: Date | null;
 
   @ManyToOne(() => Exam, (exam) => exam.grades, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'exam_id' })
   exam: Exam;
 
-  @ManyToOne(() => Student, (student) => student.grades, {
-    onDelete: 'CASCADE',
-  })
+  @Column({ type: 'int', name: 'student_id', comment: '학생 ID' })
+  studentId: number;
+
+  @ManyToOne(() => Student, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'student_id' })
   student: Student;
+
+  @Column({ type: 'int', nullable: true, name: 'score', comment: '점수' })
+  score: number | null;
+
+  @Column({ type: 'int', nullable: true, name: 'level', comment: '등급(선택)' })
+  level: number | null;
+
+  @Column({ type: 'text', nullable: true, name: 'comment', comment: '코멘트' })
+  comment: string | null;
+
+  @Column({
+    type: 'boolean',
+    name: 'is_taken',
+    default: false,
+    comment: '응시 여부',
+  })
+  isTaken: boolean;
+
+  @Column({ type: 'int', name: 'rank', nullable: true, comment: '반 내 순위' })
+  rank: number | null;
+
+  @CreateDateColumn({ type: 'datetime', name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
+  updatedAt: Date;
+
+  @OneToMany(() => GradeWrongAnswer, (gd) => gd.grade)
+  gradeWrongAnswer: GradeWrongAnswer[];
 }

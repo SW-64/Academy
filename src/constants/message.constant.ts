@@ -120,6 +120,12 @@ export const MESSAGES = {
         GET: '시험 일정이 조회되었습니다.',
         UPDATE: '시험 일정이 수정되었습니다.',
         DELETE: '시험 일정이 삭제되었습니다.',
+        CREATE_EXAM_AVERAGE: '시험 평균 점수가 생성되었습니다.',
+        GET_WRONG_ANSWERS: '시험 오답 문제들이 조회되었습니다.',
+        CALCULATE_ERROR_RATES: '시험 오답률이 계산되었습니다.',
+        GET_ERROR_RATES: '시험 오답률이 조회되었습니다.',
+        CALCULATE_RANKINGS: '시험 등수가 계산되었습니다.',
+        GET_RANKINGS: '시험 등수가 조회되었습니다.',
       },
 
       ERROR: {
@@ -139,6 +145,12 @@ export const MESSAGES = {
           EXAM_DATE_REQUIRED: '시험 날짜는 필수 입력 항목입니다.',
           EXAM_INVALID_FORMAT: '시험 이름은 문자열이어야 합니다.',
           STUDENT_AVERAGE_REQUIRED: '학생 평균은 필수 입력 항목입니다.',
+          EXAM_QUESTION_REQUIRED: '문항 번호는 필수 입력 항목입니다.',
+          EXAM_QUESTION_INVALID_FORMAT: '문항 번호는 1 이상의 정수여야 합니다.',
+          EXAM_POINTS_REQUIRED: '배점은 필수 입력 항목입니다.',
+          EXAM_POINTS_INVALID_FORMAT: '배점은 1 이상의 정수여야 합니다.',
+          EXAM_QUESTION_POINTS_LENGTH_MISMATCH:
+            '문항 번호와 배점의 개수가 일치하지 않습니다.',
         },
         UPDATE: {
           YEAR_REQUIRED: '수정할 연도를 입력해주세요.',
@@ -148,6 +160,12 @@ export const MESSAGES = {
           NO_CHANGES: '변경된 정보가 없습니다.',
           YEAR_INVALID_FORMAT: '시험 연도는 정수여야 합니다.',
           EXAM_INVALID_FORMAT: '시험 이름은 문자열이어야 합니다.',
+          EXAM_QUESTION_INVALID_FORMAT: '문항 번호는 1 이상의 정수여야 합니다.',
+          EXAM_POINTS_INVALID_FORMAT: '배점은 1 이상의 정수여야 합니다.',
+          EXAM_QUESTION_POINTS_LENGTH_MISMATCH:
+            '문항 번호와 배점의 개수가 일치하지 않습니다.',
+          EXAM_DATE_INVALID_FORMAT:
+            '시험 날짜는 올바른 날짜 형식이어야 합니다.',
         },
       },
     },
