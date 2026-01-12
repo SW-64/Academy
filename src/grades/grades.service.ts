@@ -35,63 +35,63 @@ export class GradesService {
     private readonly actionLogRepository: Repository<ActionLog>,
   ) {}
 
-  //시험점수 생성
-  async createGrade(
-    examId: number,
-    { studentId, score, comment }: CreateGradeDto,
-    adminId: number,
-  ) {
-    //1.해당 시험 일정이 존재하는지
-    const existedExam = await this.examRepository.findOneBy({ examId });
-    if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
-    }
-    //2.DB에 등록되어있는 학생인지
-    const existedStudent = await this.studentRepository.findOne({
-      where: { studentId },
-      relations: { user: true },
-      select: { studentId: true, user: { status: true } },
-    });
+  // //시험점수 생성
+  // async createGrade(
+  //   examId: number,
+  //   { studentId, score, comment }: CreateGradeDto,
+  //   adminId: number,
+  // ) {
+  //   //1.해당 시험 일정이 존재하는지
+  //   const existedExam = await this.examRepository.findOneBy({ examId });
+  //   if (!existedExam) {
+  //     throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
+  //   }
+  //   //2.DB에 등록되어있는 학생인지
+  //   const existedStudent = await this.studentRepository.findOne({
+  //     where: { studentId },
+  //     relations: { user: true },
+  //     select: { studentId: true, user: { status: true } },
+  //   });
 
-    if (!existedStudent) {
-      throw new NotFoundException(MESSAGES.ADMIN.STUDENT.ERROR.NOT_FOUND);
-    }
-    if (existedStudent.user.status !== Status.approved) {
-      throw new BadRequestException(
-        MESSAGES.ADMIN.GRADE.ERROR.STUDENT_NOT_APPROVED,
-      );
-    }
-    //3.시험점수가 이미 등록되어 있는 경우
-    const existedGrade = await this.gradeRepository.findOne({
-      where: { examId, studentId },
-    });
-    if (existedGrade) {
-      throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.ALREADY_EXISTS);
-    }
+  //   if (!existedStudent) {
+  //     throw new NotFoundException(MESSAGES.ADMIN.STUDENT.ERROR.NOT_FOUND);
+  //   }
+  //   if (existedStudent.user.status !== Status.approved) {
+  //     throw new BadRequestException(
+  //       MESSAGES.ADMIN.GRADE.ERROR.STUDENT_NOT_APPROVED,
+  //     );
+  //   }
+  //   //3.시험점수가 이미 등록되어 있는 경우
+  //   const existedGrade = await this.gradeRepository.findOne({
+  //     where: { examId, studentId },
+  //   });
+  //   if (existedGrade) {
+  //     throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.ALREADY_EXISTS);
+  //   }
 
-    //4. 시험점수 생성
-    const level = this.calculateLevel(score);
-    const grade = await this.gradeRepository.save({
-      examId,
-      studentId,
-      score,
-      level,
-      comment: comment ?? null,
-    });
+  //   //4. 시험점수 생성
+  //   const level = this.calculateLevel(score);
+  //   const grade = await this.gradeRepository.save({
+  //     examId,
+  //     studentId,
+  //     score,
+  //     level,
+  //     comment: comment ?? null,
+  //   });
 
-    // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: adminId,
-      actorType: 'admin',
-      action: 'CREATE_GRADE',
-      targetType: 'grade',
-      targetId: grade.gradeId,
-      description: `Admin created a grade for student( studentId :  ${studentId})`,
-      createdAt: new Date(),
-    });
+  //   // 로그 저장
+  //   await this.actionLogRepository.save({
+  //     actorId: adminId,
+  //     actorType: 'admin',
+  //     action: 'CREATE_GRADE',
+  //     targetType: 'grade',
+  //     targetId: grade.gradeId,
+  //     description: `Admin created a grade for student( studentId :  ${studentId})`,
+  //     createdAt: new Date(),
+  //   });
 
-    return grade;
-  }
+  //   return grade;
+  // }
 
   //시험점수 전체조회
   async getAllGrades(
@@ -149,54 +149,55 @@ export class GradesService {
     return grade;
   }
 
-  //시험점수 수정
-  async updateGrade(
-    examId: number,
-    gradeId: number,
-    { score, comment }: UpdateGradeDto,
-    adminId: number,
-  ) {
-    //1.시험일정 존재하는지
-    const existedExam = await this.examRepository.findOneBy({ examId });
-    if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
-    }
-    //2.시험성적 존재하는지
-    const existedGrade = await this.gradeRepository.findOne({
-      where: { examId, gradeId },
-    });
-    if (!existedGrade) {
-      throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
-    }
-    //3.내용이 동일한 경우
-    const patch: Partial<Grade> = {};
-    if (comment !== undefined) patch.comment = comment;
-    if (score !== undefined) {
-      patch.score = score;
-      patch.level = this.calculateLevel(score);
-    }
+  // //시험점수 수정
+  // async updateGrade(
+  //   examId: number,
+  //   gradeId: number,
+  //   { score, comment }: UpdateGradeDto,
+  //   adminId: number,
+  // ) {
+  //   //1.시험일정 존재하는지
+  //   const existedExam = await this.examRepository.findOneBy({ examId });
+  //   if (!existedExam) {
+  //     throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
+  //   }
+  //   //2.시험성적 존재하는지
+  //   const existedGrade = await this.gradeRepository.findOne({
+  //     where: { examId, gradeId },
+  //   });
+  //   if (!existedGrade) {
+  //     throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
+  //   }
+  //   //3.내용이 동일한 경우
+  //   const patch: Partial<Grade> = {};
+  //   if (comment !== undefined) patch.comment = comment;
+  //   if (score !== undefined) {
+  //     patch.score = score;
+  //     patch.level = this.calculateLevel(score);
+  //   }
 
-    if (Object.keys(patch).length === 0)
-      throw new BadRequestException(
-        MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.NO_CHANGES,
-      );
+  //   if (Object.keys(patch).length === 0)
+  //     throw new BadRequestException(
+  //       MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.NO_CHANGES,
+  //     );
 
-    await this.gradeRepository.update({ examId, gradeId }, patch);
+  //   await this.gradeRepository.update({ examId, gradeId }, patch);
 
-    // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: adminId,
-      actorType: 'admin',
-      action: 'UPDATE_GRADE',
-      targetType: 'grade',
-      targetId: gradeId,
-      description: `Admin updated a grade (gradeId: ${gradeId})`,
-      changes: patch,
-      createdAt: new Date(),
-    });
-    return;
-  }
+  //   // 로그 저장
+  //   await this.actionLogRepository.save({
+  //     actorId: adminId,
+  //     actorType: 'admin',
+  //     action: 'UPDATE_GRADE',
+  //     targetType: 'grade',
+  //     targetId: gradeId,
+  //     description: `Admin updated a grade (gradeId: ${gradeId})`,
+  //     changes: patch,
+  //     createdAt: new Date(),
+  //   });
+  //   return;
+  // }
 
+  /*
   //시험점수 삭제
   async deleteGrade(examId: number, gradeId: number, adminId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
@@ -222,7 +223,7 @@ export class GradesService {
     });
     return;
   }
-
+  */
   // 등급계산
   private calculateLevel(score: number): Level {
     if (score >= 90) {

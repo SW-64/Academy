@@ -34,7 +34,8 @@ export class HomeworkService {
     private readonly studentClassRepo: Repository<StudentClass>,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     @InjectRepository(TextbookChapter)
     private readonly chapterRepo: Repository<TextbookChapter>,
     @InjectRepository(Progress)

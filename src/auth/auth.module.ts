@@ -10,9 +10,13 @@ import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt-strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh-token.strategy';
+import { ActionLog } from '../action-logs/entities/action-logs.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, RefreshToken]), PassportModule],
+  imports: [
+    TypeOrmModule.forFeature([User, RefreshToken, ActionLog]),
+    PassportModule,
+  ],
   controllers: [AuthController],
   providers: [
     AuthService,

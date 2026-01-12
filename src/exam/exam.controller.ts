@@ -27,7 +27,7 @@ import { ExamService } from './exam.service';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 
-@Controller('exams')
+@Controller('')
 export class ExamController {
   constructor(private readonly examService: ExamService) {}
   /**
@@ -37,7 +37,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('')
+  @Post('exams')
   async createExam(
     @UserInfo() admin: PartialUser,
     @Body() createExamDto: CreateExamDto,
@@ -56,7 +56,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('')
+  @Get('exams')
   async getExamsAll(@Query('page') page = 1, @Query('limit') limit = 10) {
     const _page = Math.max(Number(page) || 1, 1);
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
@@ -77,7 +77,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/:examId')
+  @Get('exams/:examId')
   async getExamOne(@Param('examId', ParseIntPipe) examId: number) {
     const data = await this.examService.findExam(examId);
 
@@ -95,7 +95,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch('/:examId')
+  @Patch('exams/:examId')
   async updateExam(
     @Param('examId', ParseIntPipe) examId: number,
     @Body() updateExamDto: UpdateExamDto,
@@ -114,7 +114,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Delete('/:examId')
+  @Delete('exams/:examId')
   async deleteExam(
     @Param('examId', ParseIntPipe) examId: number,
     @UserInfo() admin: PartialUser,
@@ -132,7 +132,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/:examId/average')
+  @Post('exams/:examId/average')
   async createExamAverage(
     @Param('examId', ParseIntPipe) examId: number,
     @UserInfo() admin: PartialUser,
@@ -140,8 +140,105 @@ export class ExamController {
     const data = await this.examService.createExamAverage(examId, admin.userId);
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.SUCCESS.CREATE_EXAM_AVERAGE,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.CREATE_EXAM_AVERAGE,
       data: data,
+    };
+  }
+
+  /**
+   * 시험 오답 확인
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/classes/:classId/exams/:examId/wrong-answers')
+  async getExamWrongAnswers(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    const data = await this.examService.getExamWrongAnswers(examId, classId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.GET_WRONG_ANSWERS,
+      data,
+    };
+  }
+
+  /**
+   * 시험 오답률 계산
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/classes/:classId/exams/:examId/error-rates')
+  async calculateExamErrorRates(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    const data = await this.examService.calculateExamErrorRates(
+      examId,
+      classId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.CALCULATE_ERROR_RATES,
+      data,
+    };
+  }
+
+  /**
+   * 시험 오답률 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/classes/:classId/exams/:examId/error-rates')
+  async getExamErrorRates(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    const data = await this.examService.getExamErrorRates(examId, classId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.GET_ERROR_RATES,
+      data,
+    };
+  }
+
+  /**
+   * 시험 등수 계산
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('/classes/:classId/exams/:examId/rankings')
+  async calculateRankings(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    await this.examService.calculateExamRankings(examId, classId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.CALCULATE_RANKINGS,
+    };
+  }
+
+  /**
+   * 시험 등수 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/classes/:classId/exams/:examId/rankings')
+  getRankings(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    const data = this.examService.getExamRankings(examId, classId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.GET_RANKINGS,
+      data,
     };
   }
 }
