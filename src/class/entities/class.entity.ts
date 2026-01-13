@@ -12,6 +12,7 @@ import {
   Index,
 } from 'typeorm';
 import { StudentClass } from './../../student-class/entities/student-class.entity';
+import { ClassMaterial } from '../../materials/entities/class-material.entity';
 
 @Entity()
 export class Class {
@@ -35,4 +36,7 @@ export class Class {
 
   @OneToMany(() => StudentClass, (sc) => sc.clazz)
   studentClasses: StudentClass[];
+
+  @OneToMany(() => ClassMaterial, (cm) => cm.class)
+  classMaterials: ClassMaterial[];
 }
