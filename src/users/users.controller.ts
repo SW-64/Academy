@@ -222,7 +222,7 @@ export class UsersController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch('/:studentId/link-parent/:parentId')
+  @Patch('link-parent/students/:studentId/parents/:parentId')
   async linkStudentParent(
     @Param('studentId', ParseIntPipe) studentId: number,
     @Param('parentId', ParseIntPipe) parentId: number,
@@ -245,7 +245,7 @@ export class UsersController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch('/:studentId/unlink-parent/:parentId')
+  @Patch('unlink-parent/students/:studentId/parents/:parentId')
   async unlinkStudentParent(
     @Param('studentId', ParseIntPipe) studentId: number,
     @Param('parentId', ParseIntPipe) parentId: number,

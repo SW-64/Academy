@@ -63,8 +63,13 @@ export class Grade {
   })
   isTaken: boolean;
 
-  @Column({ type: 'int', name: 'rank', nullable: true, comment: '반 내 순위' })
-  rank: number | null;
+  @Column({
+    type: 'int',
+    name: 'ranking',
+    nullable: true,
+    comment: '반 내 순위',
+  })
+  ranking: number | null;
 
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;

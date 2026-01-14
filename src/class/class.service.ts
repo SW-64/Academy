@@ -12,6 +12,7 @@ import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { StudentClass } from './../student-class/entities/student-class.entity';
 import { ActionLog } from './../action-logs/entities/action-logs.entity';
+import { Student } from './../students/entities/student.entity';
 
 @Injectable()
 export class ClassService {
@@ -22,6 +23,8 @@ export class ClassService {
     private readonly classTextbookRepository: Repository<ClassTextbook>,
     @InjectRepository(StudentClass)
     private readonly studentClassRepository: Repository<StudentClass>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
     @InjectRepository(ActionLog)
     private readonly actionLogRepository: Repository<ActionLog>,
   ) {}
@@ -61,12 +64,17 @@ export class ClassService {
     if (!existedClass) {
       throw new NotFoundException(MESSAGES.ADMIN.CLASS.ERROR.NOT_FOUND);
     }
-    const students = await this.classRepository.find({
+    const students = await this.classRepository.findOne({
       where: { classId },
-      relations: ['studentClasses', 'studentClasses.student'],
+      relations: [
+        'studentClasses',
+        'studentClasses.student',
+        'studentClasses.student.user',
+      ],
       select: {
         studentClasses: {
-          students: {
+          studentClassId: true,
+          student: {
             studentId: true,
             grade: true,
             school: true,
@@ -114,7 +122,7 @@ export class ClassService {
       const targetIds = [...new Set(updateClassDto.studentIds)];
 
       // studentIds가 실제 존재하는 학생인지 검증
-      const students = await this.studentClassRepository.find({
+      const students = await this.studentRepository.find({
         where: { studentId: In(targetIds) },
         select: { studentId: true },
       });
@@ -136,35 +144,36 @@ export class ClassService {
       //제거/추가 계산
       const removeIds = [...currentSet].filter((id) => !validSet.has(id)); // 기존 - 최종
       const addIds = targetIds.filter((id) => !currentSet.has(id)); // 최종 - 기존
-
+      console.log(removeIds, addIds);
       if (removeIds.length) {
-        await this.studentClassRepository.update(
-          { classId, studentId: In(removeIds) },
-          { deletedAt: new Date() as any }, // deletedAt 타입에 맞게
-        );
-        //추가: insert
-        if (addIds.length) {
-          await this.studentClassRepository
-            .createQueryBuilder()
-            .insert()
-            .into(StudentClass)
-            .values(addIds.map((sid) => ({ classId, studentId: sid })))
-            .execute();
-        }
-
-        // 로그 저장
-        await this.actionLogRepository.save({
-          actorId: adminId,
-          actorType: 'admin',
-          action: 'UPDATE_CLASS',
-          targetType: 'class',
-          targetId: classId,
-          description: `Admin updated a class (classId: ${classId})`,
-          changes: updateClassDto,
-          createdAt: new Date(),
+        await this.studentClassRepository.delete({
+          classId,
+          studentId: In(removeIds),
         });
-        return;
       }
+
+      //추가: insert
+      if (addIds.length) {
+        await this.studentClassRepository
+          .createQueryBuilder()
+          .insert()
+          .into(StudentClass)
+          .values(addIds.map((sid) => ({ classId, studentId: sid })))
+          .execute();
+      }
+
+      // 로그 저장
+      await this.actionLogRepository.save({
+        actorId: adminId,
+        actorType: 'admin',
+        action: 'UPDATE_CLASS',
+        targetType: 'class',
+        targetId: classId,
+        description: `Admin updated a class (classId: ${classId})`,
+        changes: updateClassDto,
+        createdAt: new Date(),
+      });
+      return;
     }
   }
 
@@ -198,8 +207,10 @@ export class ClassService {
 
     const textbooks = await this.classTextbookRepository.find({
       where: { classId },
-      relations: ['textbook', 'class_textbook'],
+      relations: ['textbook'],
       select: {
+        classTextbookId: true,
+        classId: true,
         textbook: {
           textbookId: true,
           name: true,
@@ -209,6 +220,7 @@ export class ClassService {
         },
       },
     });
+
     return textbooks;
   }
 }
