@@ -36,32 +36,35 @@ export class Material {
   })
   description: string | null;
 
-  // S3 저장 정보
+  // S3 저장 정보 (S3 연동 전 테스트를 위해 nullable)
   @Column({
     type: 'varchar',
     length: 100,
     name: 's3_bucket',
+    nullable: true,
     comment: 'S3 버킷명',
   })
-  s3Bucket: string;
+  s3Bucket: string | null;
 
   @Index('uq_material_s3_key', { unique: true })
   @Column({
     type: 'varchar',
     length: 512,
     name: 's3_key',
+    nullable: true,
     comment: 'S3 오브젝트 키(UUID 권장)',
   })
-  s3Key: string;
+  s3Key: string | null;
 
-  // 파일 메타(다운로드/표시/운영에 유용)
+  // 파일 메타(다운로드/표시/운영에 유용) (S3 연동 전 테스트를 위해 nullable)
   @Column({
     type: 'varchar',
     length: 255,
     name: 'original_file_name',
+    nullable: true,
     comment: '원본 파일명(다운로드 파일명 용도)',
   })
-  originalFileName: string;
+  originalFileName: string | null;
 
   @Column({
     type: 'varchar',
@@ -75,11 +78,11 @@ export class Material {
   @Column({
     type: 'bigint',
     name: 'size_bytes',
+    nullable: true,
     comment: '파일 크기(bytes)',
   })
-  sizeBytes: number;
+  sizeBytes: number | null;
 
-  // timestamps
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 

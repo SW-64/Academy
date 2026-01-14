@@ -14,8 +14,8 @@ import { Class } from '../../class/entities/class.entity';
 
 @Entity({ name: 'class_material' })
 @Unique('uq_cm_class_material', ['classId', 'materialId'])
-@Index('idx_cm_class', ['classId'])
-@Index('idx_cm_material', ['materialId'])
+@Index('idx_cm_material_deleted', ['materialId', 'deletedAt'])
+@Index('idx_cm_class_deleted', ['classId', 'deletedAt'])
 export class ClassMaterial {
   @PrimaryGeneratedColumn({ type: 'int', name: 'class_material_id' })
   classMaterialId: number;
