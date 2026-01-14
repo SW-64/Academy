@@ -335,6 +335,7 @@ export const MESSAGES = {
         UPDATE: '학습자료가 성공적으로 수정되었습니다.',
         DELETE: '학습자료가 성공적으로 삭제되었습니다.',
         UPLOAD: '학습자료 파일이 성공적으로 업로드되었습니다.',
+        DOWNLOAD_URL: '다운로드 링크가 발급되었습니다.',
       },
 
       ERROR: {
@@ -342,6 +343,8 @@ export const MESSAGES = {
         CLASS_NOT_FOUND: '존재하지 않는 반(classId)이 포함되어 있습니다.',
         FILE_REQUIRED: '업로드할 PDF 파일을 선택해 주세요.',
         INVALID_FILE_TYPE: 'PDF 파일만 업로드할 수 있습니다.',
+        FILE_NOT_UPLOADED: '파일이 아직 업로드되지 않았습니다.',
+        FORBIDDEN: '해당 학습자료에 접근 권한이 없습니다.',
       },
 
       VALIDATION: {
@@ -403,6 +406,9 @@ export const MESSAGES = {
       SUCCESS: {
         GET: '학생 홈 정보 조회에 성공했습니다.',
       },
+    },
+    ERROR: {
+      NOT_FOUND: '학생 정보를 찾을 수 없습니다.',
     },
   },
 

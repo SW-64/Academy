@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -21,6 +22,16 @@ import { UpdateMaterialDto } from './dto/update-material.dto';
 
 import { randomUUID } from 'crypto';
 import { S3Service } from '../s3/s3.service';
+import { Student } from '../students/entities/student.entity';
+import { StudentClass } from '../student-class/entities/student-class.entity';
+
+type StudentMaterialListItem = {
+  materialId: number;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+  hasFile: boolean;
+};
 
 @Injectable()
 export class MaterialsService {
@@ -33,6 +44,10 @@ export class MaterialsService {
     private readonly classMaterialRepository: Repository<ClassMaterial>,
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
+    @InjectRepository(StudentClass)
+    private readonly studentClassRepository: Repository<StudentClass>,
   ) {}
 
   /**
@@ -470,6 +485,154 @@ export class MaterialsService {
       originalFileName: safeOriginalName,
       mimeType: file.mimetype || 'application/pdf',
       sizeBytes: file.size,
+    };
+  }
+
+  // 학생용 학습자료 다운로드 URL 발급
+  async getStudentMaterialDownloadUrl(materialId: number, userId: number) {
+    // 1) 학생 조회(userId -> studentId)
+    const student = await this.studentRepository.findOne({
+      where: { userId, deletedAt: null },
+      select: ['studentId', 'userId'],
+    });
+
+    // 2) material 존재 + 업로드 완료 여부 확인
+    const material = await this.materialRepository.findOne({
+      where: { materialId, deletedAt: null },
+      select: [
+        'materialId',
+        's3Bucket',
+        's3Key',
+        'originalFileName',
+        'mimeType',
+        'sizeBytes',
+      ],
+    });
+
+    if (!material) {
+      throw new NotFoundException(MESSAGES.ADMIN.MATERIAL.ERROR.NOT_FOUND);
+    }
+
+    // 업로드 전(material에 s3Key가 없는 상태) 방어
+    if (!material.s3Bucket || !material.s3Key) {
+      throw new BadRequestException(
+        MESSAGES.ADMIN.MATERIAL.ERROR.FILE_NOT_UPLOADED,
+      );
+    }
+
+    // 3) 권한 체크: student_class(sc) ↔ class_material(cm) 조인으로 존재 여부 확인
+    // sc.deleted_at IS NULL, cm.deleted_at IS NULL 조건 필수
+    const allowed = await this.studentClassRepository
+      .createQueryBuilder('sc')
+      .innerJoin(
+        ClassMaterial,
+        'cm',
+        'cm.class_id = sc.class_id AND cm.deleted_at IS NULL AND cm.material_id = :materialId',
+        { materialId },
+      )
+      .where('sc.student_id = :studentId', { studentId: student.studentId })
+      .andWhere('sc.deleted_at IS NULL')
+      .getExists();
+
+    if (!allowed) {
+      throw new ForbiddenException(
+        MESSAGES.ADMIN.MATERIAL.ERROR.FORBIDDEN ??
+          '해당 자료에 접근 권한이 없습니다.',
+      );
+    }
+
+    // 4) Presigned URL 발급
+    const url = await this.s3Service.getPresignedDownloadUrl({
+      bucket: material.s3Bucket,
+      key: material.s3Key,
+      fileName: material.originalFileName ?? 'material.pdf',
+      expiresInSeconds: 120, // 2분 권장(필요시 조절)
+    });
+
+    return {
+      materialId: material.materialId,
+      url,
+      expiresInSeconds: 120,
+      fileName: material.originalFileName,
+    };
+  }
+
+  // 학생용 학습자료 목록 조회
+  async getStudentMaterials(
+    userId: number,
+    options: IPaginationOptions,
+    sortOption: 'created_desc' | 'title_asc',
+    classId: number | null,
+  ): Promise<Pagination<StudentMaterialListItem>> {
+    // 1) userId -> studentId
+    const student = await this.studentRepository.findOne({
+      where: { userId, deletedAt: null },
+      select: ['studentId'],
+    });
+
+    if (!student) {
+      throw new NotFoundException(MESSAGES.STUDENTS.ERROR.NOT_FOUND);
+    }
+
+    // 2) 내 반(student_class) + 배포(class_material)로 접근 가능한 material만 조인
+    const qb = this.materialRepository
+      .createQueryBuilder('m')
+      .innerJoin(
+        ClassMaterial,
+        'cm',
+        'cm.material_id = m.material_id AND cm.deleted_at IS NULL',
+      )
+      .innerJoin(
+        StudentClass,
+        'sc',
+        'sc.class_id = cm.class_id AND sc.deleted_at IS NULL AND sc.student_id = :studentId',
+        { studentId: student.studentId },
+      )
+      .where('m.deleted_at IS NULL')
+      .distinct(true);
+
+    // (선택) 특정 반만 보기
+    if (classId && classId > 0) {
+      qb.andWhere('cm.class_id = :classId', { classId });
+    }
+
+    // 3) 목록 최소 필드만 선택
+    // hasFile: s3_key 존재 여부로 계산
+    qb.select([
+      'm.materialId',
+      'm.title',
+      'm.createdAt',
+      'm.updatedAt',
+      'm.s3Key',
+    ]);
+
+    // 4) 정렬
+    switch (sortOption) {
+      case 'title_asc':
+        qb.orderBy('m.title', 'ASC').addOrderBy('m.material_id', 'DESC');
+        break;
+      case 'created_desc':
+      default:
+        qb.orderBy('m.created_at', 'DESC').addOrderBy('m.material_id', 'DESC');
+        break;
+    }
+
+    // 5) paginate
+    // paginate가 raw select를 다룰 때는 getRawMany 기반으로도 동작하지만,
+    // 타입 캐스팅을 위해 아래처럼 transform을 권장
+    const page = await paginate(qb, options);
+
+    // items를 StudentMaterialListItem 형태로 변환
+    const items: StudentMaterialListItem[] = page.items.map((m: any) => ({
+      materialId: m.materialId,
+      title: m.title,
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
+      hasFile: Boolean(m.s3Key),
+    }));
+    return {
+      ...page,
+      items,
     };
   }
 }
