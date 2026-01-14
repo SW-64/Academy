@@ -1,4 +1,6 @@
 import {
+  ArrayUnique,
+  IsArray,
   IsDateString,
   IsInt,
   IsOptional,
@@ -7,6 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
+import { Type } from 'class-transformer';
 
 export class UpdateTextbookDto {
   /**
@@ -30,4 +33,25 @@ export class UpdateTextbookDto {
   })
   @Min(1)
   grade: number;
+
+  /**
+   * 클래스 목록
+   *
+   */
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique({
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.CLASS_ID_DUPLICATED,
+  })
+  @Type(() => Number) // 바디(JSON)에서 들어오는 값을 Number로 변환
+  @IsInt({
+    each: true,
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.CLASS_ID_INVALID_FORMAT,
+  })
+  @Min(1, {
+    each: true,
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.CLASS_ID_INVALID_FORMAT,
+  })
+  classList?: number[];
 }

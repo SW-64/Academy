@@ -126,6 +126,7 @@ export const MESSAGES = {
         GET_ERROR_RATES: '시험 오답률이 조회되었습니다.',
         CALCULATE_RANKINGS: '시험 등수가 계산되었습니다.',
         GET_RANKINGS: '시험 등수가 조회되었습니다.',
+        UPDATE_WRONG_ANSWERS: '시험 오답 문제가 수정되었습니다.',
       },
 
       ERROR: {
@@ -135,6 +136,9 @@ export const MESSAGES = {
           DELETE: '시험 일정 삭제 권한이 없습니다.',
         },
         NOT_FOUND: '시험 일정이 존재하지 않습니다.',
+        ALREADY_EXISTS: '이미 존재하는 시험 일정입니다.',
+        NO_EXAMS: '등록된 시험 일정이 없습니다.',
+        INVALID_EXAM_DETAIL: '유효하지 않은 시험 문항입니다.',
       },
 
       VALIDATION: {
@@ -267,6 +271,7 @@ export const MESSAGES = {
       ERROR: {
         NOT_FOUND: '유저 계정이 없습니다.',
         ALREADY_LINKED: '이미 연동된 학생-부모 관계입니다.',
+        NO_CHANGE: '변경된 정보가 없습니다.',
       },
     },
     TEXTBOOK: {
@@ -276,10 +281,14 @@ export const MESSAGES = {
           GRADE_REQUIRED: '교재 학년은 필수 입력 항목입니다.',
           LARGE_UNIT_REQUIRED: '대단원 개수는 필수 입력 항목입니다.',
           SMALL_UNIT_REQUIRED: '소단원 개수는 필수 입력 항목입니다.',
+          CLASS_ID_INVALID_FORMAT: '반 아이디는 1 이상의 정수여야 합니다.',
+          CLASS_ID_DUPLICATED: '반 아이디가 중복되었습니다.',
         },
         UPDATE: {
           NAME_INVALID_FORMAT: '교재 이름은 문자열이어야 합니다.',
           GRADE_INVALID_FORMAT: '교재 학년은 정수여야 합니다.',
+          CLASS_ID_INVALID_FORMAT: '반 아이디는 1 이상의 정수여야 합니다.',
+          CLASS_ID_DUPLICATED: '반 아이디가 중복되었습니다.',
         },
       },
       SUCCESS: {
@@ -293,6 +302,7 @@ export const MESSAGES = {
       ERROR: {
         NOT_FOUND: '교재를 찾을 수 없습니다.',
         NO_CHANGE: '변경된 정보가 없습니다.',
+        INVALID_CLASS_ID: '존재하지 않는 반 아이디가 포함되어 있습니다.',
       },
     },
     CLASS: {
@@ -307,13 +317,14 @@ export const MESSAGES = {
       },
       ERROR: {
         NOT_FOUND: '반을 찾을 수 없습니다.',
+        STUDENT_NOT_IN_CLASS: '해당 학생은 반에 속해있지 않습니다.',
       },
       SUCCESS: {
         CREATE: '반이 성공적으로 생성되었습니다.',
         GET_ALL: '반 전체 조회에 성공했습니다.',
         UPDATE: '반이 성공적으로 수정되었습니다.',
         DELETE: '반이 성공적으로 삭제되었습니다.',
-        GET_ALL_OF_CLASS: '반에 배정된 교재 전체 조회에 성공했습니다.',
+        GET_ALL_OF_CLASS: '반에 배정된 학생 전체 조회에 성공했습니다.',
       },
     },
     HOMEWORK: {

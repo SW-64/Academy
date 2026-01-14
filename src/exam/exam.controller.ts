@@ -26,8 +26,9 @@ import { ExamService } from './exam.service';
 
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
+import { ReplaceWrongAnswersDto } from './dto/wrong-answer-patch.dto';
 
-@Controller('')
+@Controller('classes/:classId/exams')
 export class ExamController {
   constructor(private readonly examService: ExamService) {}
   /**
@@ -37,12 +38,17 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('exams')
+  @Post()
   async createExam(
     @UserInfo() admin: PartialUser,
     @Body() createExamDto: CreateExamDto,
+    @Param('classId', ParseIntPipe) classId: number,
   ) {
-    const data = await this.examService.createExam(createExamDto, admin.userId);
+    const data = await this.examService.createExam(
+      createExamDto,
+      admin.userId,
+      classId,
+    );
     return {
       statusCode: HttpStatus.CREATED,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.CREATE,
@@ -56,11 +62,15 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('exams')
-  async getExamsAll(@Query('page') page = 1, @Query('limit') limit = 10) {
+  @Get()
+  async getExamsAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
     const _page = Math.max(Number(page) || 1, 1);
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const data = await this.examService.findAllExams({
+    const data = await this.examService.findAllExams(classId, {
       page: _page,
       limit: _limit,
     });
@@ -77,9 +87,12 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('exams/:examId')
-  async getExamOne(@Param('examId', ParseIntPipe) examId: number) {
-    const data = await this.examService.findExam(examId);
+  @Get('/:examId')
+  async getExamOne(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    const data = await this.examService.findExam(examId, classId);
 
     return {
       statusCode: HttpStatus.OK,
@@ -95,13 +108,19 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch('exams/:examId')
+  @Patch('/:examId')
   async updateExam(
+    @Param('classId', ParseIntPipe) classId: number,
     @Param('examId', ParseIntPipe) examId: number,
     @Body() updateExamDto: UpdateExamDto,
     @UserInfo() admin: PartialUser,
   ) {
-    await this.examService.updateExam(examId, updateExamDto, admin.userId);
+    await this.examService.updateExam(
+      examId,
+      updateExamDto,
+      admin.userId,
+      classId,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.UPDATE,
@@ -114,12 +133,13 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Delete('exams/:examId')
+  @Delete('/:examId')
   async deleteExam(
+    @Param('classId', ParseIntPipe) classId: number,
     @Param('examId', ParseIntPipe) examId: number,
     @UserInfo() admin: PartialUser,
   ) {
-    await this.examService.deleteExam(examId, admin.userId);
+    await this.examService.deleteExam(examId, admin.userId, classId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.DELETE,
@@ -132,12 +152,17 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('exams/:examId/average')
+  @Post('/:examId/average')
   async createExamAverage(
+    @Param('classId', ParseIntPipe) classId: number,
     @Param('examId', ParseIntPipe) examId: number,
     @UserInfo() admin: PartialUser,
   ) {
-    const data = await this.examService.createExamAverage(examId, admin.userId);
+    const data = await this.examService.createExamAverage(
+      examId,
+      admin.userId,
+      classId,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.CREATE_EXAM_AVERAGE,
@@ -151,7 +176,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/classes/:classId/exams/:examId/wrong-answers')
+  @Get('/:examId/wrong-answers')
   async getExamWrongAnswers(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('classId', ParseIntPipe) classId: number,
@@ -165,12 +190,37 @@ export class ExamController {
   }
 
   /**
+   * 시험 오답 수정
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('/:examId/wrong-answers')
+  async updateExamWrongAnswers(
+    @Param('examId', ParseIntPipe) examId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+    @Body() dto: ReplaceWrongAnswersDto,
+    @UserInfo() admin: PartialUser,
+  ) {
+    await this.examService.updateExamWrongAnswers(
+      examId,
+      classId,
+      dto,
+      admin.userId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.EXAM.SUCCESS.UPDATE_WRONG_ANSWERS,
+    };
+  }
+
+  /**
    * 시험 오답률 계산
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/classes/:classId/exams/:examId/error-rates')
+  @Post('/:examId/error-rates')
   async calculateExamErrorRates(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('classId', ParseIntPipe) classId: number,
@@ -192,7 +242,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/classes/:classId/exams/:examId/error-rates')
+  @Get('/:examId/error-rates')
   async getExamErrorRates(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('classId', ParseIntPipe) classId: number,
@@ -211,7 +261,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/classes/:classId/exams/:examId/rankings')
+  @Post(':examId/rankings')
   async calculateRankings(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('classId', ParseIntPipe) classId: number,
@@ -229,7 +279,7 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/classes/:classId/exams/:examId/rankings')
+  @Get('/:examId/rankings')
   getRankings(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('classId', ParseIntPipe) classId: number,
@@ -241,4 +291,9 @@ export class ExamController {
       data,
     };
   }
+
+  /**
+   * 시험
+   * @returns
+   */
 }

@@ -35,5 +35,5 @@ export class StudentClass {
 
   @ManyToOne(() => Student, (c) => c.studentClasses, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'student_id', referencedColumnName: 'studentId' })
-  students: Student[];
+  student: Student;
 }
