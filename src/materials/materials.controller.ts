@@ -27,7 +27,7 @@ import { MaterialsService } from './materials.service';
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 
-@Controller('admin')
+@Controller('materials')
 export class MaterialsController {
   constructor(private readonly materialsService: MaterialsService) {}
 
@@ -36,7 +36,7 @@ export class MaterialsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/materials')
+  @Post('')
   async createMaterial(
     @Body() dto: CreateMaterialDto,
     @UserInfo() admin: PartialUser,
@@ -56,7 +56,7 @@ export class MaterialsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/materials')
+  @Get('')
   async getAllMaterials(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
@@ -87,7 +87,7 @@ export class MaterialsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/materials/:materialId')
+  @Get('/:materialId')
   async getMaterial(@Param('materialId', ParseIntPipe) materialId: number) {
     const data = await this.materialsService.getMaterial(materialId);
     return {
@@ -102,7 +102,7 @@ export class MaterialsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch('/materials/:materialId')
+  @Patch('/:materialId')
   async updateMaterial(
     @Param('materialId', ParseIntPipe) materialId: number,
     @Body() dto: UpdateMaterialDto,
@@ -120,7 +120,7 @@ export class MaterialsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Delete('/materials/:materialId')
+  @Delete('/:materialId')
   async deleteMaterial(
     @Param('materialId', ParseIntPipe) materialId: number,
     @UserInfo() admin: PartialUser,
@@ -137,7 +137,7 @@ export class MaterialsController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('/materials/:materialId/file')
+  @Post('/:materialId/file')
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: 25 * 1024 * 1024 }, // 예: 25MB 제한
