@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MaterialController } from './materials.controller';
-import { MaterialService } from './materials.service';
+import { MaterialsController } from './materials.controller';
+import { MaterialsService } from './materials.service';
 
 describe('MaterialController', () => {
-  let controller: MaterialController;
+  let controller: MaterialsController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [MaterialController],
-      providers: [MaterialService],
+      controllers: [MaterialsController],
+      providers: [MaterialsService],
     }).compile();
 
-    controller = module.get<MaterialController>(MaterialController);
+    controller = module.get<MaterialsController>(MaterialsController);
   });
 
   it('should be defined', () => {
