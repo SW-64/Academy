@@ -5,6 +5,7 @@ import {
   HttpStatus,
   UseGuards,
   Res,
+  Get,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up.dto';
@@ -98,6 +99,21 @@ export class AuthController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.AUTH.SUCCESS.REFRESH,
+      data: data,
+    };
+  }
+
+  /**
+   * 세션/토큰 점검
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('/token')
+  async checkToken(@UserInfo() user: PartialUser) {
+    const data = await this.authService.checkToken(user.userId, user.role);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.AUTH.SUCCESS.TOKEN_VALID,
       data: data,
     };
   }
