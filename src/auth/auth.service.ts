@@ -258,7 +258,7 @@ export class AuthService {
       httpOnly: true,
       secure: this.configService.get('NODE_ENV') === 'production',
       sameSite: this.configService.get('COOKIE_SAMESITE') ?? 'lax',
-      domain: this.configService.get('COOKIE_DOMAIN') ?? undefined,
+      //domain: this.configService.get('COOKIE_DOMAIN') ?? undefined,
     } as const;
   }
 
