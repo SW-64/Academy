@@ -54,6 +54,7 @@ export class ParentsService {
     // paginate 사용
     return paginate(this.userRepository, options, {
       order: { createdAt: 'DESC' },
+      relations: ['parent', 'parent.student', 'parent.student.user'],
       where,
       select: {
         userId: true,
@@ -63,6 +64,16 @@ export class ParentsService {
         role: true,
         phone: true,
         createdAt: true,
+        parent: {
+          parentId: true,
+          student: {
+            studentId: true,
+            user: {
+              userId: true,
+              name: true,
+            },
+          },
+        },
       },
     });
   }
@@ -79,7 +90,13 @@ export class ParentsService {
       },
       select: {
         parentId: true,
-        user: { userId: true, name: true, email: true, status: true },
+        user: {
+          userId: true,
+          name: true,
+          email: true,
+          phone: true,
+          status: true,
+        },
         student: {
           studentId: true,
           userId: true,

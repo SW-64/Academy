@@ -60,6 +60,6 @@ export class Student {
   @OneToMany(() => Progress, (p) => p.student)
   progresses: Progress[];
 
-  @OneToMany(() => StudentClass, (sc) => sc.clazz)
+  @OneToMany(() => StudentClass, (sc) => sc.student)
   studentClasses: StudentClass[];
 }

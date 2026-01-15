@@ -16,7 +16,7 @@ import { Role } from '../users/entities/user.entity';
 import { MESSAGES } from './../constants/message.constant';
 import { BulkUpdateProgressCellsDto } from './dto/bulk-update-progress-cells.dto';
 
-@Controller('homework')
+@Controller('')
 export class HomeworkController {
   constructor(private readonly homeworkService: HomeworkService) {}
 
@@ -26,7 +26,7 @@ export class HomeworkController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('/class/:classId/textbooks/:textbookId/progress-grid')
+  @Get('/classes/:classId/textbooks/:textbookId/progress-grid')
   async getHomeworkProgress(
     @Param('classId', ParseIntPipe) classId: number,
     @Param('textbookId', ParseIntPipe) textbookId: number,
@@ -48,7 +48,7 @@ export class HomeworkController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch('/class/:classId/textbooks/:textbookId/progress-cells')
+  @Patch('/classes/:classId/textbooks/:textbookId/progress-cells')
   async updateHomeworkProgress(
     @Param('classId', ParseIntPipe) classId: number,
     @Param('textbookId', ParseIntPipe) textbookId: number,

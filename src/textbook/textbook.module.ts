@@ -6,10 +6,17 @@ import { Admin } from './../admin/entities/admin.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
 import { Textbook } from './entities/textbook.entity';
 import { TextbookChapter } from './entities/textbook-chapter.entity';
+import { ClassTextbook } from '../class-textbook/entities/class-textbook.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Admin, ActionLog, Textbook, TextbookChapter]),
+    TypeOrmModule.forFeature([
+      Admin,
+      ActionLog,
+      Textbook,
+      TextbookChapter,
+      ClassTextbook,
+    ]),
   ],
 
   controllers: [TextbookController],

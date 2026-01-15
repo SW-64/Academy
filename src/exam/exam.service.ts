@@ -23,6 +23,7 @@ import { ActionLog } from './../action-logs/entities/action-logs.entity';
 import { ExamDetail } from './entities/exam-detail.entity';
 import { Student } from './../students/entities/student.entity';
 import { GradeWrongAnswer } from '../grades/entities/grade-wrong-answer.entity';
+import { ReplaceWrongAnswersDto } from './dto/wrong-answer-patch.dto';
 
 @Injectable()
 export class ExamService {
@@ -48,6 +49,7 @@ export class ExamService {
   async createExam(
     { examTitle, examDate, question, points }: CreateExamDto,
     adminId: number,
+    classId: number,
   ) {
     return this.dataSource.transaction(async (manager) => {
       const examRepo = manager.getRepository(Exam);
@@ -57,6 +59,7 @@ export class ExamService {
       // 1) Exam 생성
       const exam = await examRepo.save(
         examRepo.create({
+          classId,
           examTitle,
           examDate: new Date(`${examDate}T00:00:00+09:00`),
         }),
@@ -104,9 +107,13 @@ export class ExamService {
   }
 
   //시험일정 전체조회
-  async findAllExams(options?: IPaginationOptions): Promise<Pagination<Exam>> {
+  async findAllExams(
+    classId: number,
+    options?: IPaginationOptions,
+  ): Promise<Pagination<Exam>> {
     const exams = await paginate(this.examRepository, options, {
       order: { createdAt: 'DESC' },
+      where: { classId },
       select: {
         examId: true,
         examTitle: true,
@@ -120,9 +127,9 @@ export class ExamService {
   }
 
   //시험일정 상세조회
-  async findExam(examId: number) {
+  async findExam(examId: number, classId: number) {
     const existedExam = await this.examRepository.findOne({
-      where: { examId },
+      where: { examId, classId },
       relations: { examDetails: true },
       select: {
         examId: true,
@@ -145,7 +152,12 @@ export class ExamService {
   }
 
   //시험일정 수정
-  async updateExam(examId: number, dto: UpdateExamDto, adminId: number) {
+  async updateExam(
+    examId: number,
+    dto: UpdateExamDto,
+    adminId: number,
+    classId: number,
+  ) {
     const { examTitle, examDate, question, points } = dto;
 
     await this.dataSource.transaction(async (manager) => {
@@ -154,7 +166,9 @@ export class ExamService {
       const actionLogRepo = manager.getRepository(ActionLog);
 
       // 1) 시험 존재 확인
-      const existedExam = await examRepo.findOne({ where: { examId } });
+      const existedExam = await examRepo.findOne({
+        where: { examId, classId },
+      });
       if (!existedExam) {
         throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
       }
@@ -303,8 +317,11 @@ export class ExamService {
   }
 
   //시험일정 삭제
-  async deleteExam(examId: number, adminId: number) {
-    const existedExam = await this.examRepository.findOneBy({ examId });
+  async deleteExam(examId: number, adminId: number, classId: number) {
+    const existedExam = await this.examRepository.findOneBy({
+      examId,
+      classId,
+    });
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
     }
@@ -324,7 +341,7 @@ export class ExamService {
   }
 
   // 전체 학생 평균 생성
-  async createExamAverage(examId: number, adminId: number) {
+  async createExamAverage(examId: number, adminId: number, classId: number) {
     const existedExam = await this.examRepository.findOneBy({ examId });
     if (!existedExam) {
       throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
@@ -381,7 +398,12 @@ export class ExamService {
       order: { question: 'ASC' },
     });
 
-    // 3) class 소속 학생 전체
+    // examDetailId -> question 매핑
+    const questionByExamDetailId = new Map<number, number>();
+    for (const q of questions)
+      questionByExamDetailId.set(q.examDetailId, q.question);
+
+    // 3) class 소속 학생 전체 (가능하면 학생 이름은 user 테이블 기준이 더 일반적)
     const students = await this.studentRepository
       .createQueryBuilder('s')
       .innerJoin(
@@ -389,21 +411,35 @@ export class ExamService {
         'sc',
         'sc.student_id = s.student_id AND sc.deleted_at IS NULL',
       )
+      .innerJoin('user', 'u', 'u.user_id = s.user_id AND u.deleted_at IS NULL') // 또는 u.status 조건
       .where('sc.class_id = :classId', { classId })
       .andWhere('s.deleted_at IS NULL')
       .select([
         's.student_id AS studentId',
-        's.name AS name',
+        'u.name AS name',
+        'u.email AS email', // 필요하면
+        'u.phone AS phone', // 필요하면
         's.school AS school',
       ])
-      .orderBy('s.name', 'ASC')
-      .getRawMany<{ studentId: number; name: string; school: string }>();
+      .orderBy('u.name', 'ASC')
+      .getRawMany<{
+        studentId: number;
+        name: string;
+        email?: string;
+        phone?: string;
+        school: string;
+      }>();
 
     const studentIds = students.map((s) => s.studentId);
     if (studentIds.length === 0) {
       return {
-        exam,
+        exam: {
+          examId: exam.examId,
+          examTitle: exam.examTitle,
+          examDate: exam.examDate,
+        },
         questions: questions.map((q) => ({
+          examDetailId: q.examDetailId,
           question: q.question,
           points: q.points,
         })),
@@ -411,51 +447,54 @@ export class ExamService {
       };
     }
 
-    // 4) 해당 시험의 grade (학생들만)
+    // 4) grades
     const grades = await this.gradeRepository.find({
       where: { examId, studentId: In(studentIds) },
       select: ['gradeId', 'studentId', 'isTaken', 'score'],
     });
+
     const gradeByStudentId = new Map<
       number,
       { gradeId: number; isTaken: boolean; score: number | null }
     >();
-    for (const g of grades)
+    const gradeIds: number[] = [];
+    for (const g of grades) {
+      gradeIds.push(g.gradeId);
       gradeByStudentId.set(g.studentId, {
         gradeId: g.gradeId,
         isTaken: g.isTaken,
         score: g.score,
       });
+    }
 
-    // 5) 오답(grade_wrong_answer -> exam_detail -> question)
-    const gradeIds = grades.map((g) => g.gradeId);
+    // 5) 오답: exam_detail 조인 없이 exam_detail_id만 가져오기
     const wrongRows = gradeIds.length
       ? await this.gradeWrongAnswerRepository
           .createQueryBuilder('wa')
-          .innerJoin(
-            'exam_detail',
-            'ed',
-            'ed.exam_detail_id = wa.exam_detail_id',
-          )
           .where('wa.grade_id IN (:...gradeIds)', { gradeIds })
-          .select(['wa.grade_id AS gradeId', 'ed.question AS question'])
-          .orderBy('ed.question', 'ASC')
-          .getRawMany<{ gradeId: number; question: number }>()
+          .select([
+            'wa.grade_id AS gradeId',
+            'wa.exam_detail_id AS examDetailId',
+          ])
+          .getRawMany<{ gradeId: number; examDetailId: number }>()
       : [];
 
-    const wrongByGradeId = new Map<number, number[]>();
+    const wrongByGradeId = new Map<number, number[]>(); // examDetailId[]
     for (const r of wrongRows) {
       if (!wrongByGradeId.has(r.gradeId)) wrongByGradeId.set(r.gradeId, []);
-      wrongByGradeId.get(r.gradeId)!.push(r.question);
+      wrongByGradeId.get(r.gradeId)!.push(r.examDetailId);
     }
 
-    // 6) 학생 전체를 기준으로 응답 조립(Grade 없는 학생도 포함)
+    // 6) 조립
     const resultStudents = students.map((s) => {
       const g = gradeByStudentId.get(s.studentId);
-      const wrongQuestions =
-        g && wrongByGradeId.get(g.gradeId)
-          ? wrongByGradeId.get(g.gradeId)!
-          : [];
+      const wrongExamDetailIds = g ? (wrongByGradeId.get(g.gradeId) ?? []) : [];
+
+      // (옵션) 화면이 question 번호 배열을 원하면 변환
+      const wrongQuestions = wrongExamDetailIds
+        .map((id) => questionByExamDetailId.get(id))
+        .filter((v): v is number => typeof v === 'number')
+        .sort((a, b) => a - b);
 
       return {
         studentId: s.studentId,
@@ -463,6 +502,11 @@ export class ExamService {
         school: s.school,
         isTaken: g?.isTaken ?? false,
         score: g?.score ?? null,
+
+        // 저장/토글에 안전한 키
+        wrongExamDetailIds,
+
+        // 화면용(선택)
         wrongQuestions,
       };
     });
@@ -474,11 +518,207 @@ export class ExamService {
         examDate: exam.examDate,
       },
       questions: questions.map((q) => ({
+        examDetailId: q.examDetailId,
         question: q.question,
         points: q.points,
       })),
       students: resultStudents,
     };
+  }
+
+  // 시험 오답 문제 수정
+  async updateExamWrongAnswers(
+    examId: number,
+    classId: number,
+    dto: ReplaceWrongAnswersDto,
+    adminUserId: number,
+  ) {
+    const items = dto.items;
+
+    // studentId 중복 제거(마지막 값 기준) - 방어 로직
+    const itemByStudent = new Map<number, number[]>();
+    for (const it of items)
+      itemByStudent.set(it.studentId, it.wrongExamDetailIds);
+    const studentIds = Array.from(itemByStudent.keys());
+
+    // 요청에 들어온 모든 examDetailId 풀어서 검증용 set 구성
+    const requestedDetailSet = new Set<number>();
+    for (const ids of itemByStudent.values()) {
+      for (const id of ids) requestedDetailSet.add(id);
+    }
+    const requestedDetailIds = Array.from(requestedDetailSet);
+
+    return this.dataSource.transaction(async (manager) => {
+      // 1) exam이 class 소속인지
+      const exam = await manager.getRepository(Exam).findOne({
+        where: { examId, classId },
+        select: ['examId', 'classId'],
+      });
+      if (!exam)
+        throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
+
+      // 2) 학생이 class 소속인지 검증 (IN)
+      const rows = await manager
+        .createQueryBuilder()
+        .select('sc.student_id', 'studentId')
+        .from('student_class', 'sc')
+        .where('sc.class_id = :classId', { classId })
+        .andWhere('sc.deleted_at IS NULL')
+        .andWhere('sc.student_id IN (:...studentIds)', { studentIds })
+        .getRawMany<{ studentId: number }>();
+
+      const validStudentSet = new Set(rows.map((r) => Number(r.studentId)));
+      const invalidStudents = studentIds.filter(
+        (id) => !validStudentSet.has(id),
+      );
+      if (invalidStudents.length) {
+        throw new BadRequestException(
+          `${MESSAGES.ADMIN.CLASS.ERROR.STUDENT_NOT_IN_CLASS}: ${invalidStudents.join(', ')}`,
+        );
+      }
+
+      // 3) examDetail이 exam 소속인지 검증 (IN)
+      if (requestedDetailIds.length) {
+        const validDetails = await manager.getRepository(ExamDetail).find({
+          where: { examId, examDetailId: In(requestedDetailIds) },
+          select: ['examDetailId'],
+        });
+        const validDetailSet = new Set(validDetails.map((d) => d.examDetailId));
+        const invalidDetails = requestedDetailIds.filter(
+          (id) => !validDetailSet.has(id),
+        );
+        if (invalidDetails.length) {
+          throw new BadRequestException(
+            `${MESSAGES.ADMIN.EXAM.ERROR.INVALID_EXAM_DETAIL}: ${invalidDetails.join(', ')}`,
+          );
+        }
+      }
+
+      // 4) grade 조회 + 없는 학생 grade 생성
+      const gradeRepo = manager.getRepository(Grade);
+      const existingGrades = await gradeRepo.find({
+        where: { examId, studentId: In(studentIds) },
+        select: ['gradeId', 'studentId', 'isTaken'],
+      });
+
+      const gradeIdByStudentId = new Map<number, number>();
+      const existingStudentSet = new Set<number>();
+      const notTakenGradeIds: number[] = [];
+
+      for (const g of existingGrades) {
+        gradeIdByStudentId.set(g.studentId, g.gradeId);
+        existingStudentSet.add(g.studentId);
+        if (!g.isTaken) notTakenGradeIds.push(g.gradeId);
+      }
+
+      const missingStudentIds = studentIds.filter(
+        (id) => !existingStudentSet.has(id),
+      );
+      if (missingStudentIds.length) {
+        await gradeRepo
+          .createQueryBuilder()
+          .insert()
+          .into(Grade)
+          .values(
+            missingStudentIds.map((sid) => ({
+              examId,
+              studentId: sid,
+              isTaken: true,
+              score: null,
+            })),
+          )
+          .execute();
+
+        const createdGrades = await gradeRepo.find({
+          where: { examId, studentId: In(missingStudentIds) },
+          select: ['gradeId', 'studentId'],
+        });
+        for (const g of createdGrades) {
+          gradeIdByStudentId.set(g.studentId, g.gradeId);
+        }
+      }
+
+      // (선택) 기존 grade 중 isTaken=false면 true로
+      if (notTakenGradeIds.length) {
+        await gradeRepo.update(
+          { gradeId: In(notTakenGradeIds) },
+          { isTaken: true },
+        );
+      }
+
+      // 5) 기존 오답 로드 (요청에 포함된 학생들만)
+      const gradeIds = studentIds
+        .map((sid) => gradeIdByStudentId.get(sid))
+        .filter((v): v is number => typeof v === 'number');
+
+      const waRepo = manager.getRepository(GradeWrongAnswer);
+
+      const existingWrongRows = gradeIds.length
+        ? await waRepo.find({
+            where: { gradeId: In(gradeIds) },
+            select: ['gradeId', 'examDetailId'],
+          })
+        : [];
+
+      const existingSetByGrade = new Map<number, Set<number>>();
+      for (const row of existingWrongRows) {
+        if (!existingSetByGrade.has(row.gradeId))
+          existingSetByGrade.set(row.gradeId, new Set());
+        existingSetByGrade.get(row.gradeId)!.add(row.examDetailId);
+      }
+
+      // 6) 학생별 diff -> delete / insert 준비
+      const inserts: Array<{ gradeId: number; examDetailId: number }> = [];
+      const deletesByGrade = new Map<number, number[]>();
+
+      for (const [studentId, wantedIds] of itemByStudent) {
+        const gradeId = gradeIdByStudentId.get(studentId);
+        if (!gradeId) continue;
+
+        const wantSet = new Set(wantedIds);
+        const curSet = existingSetByGrade.get(gradeId) ?? new Set<number>();
+
+        // delete: cur - want
+        const toDelete: number[] = [];
+        for (const cur of curSet) {
+          if (!wantSet.has(cur)) toDelete.push(cur);
+        }
+        if (toDelete.length) deletesByGrade.set(gradeId, toDelete);
+
+        // insert: want - cur
+        for (const want of wantSet) {
+          if (!curSet.has(want)) inserts.push({ gradeId, examDetailId: want });
+        }
+      }
+
+      // 7) delete 실행 (gradeId별로 IN)
+      for (const [gradeId, detailIds] of deletesByGrade) {
+        await waRepo.delete({ gradeId, examDetailId: In(detailIds) });
+      }
+
+      // 8) insert ignore (중복 방지)
+      if (inserts.length) {
+        await waRepo
+          .createQueryBuilder()
+          .insert()
+          .into(GradeWrongAnswer)
+          .values(inserts)
+          .orIgnore()
+          .execute();
+      }
+      // 9) 로그 저장
+      await manager.getRepository(ActionLog).save({
+        actorId: adminUserId,
+        actorType: 'admin',
+        action: 'UPDATE_EXAM_WRONG_ANSWERS',
+        targetType: 'exam',
+        targetId: examId,
+        description: `Admin updated exam wrong answers (examId: ${examId})`,
+        createdAt: new Date(),
+      });
+
+      return { appliedStudents: studentIds.length };
+    });
   }
 
   // 시험 오답률 계산
@@ -661,7 +901,7 @@ export class ExamService {
       await gradeRepo
         .createQueryBuilder()
         .update(Grade)
-        .set({ rank: null })
+        .set({ ranking: null })
         .where('exam_id = :examId', { examId })
         .andWhere('student_id IN (:...studentIds)', { studentIds })
         .execute();
@@ -690,7 +930,7 @@ export class ExamService {
       let rank = 0;
       let index = 0;
 
-      const updates: Array<Pick<Grade, 'gradeId' | 'rank'>> = [];
+      const updates: Array<Pick<Grade, 'gradeId' | 'ranking'>> = [];
 
       for (const g of scored) {
         index += 1;
@@ -698,7 +938,7 @@ export class ExamService {
           rank = index;
           prevScore = g.score!;
         }
-        updates.push({ gradeId: g.gradeId, rank });
+        updates.push({ gradeId: g.gradeId, ranking: rank });
       }
 
       // 2-4) 저장
@@ -718,7 +958,6 @@ export class ExamService {
     if (!exam) throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
 
     // 1) 반 학생 전체 + 해당 시험의 grade(LEFT JOIN)
-    // ⚠️ student_class 테이블명/컬럼명은 프로젝트에 맞게 수정
     const rows = await this.studentRepository
       .createQueryBuilder('s')
       .innerJoin(
@@ -726,33 +965,27 @@ export class ExamService {
         'sc',
         'sc.student_id = s.student_id AND sc.deleted_at IS NULL',
       )
+      .innerJoin('user', 'u', 'u.user_id = s.user_id AND u.deleted_at IS NULL') // ✅ 추가
       .leftJoin(
         'grade',
         'g',
-        'g.student_id = s.student_id AND g.exam_id = :examId AND g.deleted_at IS NULL',
+        'g.student_id = s.student_id AND g.exam_id = :examId ',
         { examId },
       )
       .where('sc.class_id = :classId', { classId })
       .andWhere('s.deleted_at IS NULL')
       .select([
         's.student_id AS studentId',
-        's.name AS name',
+        'u.name AS name',
         'g.is_taken AS isTaken',
         'g.score AS score',
-        'g.rank AS rank',
+        'g.ranking AS ranking',
       ])
-      // rank가 있는 학생 먼저, 그 다음 rank 오름차순 (MySQL: (rank IS NULL) 0/1 활용)
-      .orderBy('g.rank IS NULL', 'ASC')
-      .addOrderBy('g.rank', 'ASC')
-      .addOrderBy('s.name', 'ASC')
-      .getRawMany<{
-        studentId: number;
-        name: string;
-        isTaken: 0 | 1 | null;
-        score: number | null;
-        rank: number | null;
-      }>();
-
+      .orderBy('g.ranking IS NULL', 'ASC')
+      .addOrderBy('g.ranking', 'ASC')
+      .addOrderBy('u.name', 'ASC')
+      .getRawMany();
+    console.log(rows);
     return {
       exam: { examId },
       students: rows.map((r) => ({
@@ -760,7 +993,7 @@ export class ExamService {
         name: r.name,
         isTaken: r.isTaken === null ? false : Boolean(r.isTaken),
         score: r.score ?? null,
-        rank: r.rank ?? null,
+        ranking: r.ranking ?? null,
       })),
     };
   }

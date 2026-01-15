@@ -9,7 +9,6 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
 
-import { Student } from '../students/entities/student.entity';
 import { Parent } from './../parents/entities/parent.entity';
 import { Role, Status, User } from './entities/user.entity';
 
@@ -20,6 +19,7 @@ import { MESSAGES } from './../constants/message.constant';
 import { RefreshToken } from 'src/auth/entities/refreshtoken.entity';
 import { ActionLog } from './../action-logs/entities/action-logs.entity';
 import { PartialUser } from './interfaces/partial-user.entity';
+import { Student } from './../students/entities/student.entity';
 
 @Injectable()
 export class UsersService {
@@ -32,6 +32,8 @@ export class UsersService {
     private readonly refreshTokenRepository: Repository<RefreshToken>,
     @InjectRepository(ActionLog)
     private readonly actionLogRepository: Repository<ActionLog>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
   ) {}
   // 내 정보 조회
   async getMyInfo(userId: number) {
@@ -85,6 +87,23 @@ export class UsersService {
 
     const { currentPassword, newPassword, newPasswordConfirm } =
       changePasswordDto;
+
+    const passwordOfUser = await this.userRepository.findOne({
+      where: { userId },
+      select: {
+        userId: true,
+        password: true,
+      },
+    });
+    const comparePassword = await bcrypt.compare(
+      currentPassword,
+      passwordOfUser.password,
+    );
+    if (!comparePassword) {
+      throw new BadRequestException(
+        MESSAGES.AUTH.VALIDATION.PASSWORD.CURRENT_INCORRECT,
+      );
+    }
 
     if (newPassword !== newPasswordConfirm) {
       throw new BadRequestException(
@@ -246,28 +265,71 @@ export class UsersService {
   // 유저 정보 수정
   async updateUserInfo(
     userId: number,
-    updateUserDto: UpdateUserDto,
+    { email, name, phone, grade, school }: UpdateUserDto,
     adminId: number,
   ) {
-    const updatedUser = await this.userRepository.update(
-      { userId },
-      updateUserDto,
-    );
-    if (updatedUser.affected === 0) {
-      throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
+    // 1) user patch (email/name/phone)
+    const userPatch: Record<string, any> = {};
+    if (email !== undefined) userPatch.email = email;
+    if (name !== undefined) userPatch.name = name;
+    if (phone !== undefined) userPatch.phone = phone;
+
+    // 2) student patch (grade/school)
+    const studentPatch: Record<string, any> = {};
+    if (grade !== undefined) studentPatch.grade = grade;
+    if (school !== undefined) studentPatch.school = school;
+
+    const hasUserPatch = Object.keys(userPatch).length > 0;
+    const hasStudentPatch = Object.keys(studentPatch).length > 0;
+
+    // 3) 둘 다 없으면 변경 없음
+    if (!hasUserPatch && !hasStudentPatch) {
+      throw new BadRequestException(MESSAGES.ADMIN.USER.ERROR.NO_CHANGE);
+    }
+
+    // 4) user update (값이 있을 때만)
+    if (hasUserPatch) {
+      const updatedUser = await this.userRepository.update(
+        { userId },
+        userPatch,
+      );
+      if (updatedUser.affected === 0) {
+        throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
+      }
+    } else {
+      // userPatch가 없더라도, studentPatch만 있을 때 user 존재는 확인하는 편이 안전
+      const exists = await this.userRepository.exist({ where: { userId } });
+      if (!exists) {
+        throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
+      }
+    }
+
+    // 5) student update (값이 있을 때만)
+    if (hasStudentPatch) {
+      // 운영 규칙: 학생만 grade/school이 의미 있다면 role 체크 또는 student row 존재 확인 필요
+      const updatedStudent = await this.studentRepository.update(
+        { userId }, // Student가 userId FK를 갖는다는 가정
+        studentPatch,
+      );
+
+      if (updatedStudent.affected === 0) {
+        // 정책 선택:
+        // - 학생이 아닌데 grade/school을 보냈으면 BadRequest
+        // - 학생인데 student row가 없으면 NotFound(데이터 불일치)
+        throw new BadRequestException(MESSAGES.ADMIN.STUDENT.ERROR.NOT_FOUND);
+      }
     }
 
     // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: adminId,
-      actorType: 'admin',
-      action: 'UPDATE_USER_INFO',
-      targetId: userId,
-      targetType: 'user',
-      description: 'Admin updated user information',
-      changes: { updateUserDto },
-      createdAt: new Date(),
-    });
+    // await this.actionLogRepository.save({
+    //   actorId: adminId,
+    //   actorType: 'admin',
+    //   action: 'UPDATE_USER_INFO',
+    //   targetId: userId,
+    //   targetType: 'user',
+    //   description: 'Admin updated user information',
+    //   createdAt: new Date(),
+    // });
     return;
   }
 

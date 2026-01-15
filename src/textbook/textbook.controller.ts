@@ -19,6 +19,7 @@ import { UserInfo } from 'src/util/decorators/user-info.decorator';
 import { PartialUser } from 'src/users/interfaces/partial-user.entity';
 import { CreateTextbookDto } from './dto/create-textbook.dto';
 import { MESSAGES } from './../constants/message.constant';
+import { UpdateTextbookDto } from './dto/update-textbook.dto';
 
 @Controller('textbooks')
 export class TextbookController {
@@ -81,7 +82,7 @@ export class TextbookController {
 
   /**
    * 교재 수정
-   * @param createTextbookDto
+   * @param updateTextbookDto
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -90,10 +91,10 @@ export class TextbookController {
   async updateTextbook(
     @Param('textbookId', ParseIntPipe) textbookId: number,
     @UserInfo() admin: PartialUser,
-    createTextbookDto: CreateTextbookDto,
+    @Body() updateTextbookDto: UpdateTextbookDto,
   ) {
     await this.textbookService.updateTextbook(
-      createTextbookDto,
+      updateTextbookDto,
       admin.userId,
       textbookId,
     );

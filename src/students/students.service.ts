@@ -128,7 +128,7 @@ export class StudentsService {
 
     return paginate(this.userRepository, options, {
       order: { createdAt: 'DESC' },
-      relations: { student: true },
+      relations: ['student', 'student.parent', 'student.parent.user'],
       where,
       select: {
         userId: true,
@@ -142,6 +142,13 @@ export class StudentsService {
           studentId: true,
           grade: true,
           school: true,
+          parent: {
+            parentId: true,
+            user: {
+              userId: true,
+              name: true,
+            },
+          },
         },
       },
     });
@@ -157,7 +164,13 @@ export class StudentsService {
         grade: true,
         school: true,
         parentId: true,
-        user: { userId: true, name: true, email: true, status: true },
+        user: {
+          userId: true,
+          name: true,
+          email: true,
+          phone: true,
+          status: true,
+        },
       },
     });
     if (!student) {
