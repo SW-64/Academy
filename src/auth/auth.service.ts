@@ -261,4 +261,9 @@ export class AuthService {
       domain: this.configService.get('COOKIE_DOMAIN') ?? undefined,
     } as const;
   }
+
+  // 토큰 점검
+  async checkToken(userId: number, role: Role) {
+    return { userId, role };
+  }
 }

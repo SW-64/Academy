@@ -8,6 +8,7 @@ export const MESSAGES = {
       PASSWORD_CHANGE: '비밀번호 변경에 성공했습니다.',
       USER_INFO: '내 정보 조회에 성공했습니다.',
       USER_UPDATE: '내 정보 수정에 성공했습니다.',
+      TOKEN_VALID: '토큰이 유효합니다.',
     },
 
     ERROR: {
