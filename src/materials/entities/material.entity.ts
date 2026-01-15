@@ -36,7 +36,7 @@ export class Material {
   })
   description: string | null;
 
-  // S3 저장 정보 (S3 연동 전 테스트를 위해 nullable)
+  // S3 저장 정보 (학습자료 생성 후 S3에 파일 업로드 후 채워지기 때문에 nullable)
   @Column({
     type: 'varchar',
     length: 100,
@@ -56,7 +56,7 @@ export class Material {
   })
   s3Key: string | null;
 
-  // 파일 메타(다운로드/표시/운영에 유용) (S3 연동 전 테스트를 위해 nullable)
+  // 파일 메타(다운로드/표시/운영에 유용) 
   @Column({
     type: 'varchar',
     length: 255,
