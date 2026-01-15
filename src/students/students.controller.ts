@@ -18,10 +18,49 @@ import { MESSAGES } from './../constants/message.constant';
 import { StudentOrParentOwnsStudentGuard } from './../auth/guards/student-or-parent-owns-student.guard';
 import { UserInfo } from '../util/decorators/user-info.decorator';
 import { PartialUser } from './../users/interfaces/partial-user.entity';
+import { MaterialsService } from 'src/materials/materials.service';
 
 @Controller('students')
 export class StudentsController {
-  constructor(private readonly studentsService: StudentsService) {}
+  constructor(
+    private readonly studentsService: StudentsService,
+    private readonly materialsService: MaterialsService,
+  ) {}
+
+  /**
+   * 학생이 받을 수 있는 학습자료 목록 조회
+   * - 내 반에 배포된 자료만
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @Get('/materials')
+  async getStudentMaterials(
+    @UserInfo() user: PartialUser,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('sort') sort?: string,
+    @Query('classId') classId?: string,
+  ) {
+    const _page = Math.max(Number(page) || 1, 1);
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
+
+    const sortOption = sort === 'title_asc' ? 'title_asc' : 'created_desc';
+    const classIdNumber = classId ? Math.max(Number(classId) || 0, 0) : null;
+
+    const data = await this.materialsService.getStudentMaterials(
+      user.userId,
+      { page: _page, limit: _limit },
+      sortOption,
+      classIdNumber,
+    );
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.MATERIAL.SUCCESS.LIST,
+      data,
+    };
+  }
 
   /**
    * 성적 현황 조회
@@ -139,6 +178,29 @@ export class StudentsController {
       statusCode: HttpStatus.OK,
       message: MESSAGES.STUDENTS.HOME.SUCCESS.GET,
       data: data,
+    };
+  }
+
+  /**
+   * 학생용 학습자료 다운로드 URL 발급
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @Get('/materials/:materialId/download-url')
+  async getStudentMaterialDownloadUrl(
+    @Param('materialId', ParseIntPipe) materialId: number,
+    @UserInfo() user: PartialUser,
+  ) {
+    const data = await this.materialsService.getStudentMaterialDownloadUrl(
+      materialId,
+      user.userId,
+    );
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.MATERIAL.SUCCESS.DOWNLOAD_URL,
+      data,
     };
   }
 }

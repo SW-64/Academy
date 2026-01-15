@@ -10,7 +10,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Material } from './material.entity';
+import { Material } from '../../materials/entities/material.entity';
 import { Video } from './video.entity';
 import { Notice } from '../../notices/entities/notice.entity';
 

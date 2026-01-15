@@ -338,6 +338,56 @@ export const MESSAGES = {
         NO_UPDATE_ITEMS: '수정할 항목이 없습니다.',
       },
     },
+    MATERIAL: {
+      SUCCESS: {
+        CREATE: '학습자료가 성공적으로 생성되었습니다.',
+        LIST: '학습자료 목록을 성공적으로 불러왔습니다.',
+        GET: '학습자료를 성공적으로 불러왔습니다.',
+        UPDATE: '학습자료가 성공적으로 수정되었습니다.',
+        DELETE: '학습자료가 성공적으로 삭제되었습니다.',
+        UPLOAD: '학습자료 파일이 성공적으로 업로드되었습니다.',
+        DOWNLOAD_URL: '다운로드 링크가 발급되었습니다.',
+      },
+
+      ERROR: {
+        NOT_FOUND: '학습자료를 찾을 수 없습니다.',
+        CLASS_NOT_FOUND: '존재하지 않는 반(classId)이 포함되어 있습니다.',
+        FILE_REQUIRED: '업로드할 PDF 파일을 선택해 주세요.',
+        INVALID_FILE_TYPE: 'PDF 파일만 업로드할 수 있습니다.',
+        FILE_NOT_UPLOADED: '파일이 아직 업로드되지 않았습니다.',
+        FORBIDDEN: '해당 학습자료에 접근 권한이 없습니다.',
+      },
+
+      VALIDATION: {
+        CREATE: {
+          TITLE_INVALID: '자료 제목은 문자열이어야 합니다.',
+          TITLE_MAX_LENGTH: '자료 제목은 200자 이하여야 합니다.',
+
+          DESC_INVALID: '자료 설명은 문자열이어야 합니다.',
+          DESC_MAX_LENGTH: '자료 설명은 1000자 이하여야 합니다.',
+
+          CLASS_IDS_INVALID: 'classIds는 배열이어야 합니다.',
+          CLASS_IDS_EMPTY: 'classIds는 최소 1개 이상이어야 합니다.',
+          CLASS_IDS_DUPLICATED: 'classIds에 중복된 값이 있습니다.',
+          CLASS_ID_INVALID: 'classId는 1 이상의 정수여야 합니다.',
+        },
+
+        UPDATE: {
+          TITLE_INVALID: '자료 제목은 문자열이어야 합니다.',
+          TITLE_MAX_LENGTH: '자료 제목은 200자 이하여야 합니다.',
+
+          DESC_INVALID: '자료 설명은 문자열이어야 합니다.',
+          DESC_MAX_LENGTH: '자료 설명은 1000자 이하여야 합니다.',
+
+          CLASS_IDS_INVALID: 'classIds는 배열이어야 합니다.',
+          CLASS_IDS_EMPTY: 'classIds는 최소 1개 이상이어야 합니다.',
+          CLASS_IDS_DUPLICATED: 'classIds에 중복된 값이 있습니다.',
+          CLASS_ID_INVALID: 'classId는 1 이상의 정수여야 합니다.',
+
+          NO_CHANGES: '변경된 정보가 없습니다.',
+        },
+      },
+    },
   },
 
   USER: {
@@ -367,6 +417,9 @@ export const MESSAGES = {
       SUCCESS: {
         GET: '학생 홈 정보 조회에 성공했습니다.',
       },
+    },
+    ERROR: {
+      NOT_FOUND: '학생 정보를 찾을 수 없습니다.',
     },
   },
 

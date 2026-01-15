@@ -24,6 +24,7 @@ import { ClassTextbookModule } from './class-textbook/class-textbook.module';
 import { HomeworkModule } from './homework/homework.module';
 import { ClassModule } from './class/class.module';
 import { StudentClassModule } from './student-class/student-class.module';
+import { MaterialsModule } from './materials/materials.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { StudentClassModule } from './student-class/student-class.module';
     HomeworkModule,
     ClassModule,
     StudentClassModule,
+    MaterialsModule,
   ],
   controllers: [AppController],
   providers: [
