@@ -18,7 +18,7 @@ async function bootstrap() {
 
   // CORS 설정 ( 프론트와 백엔드 간 통신 허용 )
   app.enableCors({
-    origin: true, // 요청한 Orign(도메인)을 그대로 허용 -> 운영에서는 반드시 특정도메인으로 변경
+    origin: 'https://kwakmath.co.kr', // 요청한 Orign(도메인)을 그대로 허용 -> 운영에서는 반드시 특정도메인으로 변경
     credentials: true, // 쿠키/세션/JWT-With-Credentials 요청을 허용한다는 의미.
   });
 
