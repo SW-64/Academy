@@ -17,9 +17,20 @@ async function bootstrap() {
   app.use(helmet());
 
   // CORS 설정 ( 프론트와 백엔드 간 통신 허용 )
+  const allowedOrigins = [
+    'https://kwakmath.co.kr',
+    'https://www.kwakmath.co.kr',
+  ];
+
   app.enableCors({
-    origin: 'https://kwakmath.co.kr', // 요청한 Orign(도메인)을 그대로 허용 -> 운영에서는 반드시 특정도메인으로 변경
-    credentials: true, // 쿠키/세션/JWT-With-Credentials 요청을 허용한다는 의미.
+    origin: (origin, callback) => {
+      // 같은 서버에서 직접 호출(서버-서버) / Postman 등 Origin 없는 경우 허용
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      return callback(new Error(`Not allowed by CORS: ${origin}`), false);
+    },
+    credentials: true,
   });
 
   app.enableShutdownHooks();
