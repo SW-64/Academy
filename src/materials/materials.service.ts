@@ -24,6 +24,7 @@ import { randomUUID } from 'crypto';
 import { S3Service } from '../s3/s3.service';
 import { Student } from '../students/entities/student.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
+import { Admin } from '../admin/entities/admin.entity';
 
 type StudentMaterialListItem = {
   materialId: number;
@@ -84,14 +85,21 @@ export class MaterialsService {
       const materialRepo = manager.getRepository(Material);
       const cmRepo = manager.getRepository(ClassMaterial);
       const classRepo = manager.getRepository(Class);
+      const adminRepo = manager.getRepository(Admin);
+
+      const admin = await adminRepo.findOne({
+        where: { userId: adminId },
+        select: ['adminId'],
+      });
 
       const classIds = await this.validateClassesExistWithRepo(
         classRepo,
         dto.classIds,
       );
+      console.log(admin);
 
       const material = materialRepo.create({
-        adminId,
+        adminId: admin.adminId,
         title: dto.title,
         description: dto.description ?? null,
       });
@@ -185,6 +193,7 @@ export class MaterialsService {
       materialId: material.materialId,
       adminId: material.adminId,
       title: material.title,
+      originalFileName: material.originalFileName,
       description: material.description,
       createdAt: material.createdAt,
       updatedAt: material.updatedAt,
