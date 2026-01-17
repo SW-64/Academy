@@ -706,6 +706,64 @@ export class ExamService {
           .orIgnore()
           .execute();
       }
+      // ✅ 8-1) 점수 재계산: totalPoints - wrongPoints
+      // (A) 시험 총점 계산
+      const examDetailRepo = manager.getRepository(ExamDetail);
+
+      const totalRow = await examDetailRepo
+        .createQueryBuilder('ed')
+        .select('COALESCE(SUM(ed.points), 0)', 'total')
+        .where('ed.exam_id = :examId', { examId })
+        .getRawOne<{ total: string }>();
+
+      const totalPoints = Number(totalRow?.total ?? 0);
+
+      // (B) gradeId별 오답 점수 합계 계산 (오답 테이블 + exam_detail join)
+      // grade_wrong_answer 테이블명/컬럼명이 엔티티와 다르면 name에 맞춰 조정하세요.
+      const wrongSums = gradeIds.length
+        ? await manager
+            .createQueryBuilder()
+            .select('gwa.grade_id', 'gradeId')
+            .addSelect('COALESCE(SUM(ed.points), 0)', 'wrongPoints')
+            .from(GradeWrongAnswer, 'gwa')
+            .innerJoin(
+              ExamDetail,
+              'ed',
+              'ed.exam_detail_id = gwa.exam_detail_id AND ed.exam_id = :examId',
+              { examId },
+            )
+            .where('gwa.grade_id IN (:...gradeIds)', { gradeIds })
+            // soft delete 컬럼이 있다면 아래 조건 추가 권장:
+            // .andWhere('gwa.deleted_at IS NULL')
+            .groupBy('gwa.grade_id')
+            .getRawMany<{ gradeId: string; wrongPoints: string }>()
+        : [];
+
+      const wrongMap = new Map<number, number>(
+        wrongSums.map((r) => [Number(r.gradeId), Number(r.wrongPoints)]),
+      );
+
+      // (C) Grade 벌크 업데이트 (CASE WHEN)
+      // - 오답이 없는 gradeId는 wrongPoints=0 -> score=totalPoints
+      // - score가 null이어야 한다면 totalPoints가 0일 때 null 처리 등 정책 결정 가능
+      if (gradeIds.length) {
+        const cases = gradeIds
+          .map((gid) => {
+            const wrong = wrongMap.get(gid) ?? 0;
+            const score = Math.max(0, totalPoints - wrong);
+            return `WHEN ${gid} THEN ${score}`;
+          })
+          .join(' ');
+
+        await gradeRepo
+          .createQueryBuilder()
+          .update(Grade)
+          .set({
+            score: () => `CASE grade_id ${cases} END`,
+          })
+          .where('grade_id IN (:...gradeIds)', { gradeIds })
+          .execute();
+      }
       // 9) 로그 저장
       await manager.getRepository(ActionLog).save({
         actorId: adminUserId,
@@ -985,16 +1043,7 @@ export class ExamService {
       .addOrderBy('g.ranking', 'ASC')
       .addOrderBy('u.name', 'ASC')
       .getRawMany();
-    console.log(rows);
-    return {
-      exam: { examId },
-      students: rows.map((r) => ({
-        studentId: r.studentId,
-        name: r.name,
-        isTaken: r.isTaken === null ? false : Boolean(r.isTaken),
-        score: r.score ?? null,
-        ranking: r.ranking ?? null,
-      })),
-    };
+    console.log('rows:', rows);
+    return rows;
   }
 }
