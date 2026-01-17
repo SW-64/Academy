@@ -583,6 +583,23 @@ export class MaterialsService {
       throw new NotFoundException(MESSAGES.STUDENTS.ERROR.NOT_FOUND);
     }
 
+    // 1-1) classId가 들어오면 "내 반인지" 검증
+    if (classId !== null && classId > 0) {
+      const isMyClass = await this.studentClassRepository.exist({
+        where: {
+          classId,
+          studentId: student.studentId,
+          deletedAt: null,
+        },
+      });
+
+      if (!isMyClass) {
+        throw new ForbiddenException(
+          MESSAGES.STUDENTS.ERROR.NOT_IN_CLASS, // 메시지 상수는 추가/수정
+        );
+      }
+    }
+
     // 2) 내 반(student_class) + 배포(class_material)로 접근 가능한 material만 조인
     const qb = this.materialRepository
       .createQueryBuilder('m')

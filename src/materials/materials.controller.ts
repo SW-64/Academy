@@ -86,7 +86,7 @@ export class MaterialsController {
    * 학습자료 상세 조회
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.STUDENT)
   @Get('/:materialId')
   async getMaterial(@Param('materialId', ParseIntPipe) materialId: number) {
     const data = await this.materialsService.getMaterial(materialId);
