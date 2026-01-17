@@ -314,10 +314,16 @@ export class HomeworkService {
       });
 
       // 5-4) upsert (UNIQUE(homework_progress_id, textbook_chapter_id) 필요)
-      await progressChapterRepo.upsert(cellRows, {
-        conflictPaths: ['homeworkProgressId', 'textbookChapterId'],
-        skipUpdateIfNoValuesChanged: false,
-      });
+      await progressChapterRepo
+        .createQueryBuilder()
+        .insert()
+        .into(ProgressChapter)
+        .values(cellRows) // 여기에는 엔티티 프로퍼티명 써도 OK
+        .orUpdate(
+          ['status', 'progress_percent'],
+          ['homework_progress_id', 'textbook_chapter_id'],
+        )
+        .execute();
 
       return cellRows.length;
     });
@@ -331,19 +337,42 @@ export class HomeworkService {
     textbookId: number,
     userId: number,
   ) {
-    // 1) class_textbook 존재 검증 + classTextbookId 확보 (반에서 실제 사용하는 교재인지)
+    // 1) 학생 식별
+    const student = await this.studentRepo.findOne({
+      where: { userId },
+      select: { studentId: true, userId: true },
+    });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.STUDENTS.ERROR.NOT_FOUND);
+    }
+
+    // 2) 학생이 해당 반 소속인지 검증 (IDOR 방지)
+    const link = await this.studentClassRepo.findOne({
+      where: {
+        classId,
+        studentId: student.studentId,
+      },
+      select: { studentId: true },
+    });
+
+    if (!link) {
+      throw new NotFoundException(MESSAGES.STUDENTS.CLASS.ERROR.NOT_FOUND);
+      // 또는 FORBIDDEN 성격이면 403로 정책화 가능
+    }
+
+    // 3) class_textbook 존재 검증 + classTextbookId 확보 (해당 반에서 쓰는 교재인지)
     const classTextbook = await this.classTextbookRepo.findOne({
       where: { classId, textbookId },
       select: { classTextbookId: true, classId: true, textbookId: true },
     });
-    if (!classTextbook)
+    if (!classTextbook) {
       throw new NotFoundException(
         MESSAGES.ADMIN.HOMEWORK.ERROR.CLASS_TEXTBOOK_NOT_FOUND,
       );
-
+    }
     const classTextbookId = classTextbook.classTextbookId;
 
-    // 2) 단원 조회
+    // 4) 교재 단원 목록 (컬럼 최소)
     const chapters = await this.chapterRepo.find({
       where: { textbookId },
       select: { textbookChapterId: true, largeUnitNo: true, smallUnitNo: true },
@@ -357,9 +386,84 @@ export class HomeworkService {
       label: `${c.largeUnitNo}-${c.smallUnitNo}`,
     }));
 
-    const user = await this.userRepo.find({
-      where: { userId },
+    // 5) 내 이름 (User.name)
+    const user = await this.userRepo.findOne({
+      where: { userId: student.userId },
       select: { userId: true, name: true },
     });
+    const name = user?.name ?? '(unknown)';
+
+    // 6) 내 progress 헤더 1개 조회 (없으면 아직 시작 전)
+    const progress = await this.progressRepo.findOne({
+      where: { classTextbookId, studentId: student.studentId },
+      select: { homeworkProgressId: true },
+    });
+
+    // progress가 없으면 셀은 전부 null
+    if (!progress) {
+      const cells: Record<number, any | null> = {};
+      for (const ch of chapters) cells[ch.textbookChapterId] = null;
+
+      return {
+        classId,
+        textbookId,
+        classTextbookId,
+        chapters: chapterDtos,
+        student: {
+          studentId: student.studentId,
+          name,
+          cells,
+        },
+      };
+    }
+
+    // 7) 내 셀(progress_chapter)만 조회
+    const rawCells = await this.progressChapterRepo
+      .createQueryBuilder('pc')
+      .where('pc.homework_progress_id = :progressId', {
+        progressId: progress.homeworkProgressId,
+      })
+      .select([
+        'pc.textbook_chapter_id AS chapterId',
+        'pc.status AS status',
+        'pc.progress_percent AS percent',
+        'pc.updated_at AS updatedAt',
+      ])
+      .getRawMany<{
+        chapterId: number;
+        status: string;
+        percent: number;
+        updatedAt: Date;
+      }>();
+
+    const cellMap = new Map<
+      number,
+      { status: string; percent: number; updatedAt: string }
+    >();
+    for (const r of rawCells) {
+      cellMap.set(Number(r.chapterId), {
+        status: r.status,
+        percent: Number(r.percent),
+        updatedAt: new Date(r.updatedAt).toISOString(),
+      });
+    }
+
+    const cells: Record<number, any | null> = {};
+    for (const ch of chapters) {
+      const chapterId = ch.textbookChapterId;
+      cells[chapterId] = cellMap.get(chapterId) ?? null;
+    }
+
+    return {
+      classId,
+      textbookId,
+      classTextbookId,
+      chapters: chapterDtos,
+      student: {
+        studentId: student.studentId,
+        name,
+        cells,
+      },
+    };
   }
 }

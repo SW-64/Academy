@@ -435,6 +435,9 @@ export const MESSAGES = {
       SUCCESS: {
         GET_MY_CLASSES: '나의 클래스 목록 조회에 성공했습니다.',
       },
+      ERROR: {
+        NOT_FOUND: '해당 반에 소속되지 않았습니다.',
+      },
     },
     SUCCESS: {},
   },
@@ -454,6 +457,11 @@ export const MESSAGES = {
     STUDENT: {
       ERROR: {
         NOT_FOUND: '자녀가 존재하지 않습니다.',
+      },
+    },
+    HOMEWORK: {
+      SUCCESS: {
+        GET_MY_CHILD_PROGRESS: '나의 자녀 숙제 진도 목록 조회에 성공했습니다.',
       },
     },
   },

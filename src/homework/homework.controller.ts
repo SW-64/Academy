@@ -73,7 +73,7 @@ export class HomeworkController {
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.STUDENT)
   @Get('/students/me/classes/:classId/textbooks/:textbookId/homework')
   async getMyHomeworkProgress(
     @Param('classId', ParseIntPipe) classId: number,
@@ -90,5 +90,32 @@ export class HomeworkController {
       message: MESSAGES.STUDENTS.HOMEWORK.SUCCESS.GET_PROGRESS,
       data: data,
     };
+  }
+
+  /**
+   * 내 자녀의 숙제 진도 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @Get(
+    '/parents/me/students/:studentId/classes/:classId/textbooks/:textbookId/homework',
+  )
+  async getMyChildHomeworkProgress(
+    @Param('classId', ParseIntPipe) classId: number,
+    @Param('textbookId', ParseIntPipe) textbookId: number,
+    @Param('studentId', ParseIntPipe) studentId: number,
+    @UserInfo() user: PartialUser,
+  ) {
+    // const data = await this.homeworkService.getMyChildHomeworkProgress(
+    //   classId,
+    //   textbookId,
+    //   user.userId,
+    // );
+    // return {
+    //   statusCode: HttpStatus.OK,
+    //   message: MESSAGES.PARENTS.HOMEWORK.SUCCESS.GET_MY_CHILD_PROGRESS,
+    //   data: data,
+    // };
   }
 }
