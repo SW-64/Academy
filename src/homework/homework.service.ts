@@ -18,6 +18,7 @@ import { ClassTextbook } from '../class-textbook/entities/class-textbook.entity'
 import { MESSAGES } from '../constants/message.constant';
 import { StudentClass } from '../student-class/entities/student-class.entity';
 import { BulkUpdateProgressCellsDto } from './dto/bulk-update-progress-cells.dto';
+import { Parent } from './../parents/entities/parent.entity';
 
 function statusFromPercent(percent: number): ProgressStatus {
   if (percent <= 0) return ProgressStatus.NOT_STARTED;
@@ -44,6 +45,8 @@ export class HomeworkService {
     private readonly progressChapterRepo: Repository<ProgressChapter>,
     @InjectRepository(TextbookChapter)
     private readonly textbookChapterRepo: Repository<TextbookChapter>,
+    @InjectRepository(Parent)
+    private readonly parentRepo: Repository<Parent>,
   ) {}
 
   // 숙제 진도 목록 조회
@@ -461,6 +464,146 @@ export class HomeworkService {
       chapters: chapterDtos,
       student: {
         studentId: student.studentId,
+        name,
+        cells,
+      },
+    };
+  }
+
+  //내 자녀의 숙제 진도 목록 조회
+  async getMyChildHomeworkProgress(
+    parentUserId: number,
+    studentId: number,
+    classId: number,
+    textbookId: number,
+  ) {
+    // 1) parent 식별 (내 계정이 학부모인지 + parentId 확보)
+    const parent = await this.parentRepo.findOne({
+      where: { userId: parentUserId },
+      select: { parentId: true },
+    });
+    if (!parent) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+
+    // 2) studentId가 내 자녀인지 검증 (IDOR 방지)
+    const child = await this.studentRepo.findOne({
+      where: { studentId, parentId: parent.parentId },
+      select: { studentId: true, userId: true },
+    });
+    if (!child) {
+      throw new NotFoundException(MESSAGES.PARENTS.STUDENT.ERROR.NOT_FOUND);
+    }
+
+    // 3) 자녀가 해당 반 소속인지 검증
+    const link = await this.studentClassRepo.findOne({
+      where: { classId, studentId: child.studentId },
+      select: { studentId: true },
+    });
+    if (!link) {
+      throw new NotFoundException(MESSAGES.PARENTS.CLASS.ERROR.NOT_FOUND);
+    }
+
+    // 4) class_textbook 존재 검증 + classTextbookId 확보 (반에서 실제 사용하는 교재인지)
+    const classTextbook = await this.classTextbookRepo.findOne({
+      where: { classId, textbookId },
+      select: { classTextbookId: true, classId: true, textbookId: true },
+    });
+    if (!classTextbook) {
+      throw new NotFoundException(
+        MESSAGES.PARENTS.HOMEWORK.ERROR.CLASS_TEXTBOOK_NOT_FOUND,
+      );
+    }
+    const classTextbookId = classTextbook.classTextbookId;
+
+    // 5) 교재 단원 목록
+    const chapters = await this.chapterRepo.find({
+      where: { textbookId },
+      select: { textbookChapterId: true, largeUnitNo: true, smallUnitNo: true },
+      order: { largeUnitNo: 'ASC', smallUnitNo: 'ASC' },
+    });
+
+    const chapterDtos = chapters.map((c) => ({
+      chapterId: c.textbookChapterId,
+      largeUnitNo: c.largeUnitNo,
+      smallUnitNo: c.smallUnitNo,
+      label: `${c.largeUnitNo}-${c.smallUnitNo}`,
+    }));
+
+    // 6) 자녀 이름
+    const user = await this.userRepo.findOne({
+      where: { userId: child.userId },
+      select: { userId: true, name: true },
+    });
+    const name = user?.name ?? '(unknown)';
+
+    // 7) progress 헤더 1개 조회 (없으면 아직 시작 전)
+    const progress = await this.progressRepo.findOne({
+      where: { classTextbookId, studentId: child.studentId },
+      select: { homeworkProgressId: true },
+    });
+
+    if (!progress) {
+      const cells: Record<number, any | null> = {};
+      for (const ch of chapters) cells[ch.textbookChapterId] = null;
+
+      return {
+        classId,
+        textbookId,
+        classTextbookId,
+        chapters: chapterDtos,
+        student: {
+          studentId: child.studentId,
+          name,
+          cells,
+        },
+      };
+    }
+
+    // 8) 자녀 셀(progress_chapter)만 조회
+    const rawCells = await this.progressChapterRepo
+      .createQueryBuilder('pc')
+      .where('pc.homework_progress_id = :progressId', {
+        progressId: progress.homeworkProgressId,
+      })
+      .select([
+        'pc.textbook_chapter_id AS chapterId',
+        'pc.status AS status',
+        'pc.progress_percent AS percent',
+        'pc.updated_at AS updatedAt',
+      ])
+      .getRawMany<{
+        chapterId: number;
+        status: string;
+        percent: number;
+        updatedAt: Date;
+      }>();
+
+    const cellMap = new Map<
+      number,
+      { status: string; percent: number; updatedAt: string }
+    >();
+    for (const r of rawCells) {
+      cellMap.set(Number(r.chapterId), {
+        status: r.status,
+        percent: Number(r.percent),
+        updatedAt: new Date(r.updatedAt).toISOString(),
+      });
+    }
+
+    const cells: Record<number, any | null> = {};
+    for (const ch of chapters) {
+      const chapterId = ch.textbookChapterId;
+      cells[chapterId] = cellMap.get(chapterId) ?? null;
+    }
+
+    return {
+      classId,
+      textbookId,
+      classTextbookId,
+      chapters: chapterDtos,
+      student: {
+        studentId: child.studentId,
         name,
         cells,
       },

@@ -9,7 +9,7 @@ import { User } from '../users/entities/user.entity';
 import { TextbookChapter } from '../textbook/entities/textbook-chapter.entity';
 import { Progress } from './entities/progress.entity';
 import { ProgressChapter } from './entities/progress-chapter.entity';
-
+import { Parent } from './../parents/entities/parent.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -21,6 +21,7 @@ import { ProgressChapter } from './entities/progress-chapter.entity';
       Progress,
       ProgressChapter,
       TextbookChapter,
+      Parent,
     ]),
   ],
   controllers: [HomeworkController],

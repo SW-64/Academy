@@ -453,6 +453,9 @@ export const MESSAGES = {
       SUCCESS: {
         GET_MY_CHILD_CLASSES: '나의 자녀 클래스 목록 조회에 성공했습니다.',
       },
+      ERROR: {
+        NOT_FOUND: '자녀가 존재하지 않습니다.',
+      },
     },
     STUDENT: {
       ERROR: {
@@ -462,6 +465,9 @@ export const MESSAGES = {
     HOMEWORK: {
       SUCCESS: {
         GET_MY_CHILD_PROGRESS: '나의 자녀 숙제 진도 목록 조회에 성공했습니다.',
+      },
+      ERROR: {
+        CLASS_TEXTBOOK_NOT_FOUND: '클래스에 해당되는 교재가 없습니다.',
       },
     },
   },
