@@ -280,15 +280,15 @@ export class ExamController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Get('/:examId/rankings')
-  getRankings(
+  async getRankings(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('classId', ParseIntPipe) classId: number,
   ) {
-    const data = this.examService.getExamRankings(examId, classId);
+    const data = await this.examService.getExamRankings(examId, classId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.GET_RANKINGS,
-      data,
+      data: data,
     };
   }
 
