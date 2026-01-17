@@ -53,7 +53,7 @@ export class TextbookController {
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.STUDENT, Role.PARENT)
   @Get()
   async getAllTextbooks() {
     const data = await this.textbookService.getAllTextbooks();
