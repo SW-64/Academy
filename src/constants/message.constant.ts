@@ -430,6 +430,7 @@ export const MESSAGES = {
     },
     ERROR: {
       NOT_FOUND: '학생 정보를 찾을 수 없습니다.',
+      NOT_IN_CLASS: '해당 반에 소속되지 않았습니다.',
     },
     CLASS: {
       SUCCESS: {
