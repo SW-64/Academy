@@ -284,12 +284,14 @@ export const MESSAGES = {
           SMALL_UNIT_REQUIRED: '소단원 개수는 필수 입력 항목입니다.',
           CLASS_ID_INVALID_FORMAT: '반 아이디는 1 이상의 정수여야 합니다.',
           CLASS_ID_DUPLICATED: '반 아이디가 중복되었습니다.',
+          UNITS_INVALID_FORMAT: '소단원의 각 요소들은 1이상의 정수여야 합니다.',
         },
         UPDATE: {
           NAME_INVALID_FORMAT: '교재 이름은 문자열이어야 합니다.',
           GRADE_INVALID_FORMAT: '교재 학년은 정수여야 합니다.',
           CLASS_ID_INVALID_FORMAT: '반 아이디는 1 이상의 정수여야 합니다.',
           CLASS_ID_DUPLICATED: '반 아이디가 중복되었습니다.',
+          UNITS_INVALID_FORMAT: '소단원의 형식이 맞지 않습니다.',
         },
       },
       SUCCESS: {
@@ -304,6 +306,8 @@ export const MESSAGES = {
         NOT_FOUND: '교재를 찾을 수 없습니다.',
         NO_CHANGE: '변경된 정보가 없습니다.',
         INVALID_CLASS_ID: '존재하지 않는 반 아이디가 포함되어 있습니다.',
+        CANNOT_SHRINK_CHAPTER_WITH_PROGRESS:
+          '진행 데이터가 있을 시, 삭제 혹은 축소할 수 없습니다.',
       },
     },
     CLASS: {
@@ -414,6 +418,11 @@ export const MESSAGES = {
         ONE: '나의 성적 상세 조회에 성공했습니다.',
       },
     },
+    HOMEWORK: {
+      SUCCESS: {
+        GET_PROGRESS: '나의 숙제 진도 조회에 성공했습니다.',
+      },
+    },
     HOME: {
       SUCCESS: {
         GET: '학생 홈 정보 조회에 성공했습니다.',
@@ -422,6 +431,12 @@ export const MESSAGES = {
     ERROR: {
       NOT_FOUND: '학생 정보를 찾을 수 없습니다.',
     },
+    CLASS: {
+      SUCCESS: {
+        GET_MY_CLASSES: '나의 클래스 목록 조회에 성공했습니다.',
+      },
+    },
+    SUCCESS: {},
   },
 
   PARENTS: {
@@ -430,6 +445,16 @@ export const MESSAGES = {
     },
     ERROR: {
       NOT_FOUND: '자녀가 존재하지 않습니다.',
+    },
+    CLASS: {
+      SUCCESS: {
+        GET_MY_CHILD_CLASSES: '나의 자녀 클래스 목록 조회에 성공했습니다.',
+      },
+    },
+    STUDENT: {
+      ERROR: {
+        NOT_FOUND: '자녀가 존재하지 않습니다.',
+      },
     },
   },
 } as const;

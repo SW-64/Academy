@@ -1,4 +1,5 @@
 import {
+  ArrayMinSize,
   ArrayUnique,
   IsArray,
   IsDateString,
@@ -33,6 +34,25 @@ export class UpdateTextbookDto {
   })
   @Min(1)
   grade: number;
+
+  // 대단원별 소단원 개수
+  @IsOptional()
+  @Type(() => Number)
+  @IsArray({
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.UNITS_INVALID_FORMAT,
+  })
+  @ArrayMinSize(1, {
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.UNITS_INVALID_FORMAT,
+  })
+  @IsInt({
+    each: true,
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.UNITS_INVALID_FORMAT,
+  })
+  @Min(1, {
+    each: true,
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.UNITS_INVALID_FORMAT,
+  })
+  units?: number[];
 
   /**
    * 클래스 목록

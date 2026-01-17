@@ -8,10 +8,11 @@ import { Grade } from '../grades/entities/grade.entity';
 import { User } from '../users/entities/user.entity';
 import { Parent } from '../parents/entities/parent.entity';
 import { MaterialsModule } from '../materials/materials.module';
+import { StudentClass } from '../student-class/entities/student-class.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Student, Grade, User, Parent]),
+    TypeOrmModule.forFeature([Student, Grade, User, Parent, StudentClass]),
     MaterialsModule,
   ],
   controllers: [StudentsController],

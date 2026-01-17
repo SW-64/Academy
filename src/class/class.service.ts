@@ -215,8 +215,6 @@ export class ClassService {
           textbookId: true,
           name: true,
           grade: true,
-          largeUnit: true,
-          smallUnit: true,
         },
       },
     });

@@ -324,4 +324,42 @@ export class HomeworkService {
 
     return { updated };
   }
+
+  // 학생 본인의 숙제 진도 목록 조회
+  async getMyHomeworkProgress(
+    classId: number,
+    textbookId: number,
+    userId: number,
+  ) {
+    // 1) class_textbook 존재 검증 + classTextbookId 확보 (반에서 실제 사용하는 교재인지)
+    const classTextbook = await this.classTextbookRepo.findOne({
+      where: { classId, textbookId },
+      select: { classTextbookId: true, classId: true, textbookId: true },
+    });
+    if (!classTextbook)
+      throw new NotFoundException(
+        MESSAGES.ADMIN.HOMEWORK.ERROR.CLASS_TEXTBOOK_NOT_FOUND,
+      );
+
+    const classTextbookId = classTextbook.classTextbookId;
+
+    // 2) 단원 조회
+    const chapters = await this.chapterRepo.find({
+      where: { textbookId },
+      select: { textbookChapterId: true, largeUnitNo: true, smallUnitNo: true },
+      order: { largeUnitNo: 'ASC', smallUnitNo: 'ASC' },
+    });
+
+    const chapterDtos = chapters.map((c) => ({
+      chapterId: c.textbookChapterId,
+      largeUnitNo: c.largeUnitNo,
+      smallUnitNo: c.smallUnitNo,
+      label: `${c.largeUnitNo}-${c.smallUnitNo}`,
+    }));
+
+    const user = await this.userRepo.find({
+      where: { userId },
+      select: { userId: true, name: true },
+    });
+  }
 }

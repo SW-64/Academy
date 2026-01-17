@@ -23,13 +23,6 @@ export class Textbook {
   @Column({ name: 'grade' })
   grade: number;
 
-  // ERD에 있는 값 유지 (총 단원 수 메타로 쓸 경우)
-  @Column({ name: 'large_unit', type: 'int' })
-  largeUnit: number;
-
-  @Column({ name: 'small_unit', type: 'int' })
-  smallUnit: number;
-
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;
 

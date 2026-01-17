@@ -14,6 +14,7 @@ import { TextbookChapter } from './entities/textbook-chapter.entity';
 import { UpdateTextbookDto } from './dto/update-textbook.dto';
 import { ClassTextbook } from '../class-textbook/entities/class-textbook.entity';
 import { Class } from './../class/entities/class.entity';
+import { ProgressChapter } from '../homework/entities/progress-chapter.entity';
 
 @Injectable()
 export class TextbookService {
@@ -33,38 +34,47 @@ export class TextbookService {
 
   // 교재 생성
   async createTextbook(
-    { name, grade, largeUnit, smallUnit, classList }: CreateTextbookDto,
+    { name, grade, units, classList }: CreateTextbookDto,
     adminId: number,
   ) {
     const admin = await this.adminRepository.findOneBy({ userId: adminId });
     if (!admin) {
       throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
     }
-    if (largeUnit < 1 || smallUnit < 1) {
-      throw new BadRequestException('largeUnit/smallUnit must be >= 1');
-    }
+
     return this.dataSource.transaction(async (manager) => {
       const textbookRepo = manager.getRepository(Textbook);
       const chapterRepo = manager.getRepository(TextbookChapter);
       const logRepo = manager.getRepository(ActionLog);
       const classTextbookRepo = manager.getRepository(ClassTextbook);
+
       // 1) 교재 생성
       const textbook = await textbookRepo.save({
         name,
         grade,
-        largeUnit,
-        smallUnit,
       });
 
-      // 2) 단원 조합 생성 (L*S)
-      //    largeUnit=3, smallUnit=3 => (1,1)~(3,3)
-      const chapters = Array.from({ length: largeUnit }, (_, li) =>
-        Array.from({ length: smallUnit }, (_, si) => ({
-          textbookId: textbook.textbookId,
-          largeUnitNo: li + 1,
-          smallUnitNo: si + 1,
-        })),
-      ).flat();
+      /// 2) 단원(챕터) 생성: 대단원별 소단원 수 반영
+      // units = [2,1,1]
+      // => (1,1)(1,2)(2,1)(3,1)
+      const chapters: Array<{
+        textbookId: number;
+        largeUnitNo: number;
+        smallUnitNo: number;
+      }> = [];
+
+      for (let li = 0; li < units.length; li++) {
+        const smallCount = units[li];
+        const largeUnitNo = li + 1;
+
+        for (let si = 0; si < smallCount; si++) {
+          chapters.push({
+            textbookId: textbook.textbookId,
+            largeUnitNo,
+            smallUnitNo: si + 1,
+          });
+        }
+      }
 
       // 3) 벌크 INSERT (save 대신 insert)
       // insert()는 엔티티 라이프사이클 훅이 필요 없고, 불필요한 조회가 없어서 더 가볍
@@ -102,29 +112,40 @@ export class TextbookService {
 
   // 교재 상세 조회
   async getTextbookById(textbookId: number) {
-    const textbook = await this.textbookRepository.findOne({
-      where: { textbookId },
-      relations: ['classTextbooks', 'classTextbooks.clazz'],
-      select: {
-        textbookId: true,
-        name: true,
-        grade: true,
-        largeUnit: true,
-        smallUnit: true,
-        classTextbooks: {
-          classTextbookId: true,
-          clazz: {
-            classId: true,
-            className: true,
-          },
-        },
-      },
-    });
+    const rows = await this.textbookRepository
+      .createQueryBuilder('t')
+      .leftJoin('t.classTextbooks', 'ct')
+      .leftJoin('ct.clazz', 'c')
+      .select([
+        't.textbookId AS textbookId',
+        't.name AS name',
+        't.grade AS grade',
+        'ct.classTextbookId AS classTextbookId',
+        'c.classId AS classId',
+        'c.className AS className',
+      ])
+      .where('t.textbookId = :textbookId', { textbookId })
+      .getRawMany();
 
-    if (!textbook) {
+    if (rows.length === 0) {
       throw new NotFoundException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NOT_FOUND);
     }
-    return textbook;
+
+    const first = rows[0];
+
+    return {
+      textbookId: Number(first.textbookId),
+      name: first.name,
+      grade: first.grade,
+      classTextbooks: rows
+        .filter((r) => r.classTextbookId != null) // 연결이 없을 수도 있으니 방어
+        .map((r) => ({
+          classTextbookId: Number(r.classTextbookId),
+          clazz: r.classId
+            ? { classId: Number(r.classId), className: r.className }
+            : null,
+        })),
+    };
   }
 
   // 교재 수정
@@ -133,12 +154,14 @@ export class TextbookService {
     adminId: number,
     textbookId: number,
   ) {
-    const { name, grade, classList } = dto;
+    const { name, grade, units, classList } = dto;
 
     return this.dataSource.transaction(async (manager) => {
       const textbookRepo = manager.getRepository(Textbook);
       const classTextbookRepo = manager.getRepository(ClassTextbook);
       const classRepo = manager.getRepository(Class);
+      const chapterRepo = manager.getRepository(TextbookChapter);
+      const progressChapterRepo = manager.getRepository(ProgressChapter);
 
       // 1) 교재 확인
       const textbook = await textbookRepo.findOne({ where: { textbookId } });
@@ -146,7 +169,7 @@ export class TextbookService {
         throw new NotFoundException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NOT_FOUND);
       }
 
-      // 2) patch 계산
+      // 2) patch 계산 (name/grade)
       const patch: Partial<Textbook> = {};
       const nameChange =
         typeof name === 'string' &&
@@ -157,17 +180,15 @@ export class TextbookService {
       if (nameChange) patch.name = name;
       if (gradeChange) patch.grade = grade;
 
-      // 3) classList 정규화(중복 제거) - DTO에 ArrayUnique가 있어도 방어적으로 한번 더
+      // 3) classList 정규화 + diff
       const wantClassIds = Array.isArray(classList)
         ? Array.from(new Set(classList))
         : undefined;
 
-      // 4) classList diff
-      let toDelete: number[] = [];
-      let toInsert: number[] = [];
+      let toDeleteClasses: number[] = [];
+      let toInsertClasses: number[] = [];
 
       if (wantClassIds !== undefined) {
-        // 4-1) classId 유효성 검증 (존재 체크)
         if (wantClassIds.length > 0) {
           const existed = await classRepo.find({
             select: { classId: true },
@@ -180,7 +201,6 @@ export class TextbookService {
           }
         }
 
-        // 4-2) 현재 연결 조회 (활성만 존재하므로 deletedAt 조건 없음)
         const existingLinks = await classTextbookRepo.find({
           select: { classId: true },
           where: { textbookId },
@@ -188,16 +208,102 @@ export class TextbookService {
         const existingSet = new Set(existingLinks.map((l) => l.classId));
         const wantSet = new Set(wantClassIds);
 
-        toDelete = Array.from(existingSet).filter((id) => !wantSet.has(id));
-        toInsert = wantClassIds.filter((id) => !existingSet.has(id));
+        toDeleteClasses = Array.from(existingSet).filter(
+          (id) => !wantSet.has(id),
+        );
+        toInsertClasses = wantClassIds.filter((id) => !existingSet.has(id));
       }
 
       const classChangeExists =
         wantClassIds !== undefined &&
-        (toDelete.length > 0 || toInsert.length > 0);
+        (toDeleteClasses.length > 0 || toInsertClasses.length > 0);
+
+      // 4) ✅ units 변경(diff) 계산
+      // units가 들어온 경우에만 챕터 변경 처리
+      let toInsertChapters: Array<{
+        textbookId: number;
+        largeUnitNo: number;
+        smallUnitNo: number;
+      }> = [];
+      let toDeleteChapterIds: number[] = [];
+
+      const unitsChangeRequested = Array.isArray(units);
+
+      if (unitsChangeRequested) {
+        // 4-1) 현재 챕터 목록 조회
+        const existingChapters = await chapterRepo.find({
+          where: { textbookId },
+          select: {
+            textbookChapterId: true,
+            largeUnitNo: true,
+            smallUnitNo: true,
+          },
+        });
+
+        // 4-2) 원하는 챕터 Key 집합 생성
+        // key = `${large}-${small}`
+        const wantKeySet = new Set<string>();
+        for (let li = 0; li < units.length; li++) {
+          const largeNo = li + 1;
+          const smallCount = units[li];
+          for (let si = 0; si < smallCount; si++) {
+            const smallNo = si + 1;
+            wantKeySet.add(`${largeNo}-${smallNo}`);
+          }
+        }
+
+        // 4-3) 기존 챕터를 key로 맵핑
+        const existingKeyToId = new Map<string, number>();
+        for (const ch of existingChapters) {
+          existingKeyToId.set(
+            `${ch.largeUnitNo}-${ch.smallUnitNo}`,
+            ch.textbookChapterId,
+          );
+        }
+
+        // 4-4) toInsert: want - existing
+        for (const key of wantKeySet) {
+          if (!existingKeyToId.has(key)) {
+            const [largeUnitNoStr, smallUnitNoStr] = key.split('-');
+            toInsertChapters.push({
+              textbookId,
+              largeUnitNo: Number(largeUnitNoStr),
+              smallUnitNo: Number(smallUnitNoStr),
+            });
+          }
+        }
+
+        // 4-5) toDelete: existing - want
+        for (const [key, id] of existingKeyToId.entries()) {
+          if (!wantKeySet.has(key)) {
+            toDeleteChapterIds.push(id);
+          }
+        }
+
+        // 4-6) 삭제 대상 챕터에 진행 데이터가 있으면 축소 금지 (정책 A)
+        if (toDeleteChapterIds.length > 0) {
+          const usedCount = await progressChapterRepo.count({
+            where: { textbookChapterId: In(toDeleteChapterIds) },
+          });
+          if (usedCount > 0) {
+            throw new BadRequestException(
+              MESSAGES.ADMIN.TEXTBOOK.ERROR.CANNOT_SHRINK_CHAPTER_WITH_PROGRESS,
+            );
+          }
+        }
+      }
+
+      const chapterChangeExists =
+        unitsChangeRequested &&
+        (toInsertChapters.length > 0 || toDeleteChapterIds.length > 0);
 
       // 5) 변경 없음 처리
-      if (!nameChange && !gradeChange && !classChangeExists) {
+      if (
+        !nameChange &&
+        !gradeChange &&
+        !classChangeExists &&
+        !chapterChangeExists
+      ) {
         throw new BadRequestException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NO_CHANGE);
       }
 
@@ -206,22 +312,35 @@ export class TextbookService {
         await textbookRepo.update(textbookId, patch);
       }
 
-      // 7) 연결 테이블 변경 (벌크)
-      if (toDelete.length > 0) {
+      // 7) classTextbook 변경
+      if (toDeleteClasses.length > 0) {
         await classTextbookRepo.delete({
           textbookId,
-          classId: In(toDelete),
+          classId: In(toDeleteClasses),
         });
       }
-
-      if (toInsert.length > 0) {
-        // 유니크 제약 (classId, textbookId) 가 있으면 중복 insert를 DB가 방어
-        // 동시성 대비: insert 전에 이미 들어간 경우를 무시하려면 upsert 고려 가능
-        const rows = toInsert.map((classId) => ({ classId, textbookId }));
+      if (toInsertClasses.length > 0) {
+        const rows = toInsertClasses.map((classId) => ({
+          classId,
+          textbookId,
+        }));
         await classTextbookRepo.insert(rows);
       }
 
-      // 8) 로그 (변경 내역을 더 실무적으로 남김)
+      // 8) ✅ 챕터 변경 (벌크)
+      if (unitsChangeRequested) {
+        if (toDeleteChapterIds.length > 0) {
+          await chapterRepo.delete({
+            textbookChapterId: In(toDeleteChapterIds),
+          });
+        }
+        if (toInsertChapters.length > 0) {
+          // uq_textbook_unit이 있으므로 중복 방어됨
+          await chapterRepo.insert(toInsertChapters);
+        }
+      }
+
+      // 9) 로그
       await this.actionLogRepository.save({
         actorId: adminId,
         actorType: 'admin',
@@ -232,7 +351,21 @@ export class TextbookService {
         changes: {
           ...patch,
           ...(wantClassIds !== undefined
-            ? { classDiff: { toInsert, toDelete } }
+            ? {
+                classDiff: {
+                  toInsert: toInsertClasses,
+                  toDelete: toDeleteClasses,
+                },
+              }
+            : {}),
+          ...(unitsChangeRequested
+            ? {
+                chapterDiff: {
+                  toInsert: toInsertChapters.length,
+                  toDelete: toDeleteChapterIds.length,
+                  units,
+                },
+              }
             : {}),
         },
         createdAt: new Date(),

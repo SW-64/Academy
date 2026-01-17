@@ -73,4 +73,26 @@ export class ParentsController {
       data: data,
     };
   }
+
+  /**
+   * 자녀 클래스 전체 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PARENT)
+  @Get('/me/students/:studentId/classes')
+  async getMyChildClasses(
+    @UserInfo() user: PartialUser,
+    @Param('studentId', ParseIntPipe) studentId: number,
+  ) {
+    const data = await this.parentsService.getMyChildClasses(
+      user.userId,
+      studentId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.PARENTS.CLASS.SUCCESS.GET_MY_CHILD_CLASSES,
+      data: data,
+    };
+  }
 }
