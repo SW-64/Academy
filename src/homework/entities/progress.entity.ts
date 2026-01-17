@@ -16,7 +16,7 @@ import { Student } from '../../students/entities/student.entity';
 import { ProgressChapter } from './progress-chapter.entity';
 
 @Entity({ name: 'progress' })
-@Index('uq_progress_student_homework', ['studentId', 'homeworkId'], {
+@Index('uq_progress_student_class_textbook', ['studentId', 'classTextbookId'], {
   unique: true,
 })
 export class Progress {
@@ -28,9 +28,6 @@ export class Progress {
 
   @Column({ name: 'class_textbook_id', type: 'int' })
   classTextbookId: number;
-
-  @Column({ name: 'homework_id', type: 'int' })
-  homeworkId: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;
