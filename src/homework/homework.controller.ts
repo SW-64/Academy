@@ -97,7 +97,7 @@ export class HomeworkController {
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.STUDENT)
+  @Roles(Role.PARENT)
   @Get(
     '/parents/me/students/:studentId/classes/:classId/textbooks/:textbookId/homework',
   )
@@ -107,15 +107,16 @@ export class HomeworkController {
     @Param('studentId', ParseIntPipe) studentId: number,
     @UserInfo() user: PartialUser,
   ) {
-    // const data = await this.homeworkService.getMyChildHomeworkProgress(
-    //   classId,
-    //   textbookId,
-    //   user.userId,
-    // );
-    // return {
-    //   statusCode: HttpStatus.OK,
-    //   message: MESSAGES.PARENTS.HOMEWORK.SUCCESS.GET_MY_CHILD_PROGRESS,
-    //   data: data,
-    // };
+    const data = await this.homeworkService.getMyChildHomeworkProgress(
+      user.userId,
+      studentId,
+      classId,
+      textbookId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.PARENTS.HOMEWORK.SUCCESS.GET_MY_CHILD_PROGRESS,
+      data: data,
+    };
   }
 }
