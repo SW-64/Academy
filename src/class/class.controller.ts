@@ -119,7 +119,7 @@ export class ClassController {
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.STUDENT, Role.PARENT)
   @Get('/:classId/textbooks')
   async getAllTextbookOfClass(@Param('classId', ParseIntPipe) classId: number) {
     const data = await this.classService.getAllTextbooksOfClass(classId);
