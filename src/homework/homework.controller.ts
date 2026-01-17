@@ -15,6 +15,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../users/entities/user.entity';
 import { MESSAGES } from './../constants/message.constant';
 import { BulkUpdateProgressCellsDto } from './dto/bulk-update-progress-cells.dto';
+import { UserInfo } from '../util/decorators/user-info.decorator';
+import { PartialUser } from '../users/interfaces/partial-user.entity';
 
 @Controller('')
 export class HomeworkController {
@@ -62,6 +64,30 @@ export class HomeworkController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.HOMEWORK.SUCCESS.UPDATE_PROGRESS,
+      data: data,
+    };
+  }
+
+  /**
+   * 학생 본인의 숙제 진도 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/students/me/classes/:classId/textbooks/:textbookId/homework')
+  async getMyHomeworkProgress(
+    @Param('classId', ParseIntPipe) classId: number,
+    @Param('textbookId', ParseIntPipe) textbookId: number,
+    @UserInfo() user: PartialUser,
+  ) {
+    const data = await this.homeworkService.getMyHomeworkProgress(
+      classId,
+      textbookId,
+      user.userId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.STUDENTS.HOMEWORK.SUCCESS.GET_PROGRESS,
       data: data,
     };
   }

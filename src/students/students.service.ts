@@ -14,6 +14,7 @@ import { startOfMonth, addMonths } from 'date-fns';
 import { Role, Status, User } from '../users/entities/user.entity';
 import { Grade, Level } from '../grades/entities/grade.entity';
 import { Student } from './entities/student.entity';
+import { StudentClass } from '../student-class/entities/student-class.entity';
 @Injectable()
 export class StudentsService {
   constructor(
@@ -23,6 +24,8 @@ export class StudentsService {
     private readonly studentsRepository: Repository<Student>,
     @InjectRepository(Grade)
     private readonly gradesRepository: Repository<Grade>,
+    @InjectRepository(StudentClass)
+    private readonly studentClassRepository: Repository<StudentClass>,
   ) {}
 
   async getAllGrades(studentId: number, year?: number, month?: number) {
@@ -195,5 +198,25 @@ export class StudentsService {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
     return student;
+  }
+
+  // 내가 속한 클래스 조회 (학생)
+  async getMyClasses(userId: number) {
+    const student = await this.studentsRepository.findOneBy({ userId });
+    if (!student) {
+      throw new NotFoundException(MESSAGES.STUDENTS.ERROR.NOT_FOUND);
+    }
+
+    const rows = await this.studentClassRepository
+      .createQueryBuilder('sc')
+      .innerJoin('sc.clazz', 'c')
+      .select(['c.classId AS classId', 'c.className AS className'])
+      .where('sc.studentId = :studentId', { studentId: student.studentId })
+      .getRawMany();
+
+    return rows.map((r) => ({
+      classId: Number(r.classId),
+      className: r.className,
+    }));
   }
 }

@@ -28,25 +28,19 @@ export class CreateTextbookDto {
   })
   grade: number;
 
-  /**
-   * 대단원 개수
-   * @example "5"
-   */
-
-  @IsNotEmpty({
-    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.LARGE_UNIT_REQUIRED,
+  // 대단원별 소단원 개수
+  // 예: [2, 1, 1] => 1대단원 2개, 2대단원 1개, 3대단원 1개
+  @IsOptional()
+  @IsArray()
+  @IsInt({
+    each: true,
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.UNITS_INVALID_FORMAT,
   })
-  largeUnit: number;
-
-  /**
-   * 소단원 개수
-   * @example "5"
-   */
-
-  @IsNotEmpty({
-    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.SMALL_UNIT_REQUIRED,
+  @Min(1, {
+    each: true,
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.UNITS_INVALID_FORMAT,
   })
-  smallUnit: number;
+  units: number[];
 
   /**
    * 클래스 목록

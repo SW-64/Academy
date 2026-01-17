@@ -203,4 +203,20 @@ export class StudentsController {
       data,
     };
   }
+
+  /**
+   * 내 클래스 전체 목록 조회
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.STUDENT)
+  @Get('/me/classes')
+  async getMyClasses(@UserInfo() user: PartialUser) {
+    const data = await this.studentsService.getMyClasses(user.userId);
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.STUDENTS.CLASS.SUCCESS.GET_MY_CLASSES,
+      data: data,
+    };
+  }
 }
