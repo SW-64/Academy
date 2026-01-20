@@ -24,8 +24,9 @@ import { NoticesService } from './notices.service';
 
 import { UpdateNoticeDto } from '../notices/dto/update-notice.dto';
 import { CreateNoticeDto } from '../notices/dto/create-notice.dto';
+import { ClassAccessGuard } from './../auth/guards/class-acces.guard';
 
-@Controller('notices')
+@Controller('classes/:classId/notices')
 export class NoticesController {
   constructor(private readonly noticesService: NoticesService) {}
 
@@ -40,11 +41,13 @@ export class NoticesController {
   async createNotice(
     @UserInfo() user: PartialUser,
     @Body() createNoticeDto: CreateNoticeDto,
+    @Param('classId', ParseIntPipe) classId: number,
   ) {
     const userId = user.userId;
     const data = await this.noticesService.createNotice(
       userId,
       createNoticeDto,
+      classId,
     );
     return {
       statusCode: HttpStatus.CREATED,
@@ -54,16 +57,45 @@ export class NoticesController {
   }
 
   /**
-   * 공지사항 전체조회
+   * 해당 클래스의 공지사항 전체조회 ( 학생용 )
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
+  @Roles(Role.ADMIN, Role.STUDENT)
+  @Get('')
+  async getNoticesAllByStudents(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    const _page = Number(page) || 1;
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
+    const data = await this.noticesService.findAllNotices(classId, {
+      page: _page,
+      limit: _limit,
+    });
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.NOTICE.SUCCESS.LIST,
+      data: data,
+    };
+  }
+
+  /**
+   * 해당 클래스의 공지사항 전체조회 ( 학부모용 )
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
+  @Roles(Role.PARENT)
   @Get('')
-  async getNoticesAll(@Query('page') page = 1, @Query('limit') limit = 10) {
+  async getNoticesAllByParents(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
     const _page = Number(page) || 1;
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const data = await this.noticesService.findAllNotices({
+    const data = await this.noticesService.findAllNotices(classId, {
       page: _page,
       limit: _limit,
     });
@@ -79,9 +111,10 @@ export class NoticesController {
    * @returns
    */
   @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
   @Get('/pinned')
-  async getPinnedNotices() {
-    const data = await this.noticesService.findPinnedNotices();
+  async getPinnedNotices(@Param('classId', ParseIntPipe) classId: number) {
+    const data = await this.noticesService.findPinnedNotices(classId);
 
     return {
       statusCode: HttpStatus.OK,
@@ -91,13 +124,37 @@ export class NoticesController {
   }
 
   /**
-   * 공지사항 상세조회
+   * 공지사항 상세조회 ( 학생용 )
    * @returns
    */
   @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
   @Get('/:noticeId')
-  async getNoticeOne(@Param('noticeId', ParseIntPipe) noticeId: number) {
-    const data = await this.noticesService.findNotice(noticeId);
+  async getNoticeOneByStudents(
+    @Param('noticeId', ParseIntPipe) noticeId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    const data = await this.noticesService.findNotice(noticeId, classId);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.NOTICE.SUCCESS.GET,
+      data: data,
+    };
+  }
+
+  /**
+   * 공지사항 상세조회 ( 학부모용 )
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
+  @Get('/:noticeId')
+  async getNoticeOneByParents(
+    @Param('noticeId', ParseIntPipe) noticeId: number,
+    @Param('classId', ParseIntPipe) classId: number,
+  ) {
+    const data = await this.noticesService.findNotice(noticeId, classId);
 
     return {
       statusCode: HttpStatus.OK,
@@ -116,6 +173,7 @@ export class NoticesController {
   @Patch('/:noticeId')
   async updateNotice(
     @Param('noticeId', ParseIntPipe) noticeId: number,
+    @Param('classId', ParseIntPipe) classId: number,
     @Body() updateNoticeDto: UpdateNoticeDto,
     @UserInfo() admin: PartialUser,
   ) {
@@ -123,6 +181,7 @@ export class NoticesController {
       noticeId,
       updateNoticeDto,
       admin.userId,
+      classId,
     );
     return {
       statusCode: HttpStatus.OK,
@@ -140,9 +199,10 @@ export class NoticesController {
   @Delete('/:noticeId')
   async deleteNotice(
     @Param('noticeId', ParseIntPipe) noticeId: number,
+    @Param('classId', ParseIntPipe) classId: number,
     @UserInfo() admin: PartialUser,
   ) {
-    await this.noticesService.deleteNotice(noticeId, admin.userId);
+    await this.noticesService.deleteNotice(noticeId, admin.userId, classId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.NOTICE.SUCCESS.DELETE,

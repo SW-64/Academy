@@ -8,8 +8,10 @@ import {
   DeleteDateColumn,
   JoinColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
 import { Admin } from '../../admin/entities/admin.entity';
+import { ClassNotice } from './class-notice.entity';
 
 @Entity()
 @Index(['pinned', 'createdAt']) // 고정 공지 최신순 조회용
@@ -26,9 +28,6 @@ export class Notice {
   @Column({ type: 'text', comment: '내용' })
   content: string;
 
-  @Column({ type: 'boolean', default: false, comment: '고정 여부' })
-  pinned: boolean;
-
   @CreateDateColumn({ name: 'created_at', comment: '생성날짜' })
   @Index()
   createdAt: Date;
@@ -36,10 +35,10 @@ export class Notice {
   @UpdateDateColumn({ name: 'updated_at', comment: '수정날짜' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', nullable: true, comment: '삭제날짜' })
-  deletedAt: Date | null;
-
   @ManyToOne(() => Admin, (admin) => admin.notice, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'admin_id' })
   admin: Admin;
+
+  @OneToMany(() => ClassNotice, (cn) => cn.notice)
+  classNotices: ClassNotice[];
 }
