@@ -85,6 +85,7 @@ export const MESSAGES = {
           DELETE: '공지사항 삭제 권한이 없습니다.',
         },
         NOT_FOUND: '존재하지 않는 공지사항입니다.',
+        NO_CHANGES: '변경된 내용이 없습니다.',
       },
 
       VALIDATION: {
@@ -323,6 +324,7 @@ export const MESSAGES = {
       ERROR: {
         NOT_FOUND: '반을 찾을 수 없습니다.',
         STUDENT_NOT_IN_CLASS: '해당 학생은 반에 속해있지 않습니다.',
+        NO_CHANGE: '변경된 정보가 없습니다.',
       },
       SUCCESS: {
         CREATE: '반이 성공적으로 생성되었습니다.',

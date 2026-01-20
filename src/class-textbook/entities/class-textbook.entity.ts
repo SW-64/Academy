@@ -27,9 +27,6 @@ export class ClassTextbook {
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'datetime', nullable: true })
-  deletedAt: Date | null;
-
   @ManyToOne(() => Class, (c) => c.classTextbooks, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'class_id', referencedColumnName: 'classId' })
   clazz: Class;
