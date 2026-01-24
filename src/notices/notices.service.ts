@@ -1,10 +1,12 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, IsNull, Repository } from 'typeorm';
 import {
   IPaginationOptions,
   paginate,
@@ -21,6 +23,7 @@ import { Admin } from './../admin/entities/admin.entity';
 import { ClassNotice } from './entities/class-notice.entity';
 import { Class } from './../class/entities/class.entity';
 import { Type } from 'class-transformer';
+import { NoticeListItem } from './dto/find-all-notices.return.dto';
 
 @Injectable()
 export class NoticesService {
@@ -58,7 +61,7 @@ export class NoticesService {
 
   // 공지사항 생성
   async createNotice(
-    userId: number,
+    userIdOfAdmin: number,
     { title, content, pinned }: CreateNoticeDto,
     classId: number,
   ) {
@@ -71,7 +74,7 @@ export class NoticesService {
 
       const admin = await adminRepo.findOne({
         where: {
-          userId,
+          userId: userIdOfAdmin,
         },
         select: {
           adminId: true,
@@ -79,41 +82,55 @@ export class NoticesService {
         },
       });
       if (!admin) {
-        throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+        throw new UnauthorizedException(MESSAGES.AUTH.ERROR.UNAUTHORIZED);
       }
       const existedClass = await classRepo.existsBy({
         classId,
+        deletedAt: IsNull(),
       });
       if (!existedClass) {
         throw new NotFoundException(MESSAGES.ADMIN.CLASS.ERROR.NOT_FOUND);
       }
 
       // 공지 생성
-      const notice = await noticeRepo.save({
+      const noticeInsertResult = await noticeRepo.insert({
         title,
         content,
         adminId: admin.adminId,
       });
 
-      // 반-공지 생성
-      await classNoticeRepo.save({
+      // insert 결과에서 PK 꺼내기
+      // MySQL 기준: identifiers[0].noticeId 형태로 들어오는 경우가 많음
+      const noticeIdRaw =
+        noticeInsertResult.identifiers?.[0]?.noticeId ??
+        noticeInsertResult.generatedMaps?.[0]?.noticeId;
+
+      const noticeId = Number(noticeIdRaw);
+      if (!Number.isInteger(noticeId) || noticeId <= 0) {
+        throw new InternalServerErrorException(
+          MESSAGES.COMMON.ERROR.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      // 2) 반-공지 INSERT
+      await classNoticeRepo.insert({
         classId,
-        noticeId: notice.noticeId,
+        noticeId,
         pinned: pinned ?? false,
       });
 
       // 로그 저장
-      await actionLogRepo.save({
-        actorId: admin.userId,
+      await actionLogRepo.insert({
+        actorId: userIdOfAdmin,
         actorType: 'admin',
         action: 'CREATE_NOTICE',
         targetType: 'notice',
-        targetId: notice.noticeId,
-        description: `Admin created a notice (noticeId: ${notice.noticeId})`,
+        targetId: noticeId,
+        description: `Admin created a notice (noticeId: ${noticeId})`,
         createdAt: new Date(),
       });
 
-      return notice.noticeId;
+      return noticeId;
     });
   }
 
@@ -121,46 +138,45 @@ export class NoticesService {
   async findAllNotices(
     classId: number,
     options: IPaginationOptions,
-  ): Promise<Pagination<Notice & { isNew: any }>> {
+  ): Promise<Pagination<NoticeListItem>> {
     const qb = this.noticeRepository
       .createQueryBuilder('n')
-      .innerJoin(
-        ClassNotice,
-        'cn',
-        'cn.notice_id = n.notice_id AND cn.class_id = :classId',
-        { classId },
-      )
-      // 정렬: pinned 우선, 최신순
-      .orderBy('n.pinned', 'DESC')
-      .addOrderBy('n.created_at', 'DESC')
-      // 필요한 컬럼만
+      .innerJoinAndSelect('n.classNotices', 'cn', 'cn.class_id = :classId', {
+        classId,
+      })
+      .orderBy('cn.pinned', 'DESC')
+      .addOrderBy('cn.createdAt', 'DESC')
       .select([
         'n.noticeId',
         'n.title',
-        'n.content',
-        'n.pinned',
         'n.createdAt',
         'n.updatedAt',
-        'n.adminId',
+        'cn.classNoticeId',
+        'cn.pinned',
+        'cn.createdAt',
       ]);
 
-    // paginate는 QueryBuilder도 지원
     const paged = await paginate<Notice>(qb, options);
+    const now = Date.now();
 
-    // isNew 계산(기존 유틸 재사용 가능하게 형태 맞춤)
-    const items = this.noticeOne(paged.items as Notice[]).map((x) => ({
-      noticeId: x.noticeId,
-      title: x.title,
-      content: x.content,
-      pinned: x.pinned,
-      createdAt: x.createdAt,
-      updatedAt: x.updatedAt,
-      adminId: x.adminId,
-      isNew: (x as any).isNew,
-    }));
+    const items = paged.items.map((n: Notice) => {
+      const cn = n.classNotices?.[0];
+
+      return {
+        noticeId: n.noticeId,
+        title: n.title,
+        pinned: cn?.pinned ?? false,
+        createdAt: n.createdAt,
+        updatedAt: n.updatedAt,
+        isNew: cn
+          ? now - cn.createdAt.getTime() <= NoticesService.DATE_CALCULATION
+          : false,
+      };
+    });
 
     return { ...paged, items };
   }
+
   // 공지사항 상세 조회
   async findNotice(noticeId: number, classId: number) {
     const existedNotice = await this.noticeRepository.findOneBy({ noticeId });

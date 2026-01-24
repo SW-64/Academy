@@ -7,6 +7,7 @@ import {
   JoinColumn,
   Index,
   OneToMany,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Textbook } from './textbook.entity';
 import { ProgressChapter } from '../../homework/entities/progress-chapter.entity';
@@ -29,7 +30,7 @@ export class TextbookChapter {
   smallUnitNo: number;
 
   @ManyToOne(() => Textbook, (t) => t.chapters, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'textbook_id', referencedColumnName: 'textbookId' })
+  @JoinColumn({ name: 'textbook_id' })
   textbook: Textbook;
 
   @OneToMany(() => ProgressChapter, (pc) => pc.textbookChapter)

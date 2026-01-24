@@ -1,10 +1,15 @@
 import {
+  ArrayMaxSize,
   ArrayUnique,
   IsArray,
   IsInt,
   IsNotEmpty,
   IsOptional,
+  IsString,
+  Max,
+  MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 import { Type } from 'class-transformer';
@@ -17,6 +22,15 @@ export class CreateTextbookDto {
   @IsNotEmpty({
     message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.NAME_REQUIRED,
   })
+  @IsString({
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.NAME_INVALID_FORMAT,
+  })
+  @MinLength(1, {
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.NAME_INVALID_FORMAT,
+  })
+  @MaxLength(255, {
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.NAME_INVALID_FORMAT,
+  })
   name: string;
 
   /**
@@ -26,12 +40,21 @@ export class CreateTextbookDto {
   @IsNotEmpty({
     message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.GRADE_REQUIRED,
   })
+  @Type(() => Number)
+  @IsInt({
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.GRADE_INVALID_FORMAT,
+  })
+  @Min(1, {
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.GRADE_INVALID_FORMAT,
+  })
+  @Max(3)
   grade: number;
 
   // 대단원별 소단원 개수
   // 예: [2, 1, 1] => 1대단원 2개, 2대단원 1개, 3대단원 1개
   @IsOptional()
   @IsArray()
+  @Type(() => Number)
   @IsInt({
     each: true,
     message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.UNITS_INVALID_FORMAT,
@@ -40,7 +63,12 @@ export class CreateTextbookDto {
     each: true,
     message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.UNITS_INVALID_FORMAT,
   })
-  units: number[];
+  @Max(50, {
+    each: true,
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.UNITS_INVALID_FORMAT,
+  })
+  @ArrayMaxSize(100)
+  units?: number[];
 
   /**
    * 클래스 목록
@@ -61,5 +89,10 @@ export class CreateTextbookDto {
     each: true,
     message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.CLASS_ID_INVALID_FORMAT,
   })
+  @Max(2147483647, {
+    each: true,
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.CREATE.CLASS_ID_INVALID_FORMAT,
+  })
+  @ArrayMaxSize(100)
   classList?: number[];
 }

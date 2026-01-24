@@ -28,10 +28,10 @@ export class ClassTextbook {
   createdAt: Date;
 
   @ManyToOne(() => Class, (c) => c.classTextbooks, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'class_id', referencedColumnName: 'classId' })
+  @JoinColumn({ name: 'class_id' })
   clazz: Class;
 
   @ManyToOne(() => Textbook, (t) => t.classTextbooks, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'textbook_id', referencedColumnName: 'textbookId' })
+  @JoinColumn({ name: 'textbook_id' })
   textbook: Textbook;
 }

@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayUnique,
   IsArray,
+  IsBoolean,
   IsInt,
   Min,
   ValidateNested,
@@ -12,6 +13,9 @@ export class WrongAnswersUpsertItemDto {
   @IsInt()
   @Min(1)
   studentId!: number;
+
+  @IsBoolean()
+  isTaken!: boolean;
 
   @IsArray()
   @ArrayMaxSize(300) // 학생 1명이 틀릴 수 있는 문항 수 안전장치

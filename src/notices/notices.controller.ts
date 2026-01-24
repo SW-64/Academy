@@ -37,7 +37,7 @@ export class NoticesController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('')
+  @Post()
   async createNotice(
     @UserInfo() user: PartialUser,
     @Body() createNoticeDto: CreateNoticeDto,
@@ -62,7 +62,7 @@ export class NoticesController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
   @Roles(Role.ADMIN, Role.STUDENT)
-  @Get('')
+  @Get()
   async getNoticesAllByStudents(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
@@ -87,7 +87,7 @@ export class NoticesController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PARENT)
-  @Get('')
+  @Get()
   async getNoticesAllByParents(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
@@ -110,8 +110,8 @@ export class NoticesController {
    * 고정 공지사항 조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard)
-  @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   @Get('/pinned')
   async getPinnedNotices(@Param('classId', ParseIntPipe) classId: number) {
     const data = await this.noticesService.findPinnedNotices(classId);
@@ -127,7 +127,7 @@ export class NoticesController {
    * 공지사항 상세조회 ( 학생용 )
    * @returns
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
   @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
   @Get('/:noticeId')
   async getNoticeOneByStudents(
@@ -147,7 +147,7 @@ export class NoticesController {
    * 공지사항 상세조회 ( 학부모용 )
    * @returns
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
   @Get('/:noticeId')
   async getNoticeOneByParents(

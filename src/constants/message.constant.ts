@@ -1,4 +1,9 @@
 export const MESSAGES = {
+  COMMON: {
+    ERROR: {
+      INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+    },
+  },
   AUTH: {
     SUCCESS: {
       SIGN_UP: '회원가입에 성공했습니다.',
@@ -16,6 +21,9 @@ export const MESSAGES = {
       DUPLICATED_EMAIL: '이미 가입된 이메일입니다.',
       DUPLICATED_PHONE: '이미 가입된 연락처입니다.',
       UNAUTHORIZED: '인증에 실패했습니다. 다시 로그인해주세요.',
+      FORBIDDEN_ROLE: '현재 역할은 이 리소스에 접근할 수 없습니다.',
+      INVALID_PARAM: '요청 파라미터 형식이 잘못되었습니다.',
+      FORBIDDEN_CLASS_ACCESS: '권한이 없습니다.',
     },
 
     VALIDATION: {
@@ -92,11 +100,17 @@ export const MESSAGES = {
         CREATE: {
           TITLE_REQUIRED: '공지사항 제목은 필수 입력 항목입니다.',
           CONTENT_REQUIRED: '공지사항 내용은 필수 입력 항목입니다.',
+          INVALID_TITLE: '제목 형식이 맞지 않습니다.',
+          INVALID_CONTENT: '내용 형식이 맞지 않습니다.',
+          INVALID_PINNED: '고정 형식이 맞지 않습니다.',
         },
         UPDATE: {
           TITLE_REQUIRED: '수정할 제목을 입력해주세요.',
           CONTENT_REQUIRED: '수정할 내용을 입력해주세요.',
           NO_CHANGES: '변경된 정보가 없습니다.',
+          INVALID_TITLE: '제목 형식이 맞지 않습니다.',
+          INVALID_CONTENT: '내용 형식이 맞지 않습니다.',
+          INVALID_PINNED: '고정 형식이 맞지 않습니다.',
         },
       },
     },
@@ -141,6 +155,9 @@ export const MESSAGES = {
         ALREADY_EXISTS: '이미 존재하는 시험 일정입니다.',
         NO_EXAMS: '등록된 시험 일정이 없습니다.',
         INVALID_EXAM_DETAIL: '유효하지 않은 시험 문항입니다.',
+        NO_STUDENTS: '수정할 학생이 존재하지 않습니다.',
+        INVALID_WRONG_ANSWERS_FOR_NOT_TAKEN:
+          '응시를 하지 않은 학생에게 체크를 할 수 없습니다.',
       },
 
       VALIDATION: {
@@ -286,6 +303,8 @@ export const MESSAGES = {
           CLASS_ID_INVALID_FORMAT: '반 아이디는 1 이상의 정수여야 합니다.',
           CLASS_ID_DUPLICATED: '반 아이디가 중복되었습니다.',
           UNITS_INVALID_FORMAT: '소단원의 각 요소들은 1이상의 정수여야 합니다.',
+          GRADE_INVALID_FORMAT: '학년의 형식이 맞지 않습니다.',
+          NAME_INVALID_FORMAT: '교재 이름의 형식이 맞지 않습니다.',
         },
         UPDATE: {
           NAME_INVALID_FORMAT: '교재 이름은 문자열이어야 합니다.',
@@ -309,6 +328,7 @@ export const MESSAGES = {
         INVALID_CLASS_ID: '존재하지 않는 반 아이디가 포함되어 있습니다.',
         CANNOT_SHRINK_CHAPTER_WITH_PROGRESS:
           '진행 데이터가 있을 시, 삭제 혹은 축소할 수 없습니다.',
+        UNITS_INVALID_FORMAT: '기존과 동일합니다.',
       },
     },
     CLASS: {

@@ -77,6 +77,9 @@ export class Grade {
   @UpdateDateColumn({ type: 'datetime', name: 'updated_at' })
   updatedAt: Date;
 
+  @DeleteDateColumn({ type: 'datetime', name: 'deleted_at' })
+  deletedAt: Date;
+
   @OneToMany(() => GradeWrongAnswer, (gd) => gd.grade)
   gradeWrongAnswer: GradeWrongAnswer[];
 }

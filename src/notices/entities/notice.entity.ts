@@ -5,7 +5,6 @@ import {
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
   JoinColumn,
   Index,
   OneToMany,
@@ -13,8 +12,7 @@ import {
 import { Admin } from '../../admin/entities/admin.entity';
 import { ClassNotice } from './class-notice.entity';
 
-@Entity()
-@Index(['pinned', 'createdAt']) // 고정 공지 최신순 조회용
+@Entity('notice')
 export class Notice {
   @PrimaryGeneratedColumn({ name: 'notice_id', comment: '공지 id' })
   noticeId: number;
@@ -22,7 +20,7 @@ export class Notice {
   @Column({ name: 'admin_id', nullable: true, comment: '관리자 id' })
   adminId: number | null;
 
-  @Column({ comment: '제목' })
+  @Column({ type: 'varchar', length: 100, comment: '제목' })
   title: string;
 
   @Column({ type: 'text', comment: '내용' })

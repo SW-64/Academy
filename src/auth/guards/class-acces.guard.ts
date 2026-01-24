@@ -3,7 +3,6 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -13,6 +12,7 @@ import { Class } from './../../class/entities/class.entity';
 import { Student } from './../../students/entities/student.entity';
 import { StudentClass } from '../../student-class/entities/student-class.entity';
 import { IsNull, Repository } from 'typeorm';
+import { MESSAGES } from './../../constants/message.constant';
 /**
  * STUDENT: Class에 해당되는 학생인지 검증
  * PARENT : 거부
@@ -35,11 +35,12 @@ export class ClassAccessGuard implements CanActivate {
     const req = context.switchToHttp().getRequest();
 
     const user = req.user as { userId?: number; role?: Role } | undefined;
-    if (!user?.userId) throw new UnauthorizedException('Unauthorized');
+    if (!user?.userId)
+      throw new UnauthorizedException(MESSAGES.AUTH.ERROR.UNAUTHORIZED);
 
     const classId = Number(req.params?.classId);
     if (!Number.isInteger(classId) || classId <= 0) {
-      throw new NotFoundException('Class not found');
+      throw new ForbiddenException(MESSAGES.AUTH.ERROR.INVALID_PARAM);
     }
 
     // 1) class 존재 확인
@@ -47,7 +48,7 @@ export class ClassAccessGuard implements CanActivate {
       classId,
     });
     if (!existedClass) {
-      throw new NotFoundException('Class not found');
+      throw new ForbiddenException(MESSAGES.AUTH.ERROR.FORBIDDEN_CLASS_ACCESS);
     }
 
     // 2) role별 접근 정책
@@ -59,7 +60,7 @@ export class ClassAccessGuard implements CanActivate {
         return this.checkStudentInClass(user.userId, classId);
 
       default:
-        throw new ForbiddenException('권한이 없습니다.');
+        throw new ForbiddenException(MESSAGES.AUTH.ERROR.FORBIDDEN_ROLE);
     }
   }
 
@@ -72,7 +73,8 @@ export class ClassAccessGuard implements CanActivate {
       where: { userId },
       select: { studentId: true },
     });
-    if (!student) throw new ForbiddenException('권한이 없습니다.');
+    if (!student)
+      throw new ForbiddenException(MESSAGES.AUTH.ERROR.FORBIDDEN_ROLE);
 
     // 소속 확인
     const isInClass = await this.studentClassRepo.existsBy({
@@ -81,7 +83,8 @@ export class ClassAccessGuard implements CanActivate {
       deletedAt: IsNull(),
     });
 
-    if (!isInClass) throw new ForbiddenException('권한이 없습니다.');
+    if (!isInClass)
+      throw new ForbiddenException(MESSAGES.AUTH.ERROR.FORBIDDEN_ROLE);
     return true;
   }
 }

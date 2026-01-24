@@ -1,11 +1,13 @@
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   ArrayUnique,
   IsArray,
-  IsDateString,
   IsInt,
   IsOptional,
   IsString,
+  Max,
+  MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
@@ -22,18 +24,23 @@ export class UpdateTextbookDto {
     message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.NAME_INVALID_FORMAT,
   })
   @MinLength(1)
-  name: string;
+  @MaxLength(255, {
+    message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.NAME_INVALID_FORMAT,
+  })
+  name?: string;
 
   /**
    * 교재 학년
    * @example "1학년"
    */
   @IsOptional()
+  @Type(() => Number)
   @IsInt({
     message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.GRADE_INVALID_FORMAT,
   })
   @Min(1)
-  grade: number;
+  @Max(3)
+  grade?: number;
 
   // 대단원별 소단원 개수
   @IsOptional()
@@ -52,6 +59,7 @@ export class UpdateTextbookDto {
     each: true,
     message: MESSAGES.ADMIN.TEXTBOOK.VALIDATION.UPDATE.UNITS_INVALID_FORMAT,
   })
+  @ArrayMaxSize(100)
   units?: number[];
 
   /**

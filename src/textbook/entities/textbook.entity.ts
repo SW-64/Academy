@@ -20,7 +20,7 @@ export class Textbook {
   @Column({ name: 'name', type: 'varchar', length: 255 })
   name: string;
 
-  @Column({ name: 'grade' })
+  @Column({ name: 'grade', type: 'int' })
   grade: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })

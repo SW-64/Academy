@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Textbook } from './entities/textbook.entity';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { CreateTextbookDto } from './dto/create-textbook.dto';
 import { Admin } from './../admin/entities/admin.entity';
 import { MESSAGES } from '../constants/message.constant';
@@ -35,9 +35,11 @@ export class TextbookService {
   // 교재 생성
   async createTextbook(
     { name, grade, units, classList }: CreateTextbookDto,
-    adminId: number,
+    userIdOfAdmin: number,
   ) {
-    const admin = await this.adminRepository.findOneBy({ userId: adminId });
+    const admin = await this.adminRepository.existsBy({
+      userId: userIdOfAdmin,
+    });
     if (!admin) {
       throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
     }
@@ -57,28 +59,31 @@ export class TextbookService {
       /// 2) 단원(챕터) 생성: 대단원별 소단원 수 반영
       // units = [2,1,1]
       // => (1,1)(1,2)(2,1)(3,1)
-      const chapters: Array<{
-        textbookId: number;
-        largeUnitNo: number;
-        smallUnitNo: number;
-      }> = [];
 
-      for (let li = 0; li < units.length; li++) {
-        const smallCount = units[li];
-        const largeUnitNo = li + 1;
+      if (units && units.length > 0) {
+        const chapters: Array<{
+          textbookId: number;
+          largeUnitNo: number;
+          smallUnitNo: number;
+        }> = [];
 
-        for (let si = 0; si < smallCount; si++) {
-          chapters.push({
-            textbookId: textbook.textbookId,
-            largeUnitNo,
-            smallUnitNo: si + 1,
-          });
+        for (let li = 0; li < units.length; li++) {
+          const smallCount = units[li];
+          const largeUnitNo = li + 1;
+
+          for (let si = 0; si < smallCount; si++) {
+            chapters.push({
+              textbookId: textbook.textbookId,
+              largeUnitNo,
+              smallUnitNo: si + 1,
+            });
+          }
         }
-      }
 
-      // 3) 벌크 INSERT (save 대신 insert)
-      // insert()는 엔티티 라이프사이클 훅이 필요 없고, 불필요한 조회가 없어서 더 가볍
-      await chapterRepo.insert(chapters);
+        // 3) 벌크 INSERT (save 대신 insert)
+        // insert()는 엔티티 라이프사이클 훅이 필요 없고, 불필요한 조회가 없어서 더 가볍
+        await chapterRepo.insert(chapters);
+      }
 
       // 4) 교재 - 반 테이블 벌크 INSERT
       if (classList && classList.length > 0) {
@@ -91,7 +96,7 @@ export class TextbookService {
 
       // 5) 로그 저장
       await logRepo.insert({
-        actorId: admin.userId,
+        actorId: userIdOfAdmin,
         actorType: 'admin',
         action: 'CREATE_TEXTBOOK',
         targetType: 'textbook',
@@ -106,7 +111,15 @@ export class TextbookService {
 
   // 교재 목록 조회
   async getAllTextbooks() {
-    const textbooks = await this.textbookRepository.find();
+    const textbooks = await this.textbookRepository.find({
+      where: { deletedAt: IsNull() },
+      select: {
+        textbookId: true,
+        name: true,
+        grade: true,
+        createdAt: true,
+      },
+    });
     return textbooks;
   }
 
@@ -125,6 +138,7 @@ export class TextbookService {
         'c.className AS className',
       ])
       .where('t.textbookId = :textbookId', { textbookId })
+      .andWhere('t.deletedAt IS NULL')
       .getRawMany();
 
     if (rows.length === 0) {
@@ -136,7 +150,7 @@ export class TextbookService {
     return {
       textbookId: Number(first.textbookId),
       name: first.name,
-      grade: first.grade,
+      grade: Number(first.grade),
       classTextbooks: rows
         .filter((r) => r.classTextbookId != null) // 연결이 없을 수도 있으니 방어
         .map((r) => ({
@@ -151,7 +165,7 @@ export class TextbookService {
   // 교재 수정
   async updateTextbook(
     dto: UpdateTextbookDto,
-    adminId: number,
+    userIdOfAdmin: number,
     textbookId: number,
   ) {
     const { name, grade, units, classList } = dto;
@@ -162,9 +176,16 @@ export class TextbookService {
       const classRepo = manager.getRepository(Class);
       const chapterRepo = manager.getRepository(TextbookChapter);
       const progressChapterRepo = manager.getRepository(ProgressChapter);
+      const actionLogRepo = manager.getRepository(ActionLog);
 
       // 1) 교재 확인
-      const textbook = await textbookRepo.findOne({ where: { textbookId } });
+      const textbook = await textbookRepo.findOne({
+        where: { textbookId, deletedAt: IsNull() },
+        select: {
+          name: true,
+          grade: true,
+        },
+      });
       if (!textbook) {
         throw new NotFoundException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NOT_FOUND);
       }
@@ -228,7 +249,11 @@ export class TextbookService {
       let toDeleteChapterIds: number[] = [];
 
       const unitsChangeRequested = Array.isArray(units);
-
+      if (unitsChangeRequested && units.length === 0) {
+        throw new BadRequestException(
+          MESSAGES.ADMIN.TEXTBOOK.ERROR.UNITS_INVALID_FORMAT,
+        );
+      }
       if (unitsChangeRequested) {
         // 4-1) 현재 챕터 목록 조회
         const existingChapters = await chapterRepo.find({
@@ -327,7 +352,7 @@ export class TextbookService {
         await classTextbookRepo.insert(rows);
       }
 
-      // 8) ✅ 챕터 변경 (벌크)
+      // 8) 챕터 변경 (벌크)
       if (unitsChangeRequested) {
         if (toDeleteChapterIds.length > 0) {
           await chapterRepo.delete({
@@ -341,8 +366,8 @@ export class TextbookService {
       }
 
       // 9) 로그
-      await this.actionLogRepository.save({
-        actorId: adminId,
+      await actionLogRepo.save({
+        actorId: userIdOfAdmin,
         actorType: 'admin',
         action: 'UPDATE_TEXTBOOK',
         targetType: 'textbook',
@@ -376,22 +401,29 @@ export class TextbookService {
   }
 
   // 교재 삭제
-  async deleteTextbook(textbookId: number, adminId: number) {
-    const admin = await this.adminRepository.findOneBy({ userId: adminId });
+  async deleteTextbook(textbookId: number, userIdOfAdmin: number) {
+    const admin = await this.adminRepository.existsBy({
+      userId: userIdOfAdmin,
+    });
     if (!admin) {
       throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
     }
 
-    const textbook = await this.textbookRepository.findOneBy({ textbookId });
+    const textbook = await this.textbookRepository.existsBy({
+      textbookId,
+      deletedAt: IsNull(),
+    });
     if (!textbook) {
       throw new NotFoundException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NOT_FOUND);
     }
 
-    await this.textbookRepository.softDelete(textbookId);
+    const result = await this.textbookRepository.softDelete(textbookId);
+    if (result.affected === 0)
+      throw new NotFoundException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NOT_FOUND);
 
     // 로그 저장
     await this.actionLogRepository.save({
-      actorId: admin.userId,
+      actorId: userIdOfAdmin,
       actorType: 'admin',
       action: 'DELETE_TEXTBOOK',
       targetType: 'textbook',

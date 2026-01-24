@@ -1,0 +1,19 @@
+
+C:\Users\Wooni\OneDrive\사진\바탕 화면\Academy-Management\academy
+├── dist
+├── nest-cli.json
+├── node_modules
+├── package-lock.json
+├── package.json
+├── project_structure.txt
+├── README.md
+├── src
+├── test
+├── tsconfig.build.json
+└── tsconfig.json
+
+directory: 4 file: 7
+
+
+
+[2K[1G
