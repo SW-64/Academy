@@ -62,16 +62,16 @@ export class AuthService {
           MESSAGES.AUTH.VALIDATION.SIGN_UP.STUDENT_SCHOOL_GRADE_REQUIRED,
         );
       }
-
-      // Role이 STUDENT가 아닐 경우에는 값이 없어야 함
-      if (role !== Role.STUDENT) {
-        if (signupGrade || signupSchool) {
-          throw new BadRequestException(
-            MESSAGES.AUTH.VALIDATION.SIGN_UP.PARENT_SCHOOL_GRADE_FORBIDDEN,
-          );
-        }
+    }
+    // Role이 STUDENT가 아닐 경우에는 값이 없어야 함
+    else {
+      if (signupGrade || signupSchool) {
+        throw new BadRequestException(
+          MESSAGES.AUTH.VALIDATION.SIGN_UP.PARENT_SCHOOL_GRADE_FORBIDDEN,
+        );
       }
     }
+
     // 유효성검증 끝
 
     // 비밀번호 암호화
@@ -192,25 +192,19 @@ export class AuthService {
     const existedRefreshToken = await this.refreshTokenRepository.findOneBy({
       userId: userId,
     });
-    // 4-1. 이미 있다 → refreshtoken, expiresAt update
-    const updateContent = {
-      refreshtoken: currentHashedRefreshToken,
-      expiresAt: expiresAt,
-    };
-    if (existedRefreshToken) {
-      await this.refreshTokenRepository.update(
-        { userId: userId },
-        updateContent,
-      );
-    } else {
-      // 4-2. 없다 → 새 row 생성
-      await this.refreshTokenRepository.save({
+    // 4. Upsert 패턴으로 원자적 처리
+    await this.refreshTokenRepository
+      .createQueryBuilder()
+      .insert()
+      .into(RefreshToken)
+      .values({
         userId: userId,
         refreshtoken: currentHashedRefreshToken,
         createdAt: new Date(),
         expiresAt: expiresAt,
-      });
-    }
+      })
+      .orUpdate(['refreshtoken', 'expiresAt'], ['userId']) // ← 추가
+      .execute();
   }
 
   // refreshtoken 유효성 검사
