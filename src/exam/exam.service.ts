@@ -103,7 +103,13 @@ export class ExamService {
             errorRate: null,
           }));
 
-          await examDetailRepo.insert(details);
+          await examDetailRepo
+            .createQueryBuilder()
+            .insert()
+            .into(ExamDetail)
+            .values(details)
+            .orIgnore() // ← 추가 (중복 방지)
+            .execute();
         }
       }
       // 3) 로그
@@ -285,7 +291,13 @@ export class ExamService {
 
         // 실제 DB 반영 (빈 배열 허용: question=[] points=[]이면 전체 삭제가 됨)
         if (toInsert.length > 0) {
-          await examDetailRepo.insert(toInsert);
+          await examDetailRepo
+            .createQueryBuilder()
+            .insert()
+            .into(ExamDetail)
+            .values(toInsert)
+            .orIgnore() // 동시성 안전
+            .execute();
         }
         if (toUpdate.length > 0) {
           await examDetailRepo.save(toUpdate);

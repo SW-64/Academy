@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Class } from './entities/class.entity';
@@ -278,10 +279,12 @@ export class ClassService {
         throw new NotFoundException(MESSAGES.ADMIN.CLASS.ERROR.NOT_FOUND);
       }
 
-      // 하위 연결 레코드 soft delete || hard delete
+      // 하위 연결 레코드 삭제
+      // - Soft Delete: 복구 필요 (학생 연결, 학습자료)
       await studentClassRepo.softDelete({ classId });
       await classMaterialRepo.softDelete({ classId });
 
+      // - Hard Delete: 복구 불필요 (교재 연결, 공지 - 재등록 가능)
       await classTextbookRepo.delete({ classId });
       await classNoticeRepo.delete({ classId });
 

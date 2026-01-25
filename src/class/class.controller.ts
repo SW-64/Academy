@@ -20,6 +20,7 @@ import { UserInfo } from './../util/decorators/user-info.decorator';
 import { PartialUser } from './../users/interfaces/partial-user.entity';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
+import { ClassAccessGuard } from './../auth/guards/class-acces.guard';
 
 @Controller('class')
 export class ClassController {
@@ -118,7 +119,7 @@ export class ClassController {
    * 클래스의 교재 목록 조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
   @Roles(Role.ADMIN, Role.STUDENT, Role.PARENT)
   @Get('/:classId/textbooks')
   async getAllTextbookOfClass(@Param('classId', ParseIntPipe) classId: number) {

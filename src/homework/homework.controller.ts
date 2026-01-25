@@ -17,6 +17,7 @@ import { MESSAGES } from './../constants/message.constant';
 import { BulkUpdateProgressCellsDto } from './dto/bulk-update-progress-cells.dto';
 import { UserInfo } from '../util/decorators/user-info.decorator';
 import { PartialUser } from '../users/interfaces/partial-user.entity';
+import { ClassAccessGuard } from './../auth/guards/class-acces.guard';
 
 @Controller('')
 export class HomeworkController {
@@ -26,7 +27,7 @@ export class HomeworkController {
    * 숙제 진도 목록 조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
   @Roles(Role.ADMIN)
   @Get('/classes/:classId/textbooks/:textbookId/progress-grid')
   async getHomeworkProgress(

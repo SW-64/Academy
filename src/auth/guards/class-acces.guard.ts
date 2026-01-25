@@ -1,90 +1,144 @@
 import {
+  Injectable,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
-  Injectable,
-  UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
-
-import { Role } from '../../users/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Class } from './../../class/entities/class.entity';
-import { Student } from './../../students/entities/student.entity';
+import { Repository } from 'typeorm';
+import { Student } from '../../students/entities/student.entity';
+import { Parent } from '../../parents/entities/parent.entity';
 import { StudentClass } from '../../student-class/entities/student-class.entity';
-import { IsNull, Repository } from 'typeorm';
-import { MESSAGES } from './../../constants/message.constant';
+import { Role } from '../../users/entities/user.entity';
+import { IsNull, In } from 'typeorm';
+
 /**
- * STUDENT: Class에 해당되는 학생인지 검증
- * PARENT : 거부
- * ADMIN  : 그냥 통과
+ * 반 접근 권한 검증 Guard
+ * - ADMIN: 모든 반 접근 가능
+ * - STUDENT: 본인이 속한 반만
+ * - PARENT: 자녀가 속한 반만
  *
- * 전제: Class가 존재하는지 여부 검증
+ * 사용법:
+ * @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
+ * @Roles(Role.ADMIN, Role.STUDENT, Role.PARENT)
+ * @Get('/classes/:classId/...')
  */
 @Injectable()
 export class ClassAccessGuard implements CanActivate {
   constructor(
-    @InjectRepository(Class)
-    private readonly classRepo: Repository<Class>,
     @InjectRepository(Student)
-    private readonly studentRepo: Repository<Student>,
+    private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Parent)
+    private readonly parentRepository: Repository<Parent>,
     @InjectRepository(StudentClass)
-    private readonly studentClassRepo: Repository<StudentClass>,
+    private readonly studentClassRepository: Repository<StudentClass>,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
+    const user = request.user; // JwtAuthGuard에서 주입된 사용자 정보
 
-    const user = req.user as { userId?: number; role?: Role } | undefined;
-    if (!user?.userId)
-      throw new UnauthorizedException(MESSAGES.AUTH.ERROR.UNAUTHORIZED);
-
-    const classId = Number(req.params?.classId);
-    if (!Number.isInteger(classId) || classId <= 0) {
-      throw new ForbiddenException(MESSAGES.AUTH.ERROR.INVALID_PARAM);
+    if (!user) {
+      throw new ForbiddenException('인증되지 않은 사용자입니다');
     }
 
-    // 1) class 존재 확인
-    const existedClass = await this.classRepo.existsBy({
-      classId,
-    });
-    if (!existedClass) {
-      throw new ForbiddenException(MESSAGES.AUTH.ERROR.FORBIDDEN_CLASS_ACCESS);
+    // URL에서 classId 추출
+    const classId = parseInt(request.params.classId);
+    if (!classId || isNaN(classId)) {
+      throw new ForbiddenException('유효하지 않은 반 ID입니다');
     }
 
-    // 2) role별 접근 정책
-    switch (user.role) {
-      case Role.ADMIN:
-        return true;
-
-      case Role.STUDENT:
-        return this.checkStudentInClass(user.userId, classId);
-
-      default:
-        throw new ForbiddenException(MESSAGES.AUTH.ERROR.FORBIDDEN_ROLE);
+    // ADMIN은 모든 반 접근 가능
+    if (user.role === Role.ADMIN) {
+      return true;
     }
+
+    // STUDENT 검증
+    if (user.role === Role.STUDENT) {
+      return await this.validateStudentAccess(classId, user.userId);
+    }
+
+    // PARENT 검증
+    if (user.role === Role.PARENT) {
+      return await this.validateParentAccess(classId, user.userId);
+    }
+
+    // 그 외 역할은 차단
+    throw new ForbiddenException('해당 반에 접근 권한이 없습니다');
   }
 
-  private async checkStudentInClass(
-    userId: number,
+  /**
+   * STUDENT 권한 검증
+   */
+  private async validateStudentAccess(
     classId: number,
+    userId: number,
   ): Promise<boolean> {
-    // userId -> studentId
-    const student = await this.studentRepo.findOne({
+    const student = await this.studentRepository.findOne({
       where: { userId },
       select: { studentId: true },
     });
-    if (!student)
-      throw new ForbiddenException(MESSAGES.AUTH.ERROR.FORBIDDEN_ROLE);
 
-    // 소속 확인
-    const isInClass = await this.studentClassRepo.existsBy({
-      classId,
-      studentId: student.studentId,
-      deletedAt: IsNull(),
+    if (!student) {
+      throw new NotFoundException('학생 정보를 찾을 수 없습니다');
+    }
+
+    const link = await this.studentClassRepository.findOne({
+      where: {
+        classId,
+        studentId: student.studentId,
+        deletedAt: IsNull(),
+      },
+      select: { studentClassId: true },
     });
 
-    if (!isInClass)
-      throw new ForbiddenException(MESSAGES.AUTH.ERROR.FORBIDDEN_ROLE);
+    if (!link) {
+      throw new ForbiddenException('해당 반에 접근 권한이 없습니다');
+    }
+
+    return true;
+  }
+
+  /**
+   * PARENT 권한 검증
+   */
+  private async validateParentAccess(
+    classId: number,
+    userId: number,
+  ): Promise<boolean> {
+    const parent = await this.parentRepository.findOne({
+      where: { userId },
+      select: { parentId: true },
+    });
+
+    if (!parent) {
+      throw new NotFoundException('학부모 정보를 찾을 수 없습니다');
+    }
+
+    const children = await this.studentRepository.find({
+      where: { parentId: parent.parentId },
+      select: { studentId: true },
+    });
+
+    const childIds = children.map((c) => c.studentId);
+
+    if (childIds.length === 0) {
+      throw new ForbiddenException('자녀 정보가 없습니다');
+    }
+
+    const link = await this.studentClassRepository
+      .createQueryBuilder('sc')
+      .where('sc.class_id = :classId', { classId })
+      .andWhere('sc.student_id IN (:...childIds)', { childIds })
+      .andWhere('sc.deleted_at IS NULL')
+      .select(['sc.studentClassId'])
+      .getOne();
+
+    if (!link) {
+      throw new ForbiddenException('해당 반에 접근 권한이 없습니다');
+    }
+
     return true;
   }
 }
