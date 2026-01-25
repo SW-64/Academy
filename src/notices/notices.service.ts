@@ -51,13 +51,6 @@ export class NoticesService {
       isNew: now - n.createdAt.getTime() <= NoticesService.DATE_CALCULATION,
     }));
   }
-  private noticeList<T extends ClassNotice>(items: T[]) {
-    const now = Date.now();
-    return items.map((n) => ({
-      ...n,
-      isNew: now - n.createdAt.getTime() <= NoticesService.DATE_CALCULATION,
-    }));
-  }
 
   // 공지사항 생성
   async createNotice(
@@ -112,12 +105,18 @@ export class NoticesService {
         );
       }
 
-      // 2) 반-공지 INSERT
-      await classNoticeRepo.insert({
-        classId,
-        noticeId,
-        pinned: pinned ?? false,
-      });
+      // 2) 반-공지 INSERT (orIgnore로 중복 방지)
+      await classNoticeRepo
+        .createQueryBuilder()
+        .insert()
+        .into(ClassNotice)
+        .values({
+          classId,
+          noticeId,
+          pinned: pinned ?? false,
+        })
+        .orIgnore() // ← 추가
+        .execute();
 
       // 로그 저장
       await actionLogRepo.insert({
@@ -261,7 +260,7 @@ export class NoticesService {
           throw new NotFoundException(MESSAGES.ADMIN.NOTICE.ERROR.NO_CHANGES);
       }
 
-      if (pinnedChange && pinned) {
+      if (pinnedChange) {
         const result = await classNoticeRepo.update(
           { noticeId, classId },
           { pinned },
