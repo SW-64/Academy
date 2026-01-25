@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Textbook } from './entities/textbook.entity';
-import { DataSource, In, IsNull, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, IsNull, Repository } from 'typeorm';
 import { CreateTextbookDto } from './dto/create-textbook.dto';
 import { Admin } from './../admin/entities/admin.entity';
 import { MESSAGES } from '../constants/message.constant';
@@ -80,19 +80,16 @@ export class TextbookService {
           }
         }
 
-        // 3) 벌크 INSERT (save 대신 insert)
-        // insert()는 엔티티 라이프사이클 훅이 필요 없고, 불필요한 조회가 없어서 더 가볍
-        await chapterRepo.insert(chapters);
+        // 3) 벌크 INSERT (동시성 안전)
+        await this.insertChaptersIgnore(manager, chapters);
       }
 
-      // 4) 교재 - 반 테이블 벌크 INSERT
-      if (classList && classList.length > 0) {
-        const classTextbooks = classList.map((classId) => ({
-          classId,
-          textbookId: textbook.textbookId,
-        }));
-        await classTextbookRepo.insert(classTextbooks);
-      }
+      // 4) 교재 - 반 테이블 벌크 INSERT (동시성 안전)
+      await this.insertClassTextbooksIgnore(
+        manager,
+        textbook.textbookId,
+        classList ?? [],
+      );
 
       // 5) 로그 저장
       await logRepo.insert({
@@ -337,32 +334,29 @@ export class TextbookService {
         await textbookRepo.update(textbookId, patch);
       }
 
-      // 7) classTextbook 변경
+      // 7) classTextbook 변경 (동시성 안전)
       if (toDeleteClasses.length > 0) {
         await classTextbookRepo.delete({
           textbookId,
           classId: In(toDeleteClasses),
         });
       }
-      if (toInsertClasses.length > 0) {
-        const rows = toInsertClasses.map((classId) => ({
-          classId,
-          textbookId,
-        }));
-        await classTextbookRepo.insert(rows);
-      }
+      // INSERT는 헬퍼 메서드 사용
+      await this.insertClassTextbooksIgnore(
+        manager,
+        textbookId,
+        toInsertClasses,
+      );
 
-      // 8) 챕터 변경 (벌크)
+      // 8) 챕터 변경 (벌크, 동시성 안전)
       if (unitsChangeRequested) {
         if (toDeleteChapterIds.length > 0) {
           await chapterRepo.delete({
             textbookChapterId: In(toDeleteChapterIds),
           });
         }
-        if (toInsertChapters.length > 0) {
-          // uq_textbook_unit이 있으므로 중복 방어됨
-          await chapterRepo.insert(toInsertChapters);
-        }
+        // INSERT는 헬퍼 메서드 사용
+        await this.insertChaptersIgnore(manager, toInsertChapters);
       }
 
       // 9) 로그
@@ -409,27 +403,98 @@ export class TextbookService {
       throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
     }
 
-    const textbook = await this.textbookRepository.existsBy({
+    return this.dataSource.transaction(async (manager) => {
+      const textbookRepo = manager.getRepository(Textbook);
+      const classTextbookRepo = manager.getRepository(ClassTextbook);
+      const progressChapterRepo = manager.getRepository(ProgressChapter);
+      const actionLogRepo = manager.getRepository(ActionLog);
+
+      // 1. 교재 존재 확인
+      const textbook = await textbookRepo.findOne({
+        where: { textbookId, deletedAt: IsNull() },
+      });
+      if (!textbook) {
+        throw new NotFoundException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NOT_FOUND);
+      }
+
+      // 2. 진도 기록이 있으면 삭제 금지
+      const hasProgress = await progressChapterRepo
+        .createQueryBuilder('pc')
+        .innerJoin('pc.textbookChapter', 'tc')
+        .where('tc.textbookId = :textbookId', { textbookId })
+        .limit(1)
+        .getOne();
+
+      if (hasProgress) {
+        throw new BadRequestException(
+          MESSAGES.ADMIN.TEXTBOOK.ERROR.CANNOT_SHRINK_CHAPTER_WITH_PROGRESS,
+        );
+      }
+
+      // 3. ClassTextbook 자동 해제 (진도 없으면 삭제 가능)
+      await classTextbookRepo.delete({ textbookId });
+
+      // 4. Textbook Soft Delete
+      await textbookRepo.softDelete(textbookId);
+
+      // 5. 로그 저장
+      await actionLogRepo.save({
+        actorId: userIdOfAdmin,
+        actorType: 'admin',
+        action: 'DELETE_TEXTBOOK',
+        targetType: 'textbook',
+        targetId: textbookId,
+        description: `Admin soft deleted textbook (textbookId: ${textbookId})`,
+        createdAt: new Date(),
+      });
+    });
+  }
+
+  /**
+   * ClassTextbook을 중복 없이 안전하게 INSERT
+   * - orIgnore로 UNIQUE 제약 위반 시 무시
+   */
+  private async insertClassTextbooksIgnore(
+    manager: EntityManager,
+    textbookId: number,
+    classList: number[],
+  ) {
+    if (!classList?.length) return;
+
+    const values = classList.map((classId) => ({
+      classId,
       textbookId,
-      deletedAt: IsNull(),
-    });
-    if (!textbook) {
-      throw new NotFoundException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NOT_FOUND);
-    }
+    }));
 
-    const result = await this.textbookRepository.softDelete(textbookId);
-    if (result.affected === 0)
-      throw new NotFoundException(MESSAGES.ADMIN.TEXTBOOK.ERROR.NOT_FOUND);
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(ClassTextbook)
+      .values(values)
+      .orIgnore() // MySQL: INSERT IGNORE
+      .execute();
+  }
 
-    // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: userIdOfAdmin,
-      actorType: 'admin',
-      action: 'DELETE_TEXTBOOK',
-      targetType: 'textbook',
-      targetId: textbookId,
-      description: `Admin deleted a textbook (textbookId: ${textbookId})`,
-      createdAt: new Date(),
-    });
+  /**
+   * TextbookChapter를 중복 없이 안전하게 INSERT
+   * - orIgnore로 UNIQUE 제약 위반 시 무시
+   */
+  private async insertChaptersIgnore(
+    manager: EntityManager,
+    chapters: Array<{
+      textbookId: number;
+      largeUnitNo: number;
+      smallUnitNo: number;
+    }>,
+  ) {
+    if (!chapters?.length) return;
+
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(TextbookChapter)
+      .values(chapters)
+      .orIgnore() // MySQL: INSERT IGNORE
+      .execute();
   }
 }
