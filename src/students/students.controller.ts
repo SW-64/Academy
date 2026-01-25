@@ -18,7 +18,7 @@ import { MESSAGES } from './../constants/message.constant';
 import { StudentOrParentOwnsStudentGuard } from './../auth/guards/student-or-parent-owns-student.guard';
 import { UserInfo } from '../util/decorators/user-info.decorator';
 import { PartialUser } from './../users/interfaces/partial-user.entity';
-import { MaterialsService } from 'src/materials/materials.service';
+import { MaterialsService } from '../materials/materials.service';
 
 @Controller('students')
 export class StudentsController {

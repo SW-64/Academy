@@ -10,6 +10,7 @@ import { ClassNotice } from './entities/class-notice.entity';
 import { Class } from './../class/entities/class.entity';
 import { Student } from './../students/entities/student.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
+import { Parent } from './../parents/entities/parent.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -20,6 +21,7 @@ import { StudentClass } from '../student-class/entities/student-class.entity';
       Class,
       Student,
       StudentClass,
+      Parent,
     ]),
   ],
 

@@ -25,6 +25,7 @@ import { HomeworkModule } from './homework/homework.module';
 import { ClassModule } from './class/class.module';
 import { StudentClassModule } from './student-class/student-class.module';
 import { MaterialsModule } from './materials/materials.module';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [

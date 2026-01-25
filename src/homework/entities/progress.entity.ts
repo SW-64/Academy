@@ -1,4 +1,3 @@
-// src/homework/entities/progress.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,

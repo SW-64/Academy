@@ -57,11 +57,11 @@ export class NoticesController {
   }
 
   /**
-   * 해당 클래스의 공지사항 전체조회 ( 학생용 )
+   * 해당 클래스의 공지사항 전체조회
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
-  @Roles(Role.ADMIN, Role.STUDENT)
+  @Roles(Role.ADMIN, Role.STUDENT, Role.PARENT)
   @Get()
   async getNoticesAllByStudents(
     @Query('page') page = 1,
@@ -82,32 +82,7 @@ export class NoticesController {
   }
 
   /**
-   * 해당 클래스의 공지사항 전체조회 ( 학부모용 )
-   * @returns
-   */
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.PARENT)
-  @Get()
-  async getNoticesAllByParents(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
-    @Param('classId', ParseIntPipe) classId: number,
-  ) {
-    const _page = Number(page) || 1;
-    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const data = await this.noticesService.findAllNotices(classId, {
-      page: _page,
-      limit: _limit,
-    });
-    return {
-      statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.NOTICE.SUCCESS.LIST,
-      data: data,
-    };
-  }
-
-  /**
-   * 고정 공지사항 조회
+   * 고정 공지사항 조회 ( 관리자용 )
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -124,33 +99,13 @@ export class NoticesController {
   }
 
   /**
-   * 공지사항 상세조회 ( 학생용 )
+   * 공지사항 상세조회
    * @returns
    */
   @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
   @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
   @Get('/:noticeId')
   async getNoticeOneByStudents(
-    @Param('noticeId', ParseIntPipe) noticeId: number,
-    @Param('classId', ParseIntPipe) classId: number,
-  ) {
-    const data = await this.noticesService.findNotice(noticeId, classId);
-
-    return {
-      statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.NOTICE.SUCCESS.GET,
-      data: data,
-    };
-  }
-
-  /**
-   * 공지사항 상세조회 ( 학부모용 )
-   * @returns
-   */
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.PARENT, Role.STUDENT)
-  @Get('/:noticeId')
-  async getNoticeOneByParents(
     @Param('noticeId', ParseIntPipe) noticeId: number,
     @Param('classId', ParseIntPipe) classId: number,
   ) {

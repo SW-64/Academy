@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsStrongPassword } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
-import { Match } from 'src/common/validators/match.decorator';
+import { Match } from '../../common/validators/match.decorator';
 
 export class ChangePasswordDto {
   /**
