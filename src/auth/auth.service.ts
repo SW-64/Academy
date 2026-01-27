@@ -192,6 +192,7 @@ export class AuthService {
     const existedRefreshToken = await this.refreshTokenRepository.findOneBy({
       userId: userId,
     });
+
     // 4. Upsert 패턴으로 원자적 처리
     await this.refreshTokenRepository
       .createQueryBuilder()
@@ -203,7 +204,7 @@ export class AuthService {
         createdAt: new Date(),
         expiresAt: expiresAt,
       })
-      .orUpdate(['refreshtoken', 'expiresAt'], ['userId']) // ← 추가
+      .orUpdate(['refreshtoken', 'expires_at'], ['userId'])
       .execute();
   }
 
