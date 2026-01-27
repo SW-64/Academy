@@ -358,6 +358,7 @@ export const MESSAGES = {
       SUCCESS: {
         GET_PROGRESS: '숙제 진도 조회에 성공했습니다.',
         UPDATE_PROGRESS: '숙제 진도 수정에 성공했습니다.',
+        DELETE_PROGRESS: '숙제 진도 삭제에 성공했습니다.',
       },
       ERROR: {
         CLASS_TEXTBOOK_NOT_FOUND: '해당 반에 배정된 교재가 없습니다.',
@@ -436,8 +437,9 @@ export const MESSAGES = {
       SUCCESS: {
         SUMMARY: '나의 성적 현황 조회에 성공했습니다.',
         LEVEL_DISTRIBUTION: '나의 등급 분포 조회에 성공했습니다.',
-        LIST: '나의 성적 목록 조회에 성공했습니다.',
+        GET_LIST: '나의 성적 목록 조회에 성공했습니다.',
         ONE: '나의 성적 상세 조회에 성공했습니다.',
+        GET_MY_RANK: '나의 성적 등수 조회에 성공했습니다.',
       },
       ERROR: {
         NO_EXAM: '시험이 존재하지 않습니다.',
@@ -497,6 +499,10 @@ export const MESSAGES = {
       },
     },
     GRADE: {
+      SUCCESS: {
+        GET_STUDENT_RANK: '자녀의 성적 등수 조회에 성공했습니다.',
+        GET_LIST: '자녀의 성적 조회에 성공했습니다.',
+      },
       ERROR: {
         NO_EXAM: '시험이 존재하지 않습니다.',
       },

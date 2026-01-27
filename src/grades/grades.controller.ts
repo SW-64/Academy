@@ -46,7 +46,7 @@ export class GradesController {
     );
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.SUCCESS.LIST,
+      message: MESSAGES.STUDENTS.GRADE.SUCCESS.GET_LIST,
       data: data,
     };
   }
@@ -76,7 +76,7 @@ export class GradesController {
     );
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.SUCCESS.LIST,
+      message: MESSAGES.PARENTS.GRADE.SUCCESS.GET_LIST,
       data: data,
     };
   }
@@ -119,7 +119,7 @@ export class GradesController {
     );
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.SUCCESS.LIST,
+      message: MESSAGES.STUDENTS.GRADE.SUCCESS.GET_MY_RANK,
       data: data,
     };
   }
@@ -145,7 +145,7 @@ export class GradesController {
     );
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.GRADE.SUCCESS.LIST,
+      message: MESSAGES.PARENTS.GRADE.SUCCESS.GET_STUDENT_RANK,
       data: data,
     };
   }

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -65,6 +66,28 @@ export class HomeworkController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.HOMEWORK.SUCCESS.UPDATE_PROGRESS,
+      data: data,
+    };
+  }
+
+  /**
+   * 숙제 진도 삭제
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Delete('/classes/:classId/textbooks/:textbookId/progress-cells')
+  async deleteHomeworkProgress(
+    @Param('classId', ParseIntPipe) classId: number,
+    @Param('textbookId', ParseIntPipe) textbookId: number,
+  ) {
+    const data = await this.homeworkService.deleteHomeworkProgress(
+      classId,
+      textbookId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.HOMEWORK.SUCCESS.DELETE_PROGRESS,
       data: data,
     };
   }
