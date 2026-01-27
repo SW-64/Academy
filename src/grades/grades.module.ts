@@ -8,8 +8,20 @@ import { Exam } from '../exam/entities/exam.entity';
 import { Grade } from '../grades/entities/grade.entity';
 import { Student } from '../students/entities/student.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
+import { Parent } from '../parents/entities/parent.entity';
+import { StudentClass } from '../student-class/entities/student-class.entity';
 @Module({
-  imports: [TypeOrmModule.forFeature([Admin, Exam, Grade, Student, ActionLog])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Admin,
+      Exam,
+      Grade,
+      Student,
+      ActionLog,
+      Parent,
+      StudentClass,
+    ]),
+  ],
   controllers: [GradesController],
   providers: [GradesService],
 })

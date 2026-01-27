@@ -1,241 +1,294 @@
+// grades.service.ts
 import {
-  BadRequestException,
   Injectable,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Grade } from './entities/grade.entity';
+import { Student } from '../students/entities/student.entity';
+import { Parent } from '../parents/entities/parent.entity';
+import { Exam } from '../exam/entities/exam.entity';
+import { MESSAGES } from './../constants/message.constant';
 import {
   IPaginationOptions,
   paginate,
   Pagination,
 } from 'nestjs-typeorm-paginate';
-import { Repository } from 'typeorm';
-
-import { MESSAGES } from '../constants/message.constant';
-
-import { Exam } from '../exam/entities/exam.entity';
-import { Student } from '../students/entities/student.entity';
-import { Grade, Level } from './entities/grade.entity';
-
-import { CreateGradeDto } from './dto/create-grades.dto';
-import { UpdateGradeDto } from './dto/update-grades.dto';
-import { Status } from '../users/entities/user.entity';
-import { ActionLog } from './../action-logs/entities/action-logs.entity';
 
 @Injectable()
 export class GradesService {
   constructor(
-    @InjectRepository(Exam)
-    private readonly examRepository: Repository<Exam>,
-    @InjectRepository(Student)
-    private readonly studentRepository: Repository<Student>,
     @InjectRepository(Grade)
     private readonly gradeRepository: Repository<Grade>,
-    @InjectRepository(ActionLog)
-    private readonly actionLogRepository: Repository<ActionLog>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Parent)
+    private readonly parentRepository: Repository<Parent>,
+    @InjectRepository(Exam)
+    private readonly examRepository: Repository<Exam>,
   ) {}
 
-  // //시험점수 생성
-  // async createGrade(
-  //   examId: number,
-  //   { studentId, score, comment }: CreateGradeDto,
-  //   adminId: number,
-  // ) {
-  //   //1.해당 시험 일정이 존재하는지
-  //   const existedExam = await this.examRepository.findOneBy({ examId });
-  //   if (!existedExam) {
-  //     throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
-  //   }
-  //   //2.DB에 등록되어있는 학생인지
-  //   const existedStudent = await this.studentRepository.findOne({
-  //     where: { studentId },
-  //     relations: { user: true },
-  //     select: { studentId: true, user: { status: true } },
-  //   });
+  /**
+   * 학생 본인 시험점수 전체조회
+   */
+  async getStudentGrade(
+    classId: number,
+    userIdOfStudent: number,
+    sortOption: string,
+  ) {
+    // 1. 학생 정보 조회
+    const student = await this.studentRepository.findOne({
+      where: { userId: userIdOfStudent },
+      select: { studentId: true },
+    });
 
-  //   if (!existedStudent) {
-  //     throw new NotFoundException(MESSAGES.ADMIN.STUDENT.ERROR.NOT_FOUND);
-  //   }
-  //   if (existedStudent.user.status !== Status.approved) {
-  //     throw new BadRequestException(
-  //       MESSAGES.ADMIN.GRADE.ERROR.STUDENT_NOT_APPROVED,
-  //     );
-  //   }
-  //   //3.시험점수가 이미 등록되어 있는 경우
-  //   const existedGrade = await this.gradeRepository.findOne({
-  //     where: { examId, studentId },
-  //   });
-  //   if (existedGrade) {
-  //     throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.ALREADY_EXISTS);
-  //   }
+    if (!student) {
+      throw new NotFoundException(MESSAGES.STUDENTS.ERROR.NOT_FOUND);
+    }
 
-  //   //4. 시험점수 생성
-  //   const level = this.calculateLevel(score);
-  //   const grade = await this.gradeRepository.save({
-  //     examId,
-  //     studentId,
-  //     score,
-  //     level,
-  //     comment: comment ?? null,
-  //   });
+    // 2. 정렬 옵션 설정
+    const orderOption =
+      sortOption === 'score_desc'
+        ? { 'grades.score': 'DESC' as const }
+        : { examDate: 'ASC' as const };
 
-  //   // 로그 저장
-  //   await this.actionLogRepository.save({
-  //     actorId: adminId,
-  //     actorType: 'admin',
-  //     action: 'CREATE_GRADE',
-  //     targetType: 'grade',
-  //     targetId: grade.gradeId,
-  //     description: `Admin created a grade for student( studentId :  ${studentId})`,
-  //     createdAt: new Date(),
-  //   });
+    // 3. 성적 조회 (정렬 적용)
+    const gradesOfExam = await this.examRepository.find({
+      where: {
+        classId,
+        grades: {
+          studentId: student.studentId,
+        },
+      },
+      select: {
+        examId: true,
+        examTitle: true,
+        examDate: true,
+        grades: {
+          gradeId: true,
+          studentId: true,
+          score: true,
+          level: true,
+          comment: true,
+          isTaken: true,
+        },
+      },
+      order: orderOption,
+      relations: ['grades'],
+    });
 
-  //   return grade;
-  // }
+    return gradesOfExam;
+  }
 
-  //시험점수 전체조회
-  async getAllGrades(
+  /**
+   * 학부모가 자녀 성적 조회
+   */
+  async getStudentGradeByParent(
+    classId: number,
+    userIdOfParent: number,
+    studentId: number,
+    sortOption: string,
+  ) {
+    // 1. 학부모 정보 조회
+    const parent = await this.parentRepository.findOne({
+      where: { userId: userIdOfParent },
+      select: { parentId: true },
+    });
+    if (!parent) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+
+    // 2. 학부모의 자녀 정보 조회
+    const student = await this.studentRepository.findOne({
+      where: {
+        studentId,
+        parentId: parent.parentId,
+      },
+      select: {
+        studentId: true,
+      },
+    });
+    if (!student) {
+      throw new ForbiddenException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+    }
+
+    // 3. 자녀 성적 조회 (정렬 적용)
+    const orderOption =
+      sortOption === 'score_desc'
+        ? { 'grades.score': 'DESC' as const }
+        : { examDate: 'ASC' as const };
+
+    const gradesOfExam = await this.examRepository.find({
+      where: {
+        classId,
+        grades: {
+          studentId: student.studentId,
+        },
+      },
+      select: {
+        examId: true,
+        examTitle: true,
+        examDate: true,
+        grades: {
+          gradeId: true,
+          studentId: true,
+          score: true,
+          level: true,
+          comment: true,
+          isTaken: true,
+        },
+      },
+      order: orderOption,
+      relations: ['grades'],
+    });
+
+    return gradesOfExam;
+  }
+
+  /**
+   * 학생 본인 시험 등수 조회
+   */
+  async getMyRank(classId: number, examId: number, userIdOfStudent: number) {
+    // 1. 학생 정보 조회
+    const student = await this.studentRepository.findOne({
+      where: { userId: userIdOfStudent },
+      select: { studentId: true },
+    });
+
+    if (!student) {
+      throw new NotFoundException(MESSAGES.STUDENTS.ERROR.NOT_FOUND);
+    }
+
+    // 2. 시험 정보 조회
+    const exam = await this.examRepository.existsBy({
+      examId,
+      classId,
+    });
+    if (!exam) {
+      throw new NotFoundException(MESSAGES.STUDENTS.GRADE.ERROR.NO_EXAM);
+    }
+
+    // 3. 등수 조회 (모든 학생)
+    const ranks = await this.gradeRepository.find({
+      where: { examId, isTaken: true }, // ← 응시한 학생만
+      relations: ['student', 'student.user'],
+      select: {
+        gradeId: true,
+        studentId: true,
+        score: true,
+        isTaken: true,
+        ranking: true,
+        student: {
+          studentId: true,
+          user: {
+            userId: true,
+            name: true,
+          },
+        },
+      },
+      order: {
+        ranking: 'ASC', // ← 등수 순으로 정렬
+      },
+    });
+
+    // 4. 개인정보 보호: 본인만 이름 표시
+    const maskedRanks = ranks.map((grade) => {
+      const isMe = grade.studentId === student.studentId;
+
+      return {
+        ranking: grade.ranking,
+        score: grade.score,
+        isTaken: grade.isTaken,
+        isMe: isMe,
+        // 본인이면 studentId와 name 표시, 아니면 null
+        studentId: isMe ? grade.studentId : null,
+        name: isMe ? grade.student?.user?.name : null,
+      };
+    });
+
+    return maskedRanks;
+  }
+
+  /**
+   * 학부모 - 자녀의 시험 등수 조회
+   */
+  async getMyStudentRank(
+    classId: number,
     examId: number,
-    sortOption: 'score_desc' | 'name_asc',
-    options?: IPaginationOptions,
-  ): Promise<Pagination<Grade>> {
-    const qb = this.gradeRepository
-      .createQueryBuilder('grade')
-      .where('grade.exam_id = :examId', { examId });
-
-    // 공통: 필요한 컬럼만 선택 (성능/보안)
-    // 여기서 필요한 컬럼은 너 UI에 맞게 조절해.
-    qb.select([
-      'grade.gradeId',
-      'grade.examId',
-      'grade.studentId',
-      'grade.score',
-      'grade.level',
-    ]);
-
-    switch (sortOption) {
-      case 'score_desc': {
-        qb.orderBy('grade.score', 'DESC').addOrderBy('grade.gradeId', 'DESC'); // 동점일 때 정렬 안정화
-        break;
-      }
-
-      case 'name_asc': {
-        qb.leftJoin('grade.student', 'student').leftJoin(
-          'student.user',
-          'user',
-        );
-
-        qb.addSelect(['student.studentId', 'user.userId', 'user.name']);
-
-        qb.orderBy('user.name', 'ASC').addOrderBy('grade.gradeId', 'DESC'); // 동명이인/동일이름 안정화
-        break;
-      }
-
-      default:
-        qb.orderBy('grade.gradeId', 'DESC');
-    }
-
-    return paginate<Grade>(qb, options);
-  }
-
-  //시험점수 상세조회
-  async getGrade(examId: number, gradeId: number) {
-    const grade = await this.gradeRepository.findOne({
-      where: { examId, gradeId },
+    userIdOfParent: number,
+    studentId,
+  ) {
+    // 1. 학부모 정보 조회
+    const parent = await this.parentRepository.findOne({
+      where: { userId: userIdOfParent },
+      select: { parentId: true },
     });
-    if (!grade) {
-      throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
+    if (!parent) {
+      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
     }
-    return grade;
-  }
-
-  // //시험점수 수정
-  // async updateGrade(
-  //   examId: number,
-  //   gradeId: number,
-  //   { score, comment }: UpdateGradeDto,
-  //   adminId: number,
-  // ) {
-  //   //1.시험일정 존재하는지
-  //   const existedExam = await this.examRepository.findOneBy({ examId });
-  //   if (!existedExam) {
-  //     throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
-  //   }
-  //   //2.시험성적 존재하는지
-  //   const existedGrade = await this.gradeRepository.findOne({
-  //     where: { examId, gradeId },
-  //   });
-  //   if (!existedGrade) {
-  //     throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
-  //   }
-  //   //3.내용이 동일한 경우
-  //   const patch: Partial<Grade> = {};
-  //   if (comment !== undefined) patch.comment = comment;
-  //   if (score !== undefined) {
-  //     patch.score = score;
-  //     patch.level = this.calculateLevel(score);
-  //   }
-
-  //   if (Object.keys(patch).length === 0)
-  //     throw new BadRequestException(
-  //       MESSAGES.ADMIN.GRADE.VALIDATION.UPDATE.NO_CHANGES,
-  //     );
-
-  //   await this.gradeRepository.update({ examId, gradeId }, patch);
-
-  //   // 로그 저장
-  //   await this.actionLogRepository.save({
-  //     actorId: adminId,
-  //     actorType: 'admin',
-  //     action: 'UPDATE_GRADE',
-  //     targetType: 'grade',
-  //     targetId: gradeId,
-  //     description: `Admin updated a grade (gradeId: ${gradeId})`,
-  //     changes: patch,
-  //     createdAt: new Date(),
-  //   });
-  //   return;
-  // }
-
-  /*
-  //시험점수 삭제
-  async deleteGrade(examId: number, gradeId: number, adminId: number) {
-    const existedExam = await this.examRepository.findOneBy({ examId });
-    if (!existedExam) {
-      throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
-    }
-    const existedGrade = await this.gradeRepository.findOne({
-      where: { examId, gradeId },
+    // 2. 학부모의 자녀 정보 조회
+    const student = await this.studentRepository.findOne({
+      where: {
+        studentId,
+        parentId: parent.parentId, // ← 자녀 관계 검증
+      },
+      select: {
+        studentId: true,
+      },
     });
-    if (!existedGrade) {
-      throw new NotFoundException(MESSAGES.ADMIN.GRADE.ERROR.NOT_FOUND);
+    if (!student) {
+      throw new ForbiddenException('해당 학생은 자녀가 아닙니다');
     }
-    await this.gradeRepository.softDelete({ examId, gradeId });
-    // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: adminId,
-      actorType: 'admin',
-      action: 'DELETE_GRADE',
-      targetType: 'grade',
-      targetId: gradeId,
-      description: `Admin deleted a grade (gradeId: ${gradeId})`,
-      createdAt: new Date(),
+
+    // 3. 시험 정보 조회
+    const exam = await this.examRepository.existsBy({
+      examId,
+      classId,
     });
-    return;
-  }
-  */
-  // 등급계산
-  private calculateLevel(score: number): Level {
-    if (score >= 90) {
-      return Level.A;
-    } else if (score >= 80) {
-      return Level.B;
-    } else if (score >= 70) {
-      return Level.C;
-    } else if (score >= 60) {
-      return Level.D;
-    } else {
-      return Level.F;
+    if (!exam) {
+      throw new NotFoundException(MESSAGES.PARENTS.GRADE.ERROR.NO_EXAM);
     }
+
+    // 4. 등수 조회 (모든 학생)
+    const ranks = await this.gradeRepository.find({
+      where: { examId, isTaken: true }, // ← 응시한 학생만
+      relations: ['student', 'student.user'],
+      select: {
+        gradeId: true,
+        studentId: true,
+        score: true,
+        isTaken: true,
+        ranking: true,
+        student: {
+          studentId: true,
+          user: {
+            userId: true,
+            name: true,
+          },
+        },
+      },
+      order: {
+        ranking: 'ASC', // ← 등수 순으로 정렬
+      },
+    });
+
+    // 5. 개인정보 보호: 자녀만 이름 표시
+    const maskedRanks = ranks.map((grade) => {
+      const isMyChild = grade.studentId === student.studentId;
+
+      return {
+        ranking: grade.ranking,
+        score: grade.score,
+        isTaken: grade.isTaken,
+        isMe: isMyChild,
+        // 자녀이면 studentId와 name 표시, 아니면 null
+        studentId: isMyChild ? grade.studentId : null,
+        name: isMyChild ? grade.student?.user?.name : null,
+      };
+    });
+
+    return maskedRanks;
   }
 }

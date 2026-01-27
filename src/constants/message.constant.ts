@@ -439,6 +439,9 @@ export const MESSAGES = {
         LIST: '나의 성적 목록 조회에 성공했습니다.',
         ONE: '나의 성적 상세 조회에 성공했습니다.',
       },
+      ERROR: {
+        NO_EXAM: '시험이 존재하지 않습니다.',
+      },
     },
     HOMEWORK: {
       SUCCESS: {
@@ -491,6 +494,11 @@ export const MESSAGES = {
       },
       ERROR: {
         CLASS_TEXTBOOK_NOT_FOUND: '클래스에 해당되는 교재가 없습니다.',
+      },
+    },
+    GRADE: {
+      ERROR: {
+        NO_EXAM: '시험이 존재하지 않습니다.',
       },
     },
   },
