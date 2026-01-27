@@ -435,7 +435,7 @@ export class TextbookService {
       await classTextbookRepo.delete({ textbookId });
 
       // 4. Textbook Soft Delete
-      await textbookRepo.softDelete(textbookId);
+      await textbookRepo.delete(textbookId);
 
       // 5. 로그 저장
       await actionLogRepo.save({
