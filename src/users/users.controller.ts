@@ -24,6 +24,7 @@ import { PartialUser } from './interfaces/partial-user.entity';
 
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -208,8 +209,13 @@ export class UsersController {
   async resetUserPassword(
     @Param('userId', ParseIntPipe) userId: number,
     @UserInfo() admin: PartialUser,
+    @Body() resetUserPassword: ResetUserPasswordDto,
   ) {
-    await this.usersService.resetUserPassword(userId, admin.userId);
+    await this.usersService.resetUserPassword(
+      userId,
+      admin.userId,
+      resetUserPassword,
+    );
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.USER.SUCCESS.RESET_PASSWORD,

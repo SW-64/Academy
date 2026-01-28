@@ -12,6 +12,7 @@ import { Class } from '../../class/entities/class.entity';
 import { Student } from './../../students/entities/student.entity';
 
 @Entity({ name: 'student_class' })
+@Index('idx_student_class_class_id', ['classId'])
 @Index('uq_student_class', ['studentId', 'classId'], { unique: true })
 export class StudentClass {
   @PrimaryGeneratedColumn({ name: 'student_class_id' })

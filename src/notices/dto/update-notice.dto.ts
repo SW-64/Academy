@@ -1,4 +1,10 @@
-import { IsBoolean, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 
 export class UpdateNoticeDto {
@@ -7,8 +13,15 @@ export class UpdateNoticeDto {
    * @example "수정한 제목입니다."
    */
   @IsOptional()
-  @IsString()
-  @MinLength(1)
+  @IsString({
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.INVALID_TITLE,
+  })
+  @MinLength(1, {
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.INVALID_TITLE,
+  })
+  @MaxLength(100, {
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.INVALID_TITLE,
+  })
   title?: string;
 
   /**
@@ -16,8 +29,15 @@ export class UpdateNoticeDto {
    * @example "수정한 내용입니다."
    */
   @IsOptional()
-  @IsString()
-  @MinLength(1)
+  @IsString({
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.INVALID_CONTENT,
+  })
+  @MinLength(1, {
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.INVALID_CONTENT,
+  })
+  @MaxLength(10000, {
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.INVALID_CONTENT,
+  })
   content?: string;
 
   /**
@@ -25,6 +45,8 @@ export class UpdateNoticeDto {
    * @example "false"
    */
   @IsOptional()
-  @IsBoolean()
+  @IsBoolean({
+    message: MESSAGES.ADMIN.NOTICE.VALIDATION.UPDATE.INVALID_PINNED,
+  })
   pinned?: boolean;
 }

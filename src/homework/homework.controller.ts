@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -17,6 +18,7 @@ import { MESSAGES } from './../constants/message.constant';
 import { BulkUpdateProgressCellsDto } from './dto/bulk-update-progress-cells.dto';
 import { UserInfo } from '../util/decorators/user-info.decorator';
 import { PartialUser } from '../users/interfaces/partial-user.entity';
+import { ClassAccessGuard } from './../auth/guards/class-acces.guard';
 
 @Controller('')
 export class HomeworkController {
@@ -26,7 +28,7 @@ export class HomeworkController {
    * 숙제 진도 목록 조회
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ClassAccessGuard)
   @Roles(Role.ADMIN)
   @Get('/classes/:classId/textbooks/:textbookId/progress-grid')
   async getHomeworkProgress(
@@ -64,6 +66,28 @@ export class HomeworkController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.HOMEWORK.SUCCESS.UPDATE_PROGRESS,
+      data: data,
+    };
+  }
+
+  /**
+   * 숙제 진도 삭제
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Delete('/classes/:classId/textbooks/:textbookId/progress-cells')
+  async deleteHomeworkProgress(
+    @Param('classId', ParseIntPipe) classId: number,
+    @Param('textbookId', ParseIntPipe) textbookId: number,
+  ) {
+    const data = await this.homeworkService.deleteHomeworkProgress(
+      classId,
+      textbookId,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.HOMEWORK.SUCCESS.DELETE_PROGRESS,
       data: data,
     };
   }

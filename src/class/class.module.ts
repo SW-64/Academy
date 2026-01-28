@@ -7,6 +7,7 @@ import { ClassTextbook } from '../class-textbook/entities/class-textbook.entity'
 import { Student } from '../students/entities/student.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
+import { Parent } from '../parents/entities/parent.entity';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { StudentClass } from '../student-class/entities/student-class.entity';
       Student,
       ActionLog,
       StudentClass,
+      Parent,
     ]),
   ],
   controllers: [ClassController],

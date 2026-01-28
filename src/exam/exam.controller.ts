@@ -261,15 +261,16 @@ export class ExamController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post(':examId/rankings')
+  @Post('/:examId/rankings')
   async calculateRankings(
     @Param('examId', ParseIntPipe) examId: number,
     @Param('classId', ParseIntPipe) classId: number,
   ) {
-    await this.examService.calculateExamRankings(examId, classId);
+    const data = await this.examService.calculateExamRankings(examId, classId);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.CALCULATE_RANKINGS,
+      data: data,
     };
   }
 
@@ -291,9 +292,4 @@ export class ExamController {
       data: data,
     };
   }
-
-  /**
-   * 시험
-   * @returns
-   */
 }

@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   ArrayUnique,
   IsArray,
   IsDateString,
@@ -54,6 +55,7 @@ export class UpdateExamDto {
     each: true,
     message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_QUESTION_INVALID_FORMAT,
   })
+  @ArrayMaxSize(50)
   question?: number[];
 
   /**
@@ -71,6 +73,7 @@ export class UpdateExamDto {
     each: true,
     message: MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE.EXAM_POINTS_INVALID_FORMAT,
   })
+  @ArrayMaxSize(50)
   @IsQuestionsPointsMatched({
     message:
       MESSAGES.ADMIN.EXAM.VALIDATION.UPDATE

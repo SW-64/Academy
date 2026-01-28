@@ -97,17 +97,20 @@ export class HomeworkService {
 
     // 3) 학생 이름 확보 (Student.userId -> User.name)
     //    (학생 테이블에 name이 있으면 user 조인 없이 student에서 바로 뽑아도 됨)
-    const students = await this.studentRepo.find({
-      where: { studentId: In(studentIds) },
-      select: { studentId: true, userId: true },
-    });
+    const studentsWithName = await this.studentRepo
+      .createQueryBuilder('s')
+      .innerJoin('s.user', 'u')
+      .where('s.studentId IN (:...studentIds)', { studentIds }) //
+      .select([
+        's.studentId AS studentId',
+        's.userId AS userId', //
+        'u.name AS name',
+      ])
+      .getRawMany<{ studentId: number; userId: number; name: string }>(); //
 
-    const userIds = students.map((s) => s.userId);
-    const users = await this.userRepo.find({
-      where: { userId: In(userIds) },
-      select: { userId: true, name: true },
-    });
-    const userNameMap = new Map(users.map((u) => [u.userId, u.name]));
+    const userNameMap = new Map(
+      studentsWithName.map((s) => [s.userId, s.name]), //
+    );
 
     // 4) 셀 데이터 조회 (ProgressChapter JOIN Progress 한 방)
     //    - class_textbook_id 기준으로 progress를 좁히고
@@ -155,7 +158,7 @@ export class HomeworkService {
     }
 
     // 6) 그리드 조립(없는 칸 null)
-    const studentRows = students.map((s) => {
+    const studentRows = studentsWithName.map((s) => {
       const name = userNameMap.get(s.userId) ?? '(unknown)';
       const m = cellMap.get(s.studentId) ?? new Map<number, any>();
 
@@ -332,6 +335,62 @@ export class HomeworkService {
     });
 
     return { updated };
+  }
+
+  // 숙제 진도 삭제
+  async deleteHomeworkProgress(classId: number, textbookId: number) {
+    // 1) class_textbook 존재 검증 + classTextbookId 확보
+    const classTextbook = await this.classTextbookRepo.findOne({
+      where: { classId, textbookId },
+      select: { classTextbookId: true, classId: true, textbookId: true },
+    });
+
+    if (!classTextbook) {
+      throw new NotFoundException(
+        MESSAGES.ADMIN.HOMEWORK.ERROR.CLASS_TEXTBOOK_NOT_FOUND,
+      );
+    }
+
+    const classTextbookId = classTextbook.classTextbookId;
+
+    // 2) 해당 반-교재의 모든 Progress 조회
+    const progresses = await this.progressRepo.find({
+      where: { classTextbookId },
+      select: { homeworkProgressId: true, studentId: true },
+    });
+
+    if (progresses.length === 0) {
+      // 삭제할 데이터가 없으면 정상 응답
+      return {
+        deleted: 0,
+        message: '삭제할 진도 데이터가 없습니다',
+      };
+    }
+
+    // 3) 트랜잭션: ProgressChapter + Progress hard delete
+    const deleted = await this.dataSource.transaction(async (manager) => {
+      const progressRepo = manager.getRepository(Progress);
+      const progressChapterRepo = manager.getRepository(ProgressChapter);
+
+      const progressIds = progresses.map((p) => p.homeworkProgressId);
+
+      // 3-1) ProgressChapter hard delete (먼저 삭제)
+      await progressChapterRepo.delete({
+        homeworkProgressId: In(progressIds),
+      });
+
+      // 3-2) Progress hard delete
+      await progressRepo.delete({
+        homeworkProgressId: In(progressIds),
+      });
+
+      return progressIds.length;
+    });
+
+    return {
+      deleted,
+      message: `${deleted}명의 학생 진도가 삭제되었습니다`,
+    };
   }
 
   // 학생 본인의 숙제 진도 목록 조회

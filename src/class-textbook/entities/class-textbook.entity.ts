@@ -1,4 +1,3 @@
-// src/class-textbook/entities/class-textbook.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -27,14 +26,11 @@ export class ClassTextbook {
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'datetime', nullable: true })
-  deletedAt: Date | null;
-
   @ManyToOne(() => Class, (c) => c.classTextbooks, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'class_id', referencedColumnName: 'classId' })
+  @JoinColumn({ name: 'class_id' })
   clazz: Class;
 
   @ManyToOne(() => Textbook, (t) => t.classTextbooks, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'textbook_id', referencedColumnName: 'textbookId' })
+  @JoinColumn({ name: 'textbook_id' })
   textbook: Textbook;
 }

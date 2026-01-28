@@ -11,12 +11,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TextbookService } from './textbook.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { Role } from 'src/users/entities/user.entity';
-import { UserInfo } from 'src/util/decorators/user-info.decorator';
-import { PartialUser } from 'src/users/interfaces/partial-user.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../users/entities/user.entity';
+import { UserInfo } from '../util/decorators/user-info.decorator';
+import { PartialUser } from '../users/interfaces/partial-user.entity';
 import { CreateTextbookDto } from './dto/create-textbook.dto';
 import { MESSAGES } from './../constants/message.constant';
 import { UpdateTextbookDto } from './dto/update-textbook.dto';

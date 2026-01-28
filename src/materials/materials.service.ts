@@ -106,14 +106,20 @@ export class MaterialsService {
 
       const saved = await materialRepo.save(material);
 
-      await cmRepo.save(
-        classIds.map((classId) =>
-          cmRepo.create({
-            classId,
-            materialId: saved.materialId,
-          }),
-        ),
-      );
+      if (classIds.length > 0) {
+        await cmRepo
+          .createQueryBuilder()
+          .insert()
+          .into(ClassMaterial)
+          .values(
+            classIds.map((classId) => ({
+              classId,
+              materialId: saved.materialId,
+            })),
+          )
+          .orIgnore() // ← 추가
+          .execute();
+      }
 
       return saved;
     });
@@ -355,12 +361,18 @@ export class MaterialsService {
         }
 
         if (toInsert.length > 0) {
-          await cmRepo.insert(
-            toInsert.map((classId) => ({
-              materialId,
-              classId,
-            })),
-          );
+          await cmRepo
+            .createQueryBuilder()
+            .insert()
+            .into(ClassMaterial)
+            .values(
+              toInsert.map((classId) => ({
+                materialId,
+                classId,
+              })),
+            )
+            .orIgnore() // ← 추가
+            .execute();
         }
 
         return;

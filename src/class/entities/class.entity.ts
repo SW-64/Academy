@@ -13,6 +13,7 @@ import {
 } from 'typeorm';
 import { StudentClass } from './../../student-class/entities/student-class.entity';
 import { ClassMaterial } from '../../materials/entities/class-material.entity';
+import { ClassNotice } from './../../notices/entities/class-notice.entity';
 
 @Entity()
 export class Class {
@@ -39,4 +40,7 @@ export class Class {
 
   @OneToMany(() => ClassMaterial, (cm) => cm.class)
   classMaterials: ClassMaterial[];
+
+  @OneToMany(() => ClassNotice, (cm) => cm.class)
+  classNotices: ClassNotice[];
 }

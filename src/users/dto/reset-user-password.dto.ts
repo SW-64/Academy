@@ -2,13 +2,7 @@ import { IsNotEmpty, IsStrongPassword } from 'class-validator';
 import { MESSAGES } from '../../constants/message.constant';
 import { Match } from '../../common/validators/match.decorator';
 
-export class ChangePasswordDto {
-  /**
-   * 기존 비밀번호
-   * @example "Example1!"
-   */
-  @IsNotEmpty({ message: MESSAGES.AUTH.VALIDATION.PASSWORD.CURRENT_REQUIRED })
-  currentPassword: string;
+export class ResetUserPasswordDto {
   /**
    * 새 비밀번호
    * @example "Example1!"

@@ -1,0 +1,160 @@
+# name: Kwak-Math CD
+
+# on:
+#   workflow_dispatch: # 수동 배포
+#   workflow_run:
+#     workflows: ['Kwak-Math CI']
+#     types: [completed]
+#     branches: [dev]
+
+# jobs:
+#   deploy:
+#     # CI 성공 시에만 배포
+#     if: ${{ github.event.workflow_run.conclusion == 'success' }}
+#     runs-on: ubuntu-24.04
+
+#     steps:
+#       - name: Deploy to AWS EC2
+#         uses: appleboy/ssh-action@master
+#         with:
+#           host: ${{ secrets.AWS_EC2_HOST }}
+#           username: ${{ secrets.AWS_EC2_USERNAME }}
+#           key: ${{ secrets.AWS_EC2_SSH_KEY }}
+#           port: 22
+#           script: |
+#             # ==========================================
+#             # 1. 환경 설정
+#             # ==========================================
+
+#             # NVM 설정 (Node.js 사용)
+#             export NVM_DIR="$HOME/.nvm"
+#             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+#             [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+#             echo "🚀 Starting deployment..."
+#             echo "📅 Deployment time: $(date)"
+
+#             # ==========================================
+#             # 2. 프로젝트 디렉토리로 이동
+#             # ==========================================
+
+#             cd /home/ubuntu/Academy
+
+#             # ==========================================
+#             # 3. 최신 코드 가져오기
+#             # ==========================================
+
+#             echo "📥 Fetching latest code..."
+#             git switch dev
+#             git pull origin dev
+
+#             # ==========================================
+#             # 4. .env 파일 생성 (모든 환경변수)
+#             # ==========================================
+
+#             echo "🔐 Creating .env file..."
+
+#             # Node 환경
+#             echo "NODE_ENV=production" > .env
+#             echo "SERVER_PORT=${{ secrets.SERVER_PORT }}" >> .env
+
+#             # Database (RDS)
+#             echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+#             echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+#             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+#             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+#             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+
+#             # Password
+#             echo "PASSWORD_HASH=${{ secrets.PASSWORD_HASH }}" >> .env
+
+#             # JWT
+#             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+#             echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
+
+#             # Refresh Token
+#             echo "REFRESH_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }}" >> .env
+#             echo "REFRESH_TOKEN_EXPIRES_IN=${{ secrets.REFRESH_TOKEN_EXPIRES_IN }}" >> .env
+#             echo "REFRESH_TOKEN_HASH=${{ secrets.REFRESH_TOKEN_HASH }}" >> .env
+
+#             # Cookie
+#             echo "COOKIE_SAMESITE=${{ secrets.COOKIE_SAMESITE }}" >> .env
+#             echo "COOKIE_DOMAIN=${{ secrets.COOKIE_DOMAIN }}" >> .env
+
+#             # Redis
+#             echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+#             echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
+
+#             # Link Code
+#             echo "LINK_CODE_EXPIRES_IN=${{ secrets.LINK_CODE_EXPIRES_IN }}" >> .env
+
+#             # Link Code
+#             echo "LINK_CODE_EXPIRES_IN=${{ secrets.AWS_REGION }}" >> .env
+#             echo "LINK_CODE_EXPIRES_IN=${{ secrets.S3_BUCKET_NAME }}" >> .env
+
+#             # ==========================================
+#             # 5. 의존성 설치
+#             # ==========================================
+
+#             echo "📦 Installing dependencies..."
+#             npm ci --only=production
+
+#             # ==========================================
+#             # 6. 빌드
+#             # ==========================================
+
+#             echo "🏗️ Building application..."
+#             npm run build
+
+#             # 빌드 검증
+#             if [ ! -d "dist" ]; then
+#               echo "❌ Build failed: dist directory not found"
+#               exit 1
+#             fi
+#             echo "✅ Build successful"
+
+#             # ==========================================
+#             # 7. PM2 무중단 재시작
+#             # ==========================================
+
+#             echo "🔄 Restarting PM2 process..."
+
+#             # reload: 무중단 재시작
+#             # 첫 배포면 start, 이후엔 reload
+#             pm2 reload kwak-math-nest-cicd --update-env || pm2 start dist/main.js --name kwak-math-nest-cicd
+
+#             # PM2 설정 저장
+#             pm2 save
+
+#             # ==========================================
+#             # 8. 헬스체크 (30초 대기)
+#             # ==========================================
+
+#             echo "🏥 Waiting 30 seconds for server to start..."
+#             sleep 30
+
+#             echo "🏥 Running health check..."
+
+#             # 헬스체크 엔드포인트 호출
+#             HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ secrets.SERVER_PORT }}/health || echo "000")
+
+#             if [ "$HEALTH_STATUS" = "200" ]; then
+#               echo "✅ Health check passed (Status: $HEALTH_STATUS)"
+#               echo "🎉 Deployment completed successfully!"
+#             else
+#               echo "⚠️ Health check failed (Status: $HEALTH_STATUS)"
+#               echo "⚠️ Server may need manual inspection"
+#               # 실패해도 배포는 완료 (서버는 이미 재시작됨)
+#             fi
+
+#             # ==========================================
+#             # 9. 배포 정보 출력
+#             # ==========================================
+
+#             echo ""
+#             echo "📊 Deployment Summary:"
+#             echo "- Time: $(date)"
+#             echo "- Commit: $(git rev-parse --short HEAD)"
+#             echo "- Branch: $(git branch --show-current)"
+#             echo "- PM2 Status:"
+#             pm2 list | grep kwak-math-nest-cicd

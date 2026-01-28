@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, FindOptionsWhere, In, Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
@@ -16,10 +16,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 import { MESSAGES } from './../constants/message.constant';
-import { RefreshToken } from 'src/auth/entities/refreshtoken.entity';
+import { RefreshToken } from '../auth/entities/refreshtoken.entity';
 import { ActionLog } from './../action-logs/entities/action-logs.entity';
 import { PartialUser } from './interfaces/partial-user.entity';
 import { Student } from './../students/entities/student.entity';
+import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -84,65 +85,64 @@ export class UsersService {
     changePasswordDto: ChangePasswordDto,
   ) {
     const userId = user.userId;
-
     const { currentPassword, newPassword, newPasswordConfirm } =
       changePasswordDto;
 
-    const passwordOfUser = await this.userRepository.findOne({
-      where: { userId },
-      select: {
-        userId: true,
-        password: true,
-      },
-    });
-    const comparePassword = await bcrypt.compare(
-      currentPassword,
-      passwordOfUser.password,
-    );
-    if (!comparePassword) {
-      throw new BadRequestException(
-        MESSAGES.AUTH.VALIDATION.PASSWORD.CURRENT_INCORRECT,
-      );
-    }
-
+    // 1) 비밀번호 일치 검증
     if (newPassword !== newPasswordConfirm) {
       throw new BadRequestException(
         MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NOT_MATCHED,
       );
     }
 
-    const existedUser = await this.userRepository.findOne({
-      where: { userId },
-      select: {
-        userId: true,
-        password: true,
-      },
-    });
-    if (!existedUser) {
-      throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
-    }
-
-    // 비밀번호 암호화
-    const hashRounds = Number(
-      this.configService.get<number>('PASSWORD_HASH') ?? 10,
-    );
-    const hashedPassword = await bcrypt.hash(newPassword, hashRounds);
-
+    // 2) 트랜잭션 내에서 락 + 재검증
     await this.dataSource.transaction(async (manager) => {
-      await manager
-        .getRepository(User)
-        .update({ userId }, { password: hashedPassword });
-      await manager.getRepository(RefreshToken).delete({ userId });
+      const userRepo = manager.getRepository(User);
+      const rtRepo = manager.getRepository(RefreshToken);
+
+      // 2-1) FOR UPDATE 락으로 동시 변경 직렬화
+      const lockedUser = await userRepo
+        .createQueryBuilder('u')
+        .where('u.userId = :userId', { userId })
+        .setLock('pessimistic_write') // ← 행 잠금
+        .select(['u.userId', 'u.password'])
+        .getOne();
+
+      if (!lockedUser) {
+        throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+      }
+
+      // 2-2) 락을 잡은 상태에서 현재 비밀번호 재검증
+      const isValid = await bcrypt.compare(
+        currentPassword,
+        lockedUser.password,
+      );
+      if (!isValid) {
+        throw new BadRequestException(
+          MESSAGES.AUTH.VALIDATION.PASSWORD.CURRENT_INCORRECT,
+        );
+      }
+
+      // 2-3) 비밀번호 암호화
+      const hashRounds = Number(
+        this.configService.get<number>('PASSWORD_HASH') ?? 10,
+      );
+      const hashedPassword = await bcrypt.hash(newPassword, hashRounds);
+
+      // 2-4) 업데이트 + RefreshToken 삭제
+      await userRepo.update({ userId }, { password: hashedPassword });
+      await rtRepo.delete({ userId });
+
+      // 2-5) 로그 저장
+      await manager.getRepository(ActionLog).save({
+        actorId: userId,
+        actorType: user.role === Role.STUDENT ? 'user' : 'admin',
+        action: 'PASSWORD_CHANGE',
+        description: 'User changed their password',
+        createdAt: new Date(),
+      });
     });
 
-    // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: userId,
-      actorType: user.role === Role.STUDENT ? 'user' : 'admin',
-      action: 'PASSWORD_CHANGE',
-      description: 'User changed their password',
-      createdAt: new Date(),
-    });
     return;
   }
 
@@ -177,21 +177,27 @@ export class UsersService {
       await userRepo.save(user);
 
       if (user.role === Role.STUDENT) {
-        const student = await studentRepo.findOne({ where: { userId } });
-        if (!student) {
-          await studentRepo.save({
+        await studentRepo
+          .createQueryBuilder()
+          .insert()
+          .into(Student)
+          .values({
             userId: user.userId,
             grade: user.signupGrade,
             school: user.signupSchool,
-          });
-        }
+          })
+          .orIgnore() // ← 중복 시 무시
+          .execute();
       }
 
       if (user.role === Role.PARENT) {
-        const parent = await parentRepo.findOne({ where: { userId } });
-        if (!parent) {
-          await parentRepo.save({ userId: user.userId });
-        }
+        await parentRepo
+          .createQueryBuilder()
+          .insert()
+          .into(Parent)
+          .values({ userId: user.userId })
+          .orIgnore() // ← 중복 시 무시
+          .execute();
       }
 
       // 로그 저장
@@ -334,7 +340,20 @@ export class UsersService {
   }
 
   // 유저 비밀번호 초기화
-  async resetUserPassword(userId: number, adminId: number) {
+  async resetUserPassword(
+    userId: number,
+    adminId: number,
+    resetUserPassword: ResetUserPasswordDto,
+  ) {
+    const { newPassword, newPasswordConfirm } = resetUserPassword;
+    // 1) 비밀번호 일치 검증
+    if (newPassword !== newPasswordConfirm) {
+      throw new BadRequestException(
+        MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NOT_MATCHED,
+      );
+    }
+
+    // 2) 유저 검증
     const existedUser = await this.userRepository.findOne({
       where: { userId },
       select: {
@@ -345,24 +364,45 @@ export class UsersService {
     if (!existedUser) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
-    // 비밀번호 암호화
-    const tempPassword = Math.random().toString(36).slice(-8);
-    const hashRounds = Number(
-      this.configService.get<number>('PASSWORD_HASH') ?? 10,
-    );
-    const hashedPassword = await bcrypt.hash(tempPassword, hashRounds);
-    await this.userRepository.update({ userId }, { password: hashedPassword });
+    // 3) 트랜잭션 내에서 락 + 재검증
+    await this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const rtRepo = manager.getRepository(RefreshToken);
 
-    // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: adminId,
-      actorType: 'admin',
-      action: 'RESET_USER_PASSWORD',
-      targetId: userId,
-      targetType: 'user',
-      description: 'Admin reset user password',
-      createdAt: new Date(),
+      // 2-1) FOR UPDATE 락으로 동시 변경 직렬화
+      const lockedUser = await userRepo
+        .createQueryBuilder('u')
+        .where('u.userId = :userId', { userId })
+        .setLock('pessimistic_write') // ← 행 잠금
+        .select(['u.userId', 'u.password'])
+        .getOne();
+
+      if (!lockedUser) {
+        throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+      }
+
+      // 2-2) 비밀번호 암호화
+      const hashRounds = Number(
+        this.configService.get<number>('PASSWORD_HASH') ?? 10,
+      );
+      const hashedPassword = await bcrypt.hash(newPassword, hashRounds);
+
+      // 2-3) 업데이트 + RefreshToken 삭제
+      await userRepo.update({ userId }, { password: hashedPassword });
+      await rtRepo.delete({ userId });
+
+      // 2-4) 로그 저장
+      await manager.getRepository(ActionLog).save({
+        actorId: adminId,
+        actorType: 'admin',
+        action: 'RESET_USER_PASSWORD',
+        targetId: userId,
+        targetType: 'user',
+        description: 'Admin reset user password',
+        createdAt: new Date(),
+      });
     });
+
     return;
   }
 
@@ -372,35 +412,45 @@ export class UsersService {
     parentId: number,
     adminId: number,
   ) {
-    const student = await this.dataSource
-      .getRepository(Student)
-      .findOne({ where: { studentId } });
-    if (!student) {
-      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
-    }
-    const parent = await this.dataSource
-      .getRepository(Parent)
-      .findOne({ where: { parentId } });
-    if (!parent) {
-      throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
-    }
+    await this.dataSource.transaction(async (manager) => {
+      const studentRepo = manager.getRepository(Student);
+      const parentRepo = manager.getRepository(Parent);
+      const actionLogRepo = manager.getRepository(ActionLog);
 
-    if (student.parentId) {
-      throw new BadRequestException(MESSAGES.ADMIN.USER.ERROR.ALREADY_LINKED);
-    }
-    student.parentId = parentId;
-    await this.dataSource.getRepository(Student).save(student);
-    // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: adminId,
-      actorType: 'admin',
-      action: 'LINK_STUDENT_PARENT',
-      targetType: 'student-parent',
-      targetId: studentId,
-      description: `Admin linked student (studentId: ${studentId}) with parent (parentId: ${parentId})`,
-      createdAt: new Date(),
+      // 1) Parent 존재 확인
+      const parent = await parentRepo.findOne({ where: { parentId } });
+      if (!parent) {
+        throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+      }
+
+      // 2) 조건부 UPDATE로 동시성 방어
+      // parentId가 NULL일 때만 업데이트 (레이스 컨디션 방지)
+      const result = await studentRepo.update(
+        { studentId, parentId: IsNull() }, // ← 조건: parentId가 NULL
+        { parentId },
+      );
+
+      // 3) 업데이트 실패 처리
+      if (!result.affected || result.affected === 0) {
+        // affected=0 → studentId가 없거나 이미 연결됨
+        const exists = await studentRepo.exist({ where: { studentId } });
+        if (!exists) {
+          throw new NotFoundException(MESSAGES.PARENTS.ERROR.NOT_FOUND);
+        }
+        throw new BadRequestException(MESSAGES.ADMIN.USER.ERROR.ALREADY_LINKED);
+      }
+
+      // 4) 로그 저장
+      await actionLogRepo.save({
+        actorId: adminId,
+        actorType: 'admin',
+        action: 'LINK_STUDENT_PARENT',
+        targetType: 'student-parent',
+        targetId: studentId,
+        description: `Admin linked student (studentId: ${studentId}) with parent (parentId: ${parentId})`,
+        createdAt: new Date(),
+      });
     });
-    return;
   }
 
   // 학생-부모 연동 해제

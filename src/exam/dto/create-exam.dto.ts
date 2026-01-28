@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   ArrayUnique,
   IsArray,
   IsDateString,
@@ -6,6 +7,8 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
+  MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
@@ -25,6 +28,7 @@ export class CreateExamDto {
     message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_INVALID_FORMAT,
   })
   @MinLength(1)
+  @MaxLength(100)
   examTitle: string;
 
   /**
@@ -55,6 +59,11 @@ export class CreateExamDto {
     each: true,
     message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_QUESTION_INVALID_FORMAT,
   })
+  @Max(50, {
+    each: true,
+    message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_QUESTION_INVALID_FORMAT,
+  })
+  @ArrayMaxSize(50)
   question?: number[];
 
   /**
@@ -72,6 +81,11 @@ export class CreateExamDto {
     each: true,
     message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_POINTS_INVALID_FORMAT,
   })
+  @Max(100, {
+    each: true,
+    message: MESSAGES.ADMIN.EXAM.VALIDATION.CREATE.EXAM_POINTS_INVALID_FORMAT,
+  })
+  @ArrayMaxSize(50)
   @IsQuestionsPointsMatched({
     message:
       MESSAGES.ADMIN.EXAM.VALIDATION.CREATE
