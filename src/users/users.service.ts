@@ -20,6 +20,7 @@ import { RefreshToken } from '../auth/entities/refreshtoken.entity';
 import { ActionLog } from './../action-logs/entities/action-logs.entity';
 import { PartialUser } from './interfaces/partial-user.entity';
 import { Student } from './../students/entities/student.entity';
+import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -339,7 +340,20 @@ export class UsersService {
   }
 
   // 유저 비밀번호 초기화
-  async resetUserPassword(userId: number, adminId: number) {
+  async resetUserPassword(
+    userId: number,
+    adminId: number,
+    resetUserPassword: ResetUserPasswordDto,
+  ) {
+    const { newPassword, newPasswordConfirm } = resetUserPassword;
+    // 1) 비밀번호 일치 검증
+    if (newPassword !== newPasswordConfirm) {
+      throw new BadRequestException(
+        MESSAGES.AUTH.VALIDATION.PASSWORD_CONFIRM.NOT_MATCHED,
+      );
+    }
+
+    // 2) 유저 검증
     const existedUser = await this.userRepository.findOne({
       where: { userId },
       select: {
@@ -350,24 +364,45 @@ export class UsersService {
     if (!existedUser) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
-    // 비밀번호 암호화
-    const tempPassword = Math.random().toString(36).slice(-8);
-    const hashRounds = Number(
-      this.configService.get<number>('PASSWORD_HASH') ?? 10,
-    );
-    const hashedPassword = await bcrypt.hash(tempPassword, hashRounds);
-    await this.userRepository.update({ userId }, { password: hashedPassword });
+    // 3) 트랜잭션 내에서 락 + 재검증
+    await this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const rtRepo = manager.getRepository(RefreshToken);
 
-    // 로그 저장
-    await this.actionLogRepository.save({
-      actorId: adminId,
-      actorType: 'admin',
-      action: 'RESET_USER_PASSWORD',
-      targetId: userId,
-      targetType: 'user',
-      description: 'Admin reset user password',
-      createdAt: new Date(),
+      // 2-1) FOR UPDATE 락으로 동시 변경 직렬화
+      const lockedUser = await userRepo
+        .createQueryBuilder('u')
+        .where('u.userId = :userId', { userId })
+        .setLock('pessimistic_write') // ← 행 잠금
+        .select(['u.userId', 'u.password'])
+        .getOne();
+
+      if (!lockedUser) {
+        throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+      }
+
+      // 2-2) 비밀번호 암호화
+      const hashRounds = Number(
+        this.configService.get<number>('PASSWORD_HASH') ?? 10,
+      );
+      const hashedPassword = await bcrypt.hash(newPassword, hashRounds);
+
+      // 2-3) 업데이트 + RefreshToken 삭제
+      await userRepo.update({ userId }, { password: hashedPassword });
+      await rtRepo.delete({ userId });
+
+      // 2-4) 로그 저장
+      await manager.getRepository(ActionLog).save({
+        actorId: adminId,
+        actorType: 'admin',
+        action: 'RESET_USER_PASSWORD',
+        targetId: userId,
+        targetType: 'user',
+        description: 'Admin reset user password',
+        createdAt: new Date(),
+      });
     });
+
     return;
   }
 
