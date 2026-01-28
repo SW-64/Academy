@@ -102,7 +102,7 @@ export class StudentsController {
     );
     return {
       statusCode: HttpStatus.OK,
-      message: MESSAGES.STUDENTS.GRADE.SUCCESS.LIST,
+      message: MESSAGES.STUDENTS.GRADE.SUCCESS.GET_LIST,
       data: data,
     };
   }
