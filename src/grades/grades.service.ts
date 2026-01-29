@@ -66,6 +66,7 @@ export class GradesService {
         examId: true,
         examTitle: true,
         examDate: true,
+        studentAverage: true,
         grades: {
           gradeId: true,
           studentId: true,
@@ -131,6 +132,7 @@ export class GradesService {
         examId: true,
         examTitle: true,
         examDate: true,
+        studentAverage: true,
         grades: {
           gradeId: true,
           studentId: true,
