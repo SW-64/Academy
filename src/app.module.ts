@@ -26,6 +26,7 @@ import { ClassModule } from './class/class.module';
 import { StudentClassModule } from './student-class/student-class.module';
 import { MaterialsModule } from './materials/materials.module';
 import { DataSource } from 'typeorm';
+import { VideosModule } from './videos/videos.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { DataSource } from 'typeorm';
     ClassModule,
     StudentClassModule,
     MaterialsModule,
+    VideosModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,3 +1,4 @@
+import { StudentVideo } from '../../videos/entities/student-video.entity';
 import { Grade } from '../../grades/entities/grade.entity';
 import { Parent } from '../../parents/entities/parent.entity';
 import { User } from '../../users/entities/user.entity';
@@ -62,4 +63,7 @@ export class Student {
 
   @OneToMany(() => StudentClass, (sc) => sc.student)
   studentClasses: StudentClass[];
+
+  @OneToMany(() => StudentVideo, (cm) => cm.student)
+  studentVideos: StudentVideo[];
 }
