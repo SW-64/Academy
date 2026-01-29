@@ -55,30 +55,35 @@ export class GradesService {
         : { examDate: 'ASC' as const };
 
     // 3. 성적 조회 (정렬 적용)
-    const gradesOfExam = await this.examRepository.find({
-      where: {
-        classId,
-        grades: {
-          studentId: student.studentId,
-        },
-      },
-      select: {
-        examId: true,
-        examTitle: true,
-        examDate: true,
-        studentAverage: true,
-        grades: {
-          gradeId: true,
-          studentId: true,
-          score: true,
-          level: true,
-          comment: true,
-          isTaken: true,
-        },
-      },
-      order: orderOption,
-      relations: ['grades'],
-    });
+    const queryBuilder = this.examRepository
+      .createQueryBuilder('exam')
+      .leftJoinAndSelect('exam.grades', 'grade')
+      .where('exam.classId = :classId', { classId })
+      .andWhere('grade.studentId = :studentId', {
+        studentId: student.studentId,
+      })
+      .select([
+        'exam.examId',
+        'exam.examTitle',
+        'exam.examDate',
+        'exam.studentAverage',
+        'grade.gradeId',
+        'grade.studentId',
+        'grade.score',
+        'grade.level',
+        'grade.comment',
+        'grade.isTaken',
+      ]);
+
+    // 정렬 옵션 적용
+    if (sortOption === 'score_desc') {
+      queryBuilder.orderBy('grade.score', 'DESC');
+    } else {
+      queryBuilder.orderBy('exam.examDate', 'ASC');
+    }
+
+    // 3. 성적 조회
+    const gradesOfExam = await queryBuilder.getMany();
 
     return gradesOfExam;
   }
