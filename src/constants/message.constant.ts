@@ -76,6 +76,28 @@ export const MESSAGES = {
     },
   },
   ADMIN: {
+    VIDEO: {
+      SUCCESS: {
+        UPLOAD: '영상 업로드에 성공했습니다.',
+        LIST: '영상 목록 조회에 성공했습니다.',
+        ONE: '영상 상세 조회에 성공했습니다.',
+        PLAYBACK: '영상 재생 URL 조회에 성공했습니다.',
+        DELETE: '영상 삭제에 성공했습니다.',
+        UPDATE: '영상 수정에 성공했습니다.',
+      },
+      VALIDATION: {
+        CREATE: {
+          NAME_REQUIRED: '영상 제목은 필수 입력 항목입니다.',
+          INVALID_TITLE: '영상 제목 형식이 맞지 않습니다.',
+          INVALID_STUDENTS_LIST: '영상에 할당된 학생들의 형식이 맞지 않습니다.',
+        },
+        UPDATE: {
+          INVALID_TITLE: '영상 제목 형식이 맞지 않습니다.',
+          INVALID_CONTENT: '내용 형식이 맞지 않습니다.',
+          INVALID_STUDENTS_LIST: '영상에 할당된 학생들의 형식이 맞지 않습니다.',
+        },
+      },
+    },
     NOTICE: {
       SUCCESS: {
         CREATE: '공지사항이 성공적으로 생성되었습니다.',

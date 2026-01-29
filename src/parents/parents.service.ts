@@ -66,7 +66,7 @@ export class ParentsService {
 
     // paginate 사용
     return paginate(this.userRepository, options, {
-      order: { createdAt: 'DESC' },
+      order: { name: 'ASC' },
       relations: ['parent', 'parent.student', 'parent.student.user'],
       where,
       select: {

@@ -130,7 +130,7 @@ export class StudentsService {
     };
 
     return paginate(this.userRepository, options, {
-      order: { createdAt: 'DESC' },
+      order: { name: 'ASC' },
       relations: ['student', 'student.parent', 'student.parent.user'],
       where,
       select: {
