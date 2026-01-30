@@ -28,7 +28,7 @@ export class TextbookChapter {
   @Column({ name: 'small_unit_no', type: 'int' })
   smallUnitNo: number;
 
-  @ManyToOne(() => Textbook, (t) => t.chapters, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Textbook, (t) => t.chapters, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'textbook_id' })
   textbook: Textbook;
 
