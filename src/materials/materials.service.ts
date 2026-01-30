@@ -96,7 +96,6 @@ export class MaterialsService {
         classRepo,
         dto.classIds,
       );
-      console.log(admin);
 
       const material = materialRepo.create({
         adminId: admin.adminId,
