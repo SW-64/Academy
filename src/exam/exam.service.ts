@@ -724,7 +724,7 @@ export class ExamService {
       for (const [studentId, v] of itemByStudent) {
         if (!v.isTaken && v.wrongExamDetailIds.length > 0) {
           throw new BadRequestException(
-            `${MESSAGES.ADMIN.EXAM.ERROR.INVALID_WRONG_ANSWERS_FOR_NOT_TAKEN}: ${studentId}`,
+            `${MESSAGES.ADMIN.EXAM.ERROR.INVALID_WRONG_ANSWERS_FOR_NOT_TAKEN}`,
           );
         }
         const gradeId = gradeIdByStudentId.get(studentId);
@@ -1081,7 +1081,7 @@ export class ExamService {
         .set({ ranking: null })
         .where('exam_id = :examId', { examId })
         .andWhere('student_id IN (:...studentIds)', { studentIds })
-        .andWhere('g.deleted_at IS NULL')
+        .andWhere('deleted_at IS NULL')
         .execute();
 
       // 2-2) 순위 산정 대상: is_taken=true AND score IS NOT NULL
