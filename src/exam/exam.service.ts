@@ -482,7 +482,7 @@ export class ExamService {
       .getRawMany<{
         studentId: number;
         name: string;
-        email?: string;
+        loginId?: string;
         phone?: string;
         school: string;
       }>();

@@ -26,7 +26,7 @@ export class AuthService {
   // 회원가입
   async signUp({
     name,
-    email,
+    loginId,
     role,
     phone,
     password,
@@ -35,11 +35,11 @@ export class AuthService {
     signupGrade,
   }: SignUpDto) {
     // 유효성 검증
-    // 1. email
+    // 1. loginId
     // 기존 이메일로 가입된 이력이 있을 경우 False
-    const existedEmail = await this.userRepository.findOneBy({ email });
-    if (existedEmail)
-      throw new BadRequestException(MESSAGES.AUTH.ERROR.DUPLICATED_EMAIL);
+    const existedLoginId = await this.userRepository.findOneBy({ loginId });
+    if (existedLoginId)
+      throw new BadRequestException(MESSAGES.AUTH.ERROR.DUPLICATED_LOGIN_ID);
 
     // 2. phone
     // 기존 연락처로 가입된 이력이 있을 경우 False
@@ -79,7 +79,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, hashRounds);
 
     const user = await this.userRepository.save({
-      email,
+      loginId,
       password: hashedPassword,
       name,
       role,

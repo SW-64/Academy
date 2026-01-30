@@ -1,11 +1,4 @@
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Length,
-  Matches,
-} from 'class-validator';
+import { IsOptional, IsString, Length, Matches } from 'class-validator';
 import { MESSAGES } from './../../constants/message.constant';
 
 export class UpdateUserDto {
@@ -16,14 +9,6 @@ export class UpdateUserDto {
   @IsOptional()
   @Length(2, 20, { message: MESSAGES.AUTH.VALIDATION.NAME.INVALID_LENGTH })
   name?: string;
-
-  /**
-   * 이메일
-   * @example "test@example.com"
-   */
-  @IsOptional()
-  @IsEmail({}, { message: MESSAGES.AUTH.VALIDATION.EMAIL.INVALID_FORMAT })
-  email?: string;
 
   /**
    * 연락처

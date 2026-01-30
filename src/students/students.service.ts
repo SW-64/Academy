@@ -135,7 +135,7 @@ export class StudentsService {
       where,
       select: {
         userId: true,
-        email: true,
+        loginId: true,
         name: true,
         role: true,
         phone: true,
@@ -170,7 +170,7 @@ export class StudentsService {
         user: {
           userId: true,
           name: true,
-          email: true,
+          loginId: true,
           phone: true,
           status: true,
         },

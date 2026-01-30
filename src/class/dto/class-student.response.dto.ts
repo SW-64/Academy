@@ -8,6 +8,6 @@ export type ClassStudentsResponse = {
     school: string;
     userId: number;
     name: string;
-    email: string;
+    loginId: string;
   }>;
 };

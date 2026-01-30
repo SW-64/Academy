@@ -71,7 +71,7 @@ export class ParentsService {
       where,
       select: {
         userId: true,
-        email: true,
+        loginId: true,
         name: true,
         status: true,
         role: true,
@@ -106,7 +106,7 @@ export class ParentsService {
         user: {
           userId: true,
           name: true,
-          email: true,
+          loginId: true,
           phone: true,
           status: true,
         },

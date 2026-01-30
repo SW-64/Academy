@@ -18,7 +18,7 @@ export const MESSAGES = {
 
     ERROR: {
       NOT_APPROVED: '관리자 승인 대기 중인 계정입니다.',
-      DUPLICATED_EMAIL: '이미 가입된 이메일입니다.',
+      DUPLICATED_LOGIN_ID: '이미 존재하는 아이디입니다.',
       DUPLICATED_PHONE: '이미 가입된 연락처입니다.',
       UNAUTHORIZED: '인증에 실패했습니다. 다시 로그인해주세요.',
       FORBIDDEN_ROLE: '현재 역할은 이 리소스에 접근할 수 없습니다.',
@@ -39,7 +39,7 @@ export const MESSAGES = {
         INVALID_LENGTH: '이름은 2자 이상 20자 이하로 입력해주세요.',
       },
 
-      EMAIL: {
+      LOGIN_ID: {
         REQUIRED: '이메일은 필수 입력 항목입니다.',
         INVALID_FORMAT: '유효한 이메일 형식이 아닙니다.',
       },

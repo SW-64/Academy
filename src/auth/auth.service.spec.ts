@@ -156,7 +156,7 @@ describe('AuthService - MEDIUM-1: signUp validation', () => {
     // given
     const dto: any = {
       name: '홍길동',
-      email: 'parent@test.com',
+      loginId: 'parent',
       password: 'Test1234!',
       passwordConfirm: 'Test1234!',
       role: 'PARENT',
@@ -173,7 +173,7 @@ describe('AuthService - MEDIUM-1: signUp validation', () => {
     // given
     const dto: any = {
       name: '학생',
-      email: 'student@test.com',
+      loginId: 'student',
       password: 'Test1234!',
       passwordConfirm: 'Test1234!',
       role: 'STUDENT',
@@ -198,7 +198,7 @@ describe('AuthService - MEDIUM-1: signUp validation', () => {
     // given
     const dto: any = {
       name: '학생',
-      email: 'student@test.com',
+      loginId: 'student',
       password: 'Test1234!',
       passwordConfirm: 'Test1234!',
       role: 'STUDENT',

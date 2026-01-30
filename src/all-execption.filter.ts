@@ -52,7 +52,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
        * - status: 실무에서는 보통 409 Conflict를 사용 (팀 컨벤션에 맞추면 됨)
        */
       if (e.code === 'ER_DUP_ENTRY') {
-        // sqlMessage 예시: "Duplicate entry '...' for key 'user.email'"
+        // sqlMessage 예시: "Duplicate entry '...' for key 'user.loginId'"
         const rawMsg = String(e.sqlMessage || e.message || '');
 
         // 기본 메시지 (필드 판별 실패 시)
@@ -64,11 +64,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
          * - 가장 안정적인 방법: 유니크 인덱스에 명확한 이름을 붙여두고(key명), 그걸로 분기하기.
          */
         if (
-          rawMsg.includes('user.email') ||
-          rawMsg.includes('email') ||
-          rawMsg.includes('UK_user_email') // (예시) 인덱스/제약 이름을 이렇게 붙였다면 더 안정적
+          rawMsg.includes('user.loginId') ||
+          rawMsg.includes('loginId') ||
+          rawMsg.includes('UK_user_loginId') // (예시) 인덱스/제약 이름을 이렇게 붙였다면 더 안정적
         ) {
-          message = '이미 사용 중인 이메일입니다.';
+          message = '이미 사용 중인 아이디입니다.';
         } else if (
           rawMsg.includes('user.phone') ||
           rawMsg.includes('phone') ||
@@ -101,9 +101,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
         let message = '이미 존재하는 값입니다.';
 
-        // Postgres는 detail에 "Key (email)=(...) already exists." 형태로 들어오는 경우가 흔함
-        if (rawMsg.includes('(email)') || rawMsg.includes('email')) {
-          message = '이미 사용 중인 이메일입니다.';
+        // Postgres는 detail에 "Key (loginId)=(...) already exists." 형태로 들어오는 경우가 흔함
+        if (rawMsg.includes('(loginId)') || rawMsg.includes('loginId')) {
+          message = '이미 사용 중인 아이디입니다.';
         } else if (rawMsg.includes('(phone)') || rawMsg.includes('phone')) {
           message = '이미 사용 중인 연락처입니다.';
         }

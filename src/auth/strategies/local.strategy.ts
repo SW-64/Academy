@@ -20,14 +20,17 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
     @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {
     super({
-      usernameField: 'email',
+      usernameField: 'loginId',
       passwordField: 'password',
     });
   }
 
-  async validate(email: string, password: string): Promise<PartialUser | null> {
+  async validate(
+    loginId: string,
+    password: string,
+  ): Promise<PartialUser | null> {
     const user = await this.userRepository.findOne({
-      where: { email },
+      where: { loginId },
       select: {
         userId: true,
         password: true,
