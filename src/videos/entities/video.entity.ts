@@ -30,7 +30,6 @@ export class Video {
   title: string;
 
   @Column({ type: 'varchar', length: 100, unique: true })
-  @Index()
   bunnyVideoId: string; // Bunny의 Video GUID
 
   @Column({ type: 'varchar', length: 500, nullable: true })

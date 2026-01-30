@@ -32,8 +32,8 @@ export class User {
   @PrimaryGeneratedColumn({ name: 'user_id', comment: '유저 아이디' })
   userId: number;
 
-  @Column({ unique: true, comment: '이메일' })
-  email: string;
+  @Column({ unique: true, comment: '아이디' })
+  loginId: string;
 
   @Column({ comment: '이름' })
   name: string;

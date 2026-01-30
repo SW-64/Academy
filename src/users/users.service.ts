@@ -42,7 +42,7 @@ export class UsersService {
       where: { userId },
       select: {
         userId: true,
-        email: true,
+        loginId: true,
         name: true,
         role: true,
         phone: true,
@@ -271,12 +271,11 @@ export class UsersService {
   // 유저 정보 수정
   async updateUserInfo(
     userId: number,
-    { email, name, phone, grade, school }: UpdateUserDto,
+    { name, phone, grade, school }: UpdateUserDto,
     adminId: number,
   ) {
-    // 1) user patch (email/name/phone)
+    // 1) user patch (loginId/name/phone)
     const userPatch: Record<string, any> = {};
-    if (email !== undefined) userPatch.email = email;
     if (name !== undefined) userPatch.name = name;
     if (phone !== undefined) userPatch.phone = phone;
 
@@ -358,7 +357,7 @@ export class UsersService {
       where: { userId },
       select: {
         userId: true,
-        email: true,
+        loginId: true,
       },
     });
     if (!existedUser) {

@@ -119,7 +119,7 @@ export class ClassService {
 
         'u.user_id AS userId',
         'u.name AS name',
-        'u.email AS email',
+        'u.loginId AS loginId',
       ])
       .orderBy('u.name', 'ASC')
       .getRawMany();
@@ -144,7 +144,7 @@ export class ClassService {
         school: r.school,
         userId: Number(r.userId),
         name: r.name,
-        email: r.email,
+        loginId: r.loginId,
       }));
 
     return { ...classInfo, students };
