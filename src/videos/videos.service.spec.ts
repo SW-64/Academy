@@ -1,70 +1,272 @@
-// import { Test, TestingModule } from '@nestjs/testing';
-// import { VideosService } from './videos.service';
-// import { BadRequestException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { VideosService } from './videos.service';
+import { Video, VideoStatus } from './entities/video.entity';
+import { StudentVideo } from './entities/student-video.entity';
+import { Student } from '../students/entities/student.entity';
+import { ActionLog } from '../action-logs/entities/action-logs.entity';
+import { BunnyService } from './bunny.service';
 
-// describe('VideosService', () => {
-//   let service: VideosService;
+describe('VideosService', () => {
+  let service: VideosService;
+  let videoRepository: Repository<Video>;
+  let studentVideoRepository: Repository<StudentVideo>;
+  let studentRepository: Repository<Student>;
+  let bunnyService: BunnyService;
+  let dataSource: DataSource;
 
-//   beforeEach(async () => {
-//     const module: TestingModule = await Test.createTestingModule({
-//       providers: [VideosService],
-//     }).compile();
+  const mockVideoRepository = {
+    save: jest.fn(),
+    update: jest.fn(),
+    findOne: jest.fn(),
+    existsBy: jest.fn(),
+    createQueryBuilder: jest.fn(),
+    find: jest.fn(),
+    increment: jest.fn(),
+  };
 
-//     service = module.get<VideosService>(VideosService);
-//   });
+  const mockStudentVideoRepository = {
+    createQueryBuilder: jest.fn(),
+    delete: jest.fn(),
+    find: jest.fn(),
+  };
 
-//   it('should be defined', () => {
-//     expect(service).toBeDefined();
-//   });
-// });
+  const mockStudentRepository = {
+    find: jest.fn(),
+  };
 
-// describe('VideosService - studentIds 검증', () => {
-//   let service: VideosService;
+  const mockActionLogRepository = {
+    insert: jest.fn(),
+    save: jest.fn(),
+  };
 
-//   it('존재하지 않는 studentId로 업로드 시 BadRequestException', async () => {
-//     const dto = {
-//       title: 'Test Video',
-//       studentIds: [9999, 10000], // 존재하지 않는 ID
-//     };
-//     const file = {} as Express.Multer.File;
+  const mockBunnyService = {
+    createVideo: jest.fn(),
+    uploadVideoStream: jest.fn(),
+    deleteVideo: jest.fn(),
+    getVideo: jest.fn(),
+    getPlaybackUrl: jest.fn(),
+    getThumbnailUrl: jest.fn(),
+  };
 
-//     await expect(service.uploadVideo(dto, file, 1)).rejects.toThrow(
-//       BadRequestException,
-//     );
-//   });
+  const mockDataSource = {
+    transaction: jest.fn(),
+  };
 
-//   it('중복된 studentId는 제거되어야 함', async () => {
-//     // studentRepository mock 설정
-//     jest
-//       .spyOn(studentRepository, 'find')
-//       .mockResolvedValue([
-//         { studentId: 1 } as Student,
-//         { studentId: 2 } as Student,
-//       ]);
+  beforeEach(async () => {
+    jest.clearAllMocks();
 
-//     const dto = {
-//       title: 'Test Video',
-//       studentIds: [1, 2, 1, 2], // 중복
-//     };
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        VideosService,
+        {
+          provide: getRepositoryToken(Video),
+          useValue: mockVideoRepository,
+        },
+        {
+          provide: getRepositoryToken(StudentVideo),
+          useValue: mockStudentVideoRepository,
+        },
+        {
+          provide: getRepositoryToken(Student),
+          useValue: mockStudentRepository,
+        },
+        {
+          provide: getRepositoryToken(ActionLog),
+          useValue: mockActionLogRepository,
+        },
+        {
+          provide: BunnyService,
+          useValue: mockBunnyService,
+        },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
+      ],
+    }).compile();
 
-//     // ... 업로드 로직 실행
+    service = module.get<VideosService>(VideosService);
+    videoRepository = module.get(getRepositoryToken(Video));
+    studentVideoRepository = module.get(getRepositoryToken(StudentVideo));
+    studentRepository = module.get(getRepositoryToken(Student));
+    bunnyService = module.get<BunnyService>(BunnyService);
+    dataSource = module.get<DataSource>(DataSource);
+  });
 
-//     // createVideoDto.studentIds가 [1, 2]로 정리되었는지 확인
-//     expect(dto.studentIds).toEqual([1, 2]);
-//   });
+  describe('CRITICAL-1: uploadVideo', () => {
+    it('업로드 실패 시 StudentVideo가 생성되지 않아야 한다', async () => {
+      // Given
+      const mockFile: any = {
+        path: '/tmp/test-video.mp4',
+        size: 1024 * 1024 * 100, // 100MB
+        mimetype: 'video/mp4',
+      };
 
-//   it('일부 studentId만 존재하지 않으면 에러 메시지에 표시', async () => {
-//     jest
-//       .spyOn(studentRepository, 'find')
-//       .mockResolvedValue([{ studentId: 1 } as Student]);
+      const createVideoDto = {
+        title: '수학 특강',
+        studentIds: [1, 2, 3],
+      };
 
-//     const dto = {
-//       title: 'Test Video',
-//       studentIds: [1, 999, 1000],
-//     };
+      mockStudentRepository.find.mockResolvedValue([
+        { studentId: 1 },
+        { studentId: 2 },
+        { studentId: 3 },
+      ]);
 
-//     await expect(
-//       service.uploadVideo(dto, {} as Express.Multer.File, 1),
-//     ).rejects.toThrow('존재하지 않는 학생 ID가 포함되어 있습니다: 999, 1000');
-//   });
-// });
+      mockBunnyService.createVideo.mockResolvedValue({
+        guid: 'bunny-video-guid',
+      });
+
+      // 트랜잭션 모킹 (Video만 저장)
+      mockDataSource.transaction.mockImplementation(async (callback) => {
+        const mockManager = {
+          getRepository: jest.fn((entity) => {
+            if (entity === Video) {
+              return {
+                save: jest.fn().mockResolvedValue({
+                  videoId: 123,
+                  title: '수학 특강',
+                  bunnyVideoId: 'bunny-video-guid',
+                  status: VideoStatus.UPLOADING,
+                }),
+              };
+            }
+            if (entity === ActionLog) {
+              return {
+                insert: jest.fn().mockResolvedValue({}),
+              };
+            }
+            return {};
+          }),
+        };
+        return callback(mockManager);
+      });
+
+      // 업로드 실패를 시뮬레이션하기 위해 spy 사용
+      const uploadSpy = jest
+        .spyOn(service as any, 'uploadVideoToBundleWithAssignment')
+        .mockImplementation(async () => {
+          // 업로드 실패 시뮬레이션
+          await mockVideoRepository.update(123, {
+            status: VideoStatus.FAILED,
+          });
+        });
+
+      // When
+      const result = await service.uploadVideo(createVideoDto, mockFile, 999);
+
+      // Then
+      expect(result.videoId).toBe(123);
+      expect(result.status).toBe(VideoStatus.UPLOADING);
+      expect(uploadSpy).toHaveBeenCalledWith(
+        123,
+        'bunny-video-guid',
+        '/tmp/test-video.mp4',
+        [1, 2, 3],
+      );
+
+      // 업로드 실패 시 status만 FAILED로 변경되고 StudentVideo는 생성 안 됨
+      expect(mockVideoRepository.update).toHaveBeenCalledWith(123, {
+        status: VideoStatus.FAILED,
+      });
+    });
+  });
+
+  describe('HIGH-1: getAllVideos', () => {
+    it('assignedStudentCount가 포함되어 반환되어야 한다', async () => {
+      // Given
+      const mockQueryBuilder: any = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getRawAndEntities: jest.fn().mockResolvedValue({
+          entities: [
+            {
+              videoId: 1,
+              title: '수학 특강',
+              status: VideoStatus.READY,
+              viewCount: 100,
+              createdAt: new Date(),
+            },
+          ],
+          raw: [
+            {
+              assignedStudentCount: '5',
+            },
+          ],
+        }),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+
+      mockVideoRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+
+      // When
+      const result = await service.getAllVideos({ page: 1, limit: 20 });
+
+      // Then
+      expect(result.data[0].assignedStudentCount).toBe(5);
+      expect(result.data[0].videoId).toBe(1);
+      expect(result.meta.total).toBe(1);
+    });
+  });
+
+  describe('CRITICAL-2: deleteVideo', () => {
+    it('Video 삭제 시 StudentVideo도 함께 삭제되어야 한다', async () => {
+      // Given
+      mockVideoRepository.findOne.mockResolvedValue({
+        videoId: 100,
+        bunnyVideoId: 'bunny-guid',
+        status: VideoStatus.READY,
+      });
+
+      const mockStudentVideoRepoInTransaction = {
+        delete: jest.fn().mockResolvedValue({ affected: 3 }),
+      };
+
+      const mockVideoRepoInTransaction = {
+        update: jest.fn().mockResolvedValue({}),
+        softDelete: jest.fn().mockResolvedValue({}),
+      };
+
+      const mockLogRepoInTransaction = {
+        save: jest.fn().mockResolvedValue({}),
+      };
+
+      mockDataSource.transaction.mockImplementation(async (callback) => {
+        const mockManager = {
+          getRepository: jest.fn((entity) => {
+            if (entity === StudentVideo)
+              return mockStudentVideoRepoInTransaction;
+            if (entity === Video) return mockVideoRepoInTransaction;
+            if (entity === ActionLog) return mockLogRepoInTransaction;
+            return {};
+          }),
+        };
+        return callback(mockManager);
+      });
+
+      // When
+      await service.deleteVideo(100, 999);
+
+      // Then
+      // StudentVideo가 먼저 삭제되어야 함
+      expect(mockStudentVideoRepoInTransaction.delete).toHaveBeenCalledWith({
+        videoId: 100,
+      });
+
+      // Video가 soft delete 되어야 함
+      expect(mockVideoRepoInTransaction.update).toHaveBeenCalledWith(100, {
+        status: VideoStatus.DELETING,
+      });
+      expect(mockVideoRepoInTransaction.softDelete).toHaveBeenCalledWith(100);
+    });
+  });
+});

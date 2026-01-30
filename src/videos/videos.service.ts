@@ -135,21 +135,21 @@ export class VideosService {
           status: VideoStatus.UPLOADING,
         });
 
-        // 학생들에게 영상 할당
-        if (createVideoDto.studentIds && createVideoDto.studentIds.length > 0) {
-          await studentVideoRepo
-            .createQueryBuilder()
-            .insert()
-            .into(StudentVideo)
-            .values(
-              createVideoDto.studentIds.map((studentId) => ({
-                studentId,
-                videoId: video.videoId,
-              })),
-            )
-            .orIgnore()
-            .execute();
-        }
+        // // 학생들에게 영상 할당
+        // if (createVideoDto.studentIds && createVideoDto.studentIds.length > 0) {
+        //   await studentVideoRepo
+        //     .createQueryBuilder()
+        //     .insert()
+        //     .into(StudentVideo)
+        //     .values(
+        //       createVideoDto.studentIds.map((studentId) => ({
+        //         studentId,
+        //         videoId: video.videoId,
+        //       })),
+        //     )
+        //     .orIgnore()
+        //     .execute();
+        // }
 
         // 로그 저장
         await logRepo.insert({
@@ -165,8 +165,13 @@ export class VideosService {
         return video;
       });
 
-      // 4. 비동기로 파일 업로드 (백그라운드에서 처리)
-      this.uploadVideoToBundle(savedVideo.videoId, bunnyVideo.guid, file.path);
+      // 4. ✅ 비동기로 파일 업로드 + 성공 시 학생 할당
+      this.uploadVideoToBundleWithAssignment(
+        savedVideo.videoId,
+        bunnyVideo.guid,
+        file.path,
+        createVideoDto.studentIds,
+      );
 
       return this.toResponseDto(savedVideo);
     } catch (error) {
@@ -186,19 +191,43 @@ export class VideosService {
   }
 
   /**
-   * 실제 파일 업로드 처리 (비동기)
+   * 실제 파일 업로드 + 성공 시 학생 할당 (비동기)
    */
-  private async uploadVideoToBundle(
+  private async uploadVideoToBundleWithAssignment(
     videoId: number,
     bunnyVideoId: string,
     filePath: string,
+    studentIds: number[],
   ): Promise<void> {
     try {
       // Stream 업로드
       await this.bunnyService.uploadVideoStream(bunnyVideoId, filePath);
 
-      await this.videoRepository.update(videoId, {
-        status: VideoStatus.ENCODING,
+      // 업로드 성공 후 트랜잭션으로 상태 변경 + 학생 할당
+      await this.dataSource.transaction(async (manager) => {
+        const videoRepo = manager.getRepository(Video);
+        const studentVideoRepo = manager.getRepository(StudentVideo);
+
+        // 1. 상태 변경
+        await videoRepo.update(videoId, {
+          status: VideoStatus.ENCODING,
+        });
+
+        // 2. 학생 할당 생성
+        if (studentIds && studentIds.length > 0) {
+          await studentVideoRepo
+            .createQueryBuilder()
+            .insert()
+            .into(StudentVideo)
+            .values(
+              studentIds.map((studentId) => ({
+                studentId,
+                videoId: videoId,
+              })),
+            )
+            .orIgnore()
+            .execute();
+        }
       });
 
       // 업로드 완료 후 임시 파일 삭제
@@ -217,6 +246,7 @@ export class VideosService {
         stack: error.stack,
       });
 
+      // ✅ 실패 시 StudentVideo는 생성되지 않고 상태만 FAILED로
       await this.videoRepository.update(videoId, {
         status: VideoStatus.FAILED,
       });
@@ -235,7 +265,8 @@ export class VideosService {
     const { page = 1, limit = 20 } = pagination;
     const skip = (page - 1) * limit;
 
-    const [videos, total] = await this.videoRepository
+    // ✅ getRawAndEntities로 변경
+    const queryBuilder = this.videoRepository
       .createQueryBuilder('v')
       .leftJoin('v.studentVideos', 'sv')
       .select([
@@ -248,7 +279,7 @@ export class VideosService {
         'v.createdAt',
       ])
       .addSelect('COUNT(sv.studentVideoId)', 'assignedStudentCount')
-      .where('v.deletedAt IS NULL') // Soft Delete 고려
+      .where('v.deletedAt IS NULL')
       .groupBy('v.videoId')
       .addGroupBy('v.title')
       .addGroupBy('v.thumbnailUrl')
@@ -256,12 +287,29 @@ export class VideosService {
       .addGroupBy('v.status')
       .addGroupBy('v.viewCount')
       .addGroupBy('v.createdAt')
-      .orderBy('v.createdAt', 'DESC') // 최신순
+      .orderBy('v.createdAt', 'DESC')
       .skip(skip)
-      .take(limit)
-      .getManyAndCount(); // ✅ getRawAndEntities 대신 getManyAndCount 사용
+      .take(limit);
 
-    const data = videos.map((video) => this.toListResponseDto(video));
+    // ✅ getRawAndEntities 사용
+    const { entities: videos, raw } = await queryBuilder.getRawAndEntities();
+
+    // ✅ total은 별도 쿼리
+    const total = await this.videoRepository
+      .createQueryBuilder('v')
+      .where('v.deletedAt IS NULL')
+      .getCount();
+
+    // ✅ raw 데이터와 entity 매핑
+    const data = videos.map((video, index) => {
+      const assignedStudentCount =
+        parseInt(raw[index].assignedStudentCount) || 0;
+
+      return {
+        ...this.toListResponseDto(video),
+        assignedStudentCount,
+      };
+    });
 
     return {
       data,
@@ -291,6 +339,7 @@ export class VideosService {
       .where('s.userId = :userId', { userId: userIdOfStudent })
       .andWhere('v.deletedAt IS NULL')
       .andWhere('s.deletedAt IS NULL')
+      .andWhere('v.status = :status', { status: VideoStatus.READY }) //  READY만 노출
       .select([
         'v.videoId',
         'v.title',
@@ -633,6 +682,9 @@ export class VideosService {
     await this.dataSource.transaction(async (manager) => {
       const videoRepo = manager.getRepository(Video);
       const logRepo = manager.getRepository(ActionLog);
+      const studentVideoRepo = manager.getRepository(StudentVideo);
+
+      await studentVideoRepo.delete({ videoId });
 
       // 상태를 DELETING으로 변경 + Soft Delete
       await videoRepo.update(videoId, {
