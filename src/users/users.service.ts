@@ -177,27 +177,37 @@ export class UsersService {
       await userRepo.save(user);
 
       if (user.role === Role.STUDENT) {
-        await studentRepo
-          .createQueryBuilder()
-          .insert()
-          .into(Student)
-          .values({
-            userId: user.userId,
-            grade: user.signupGrade,
-            school: user.signupSchool,
-          })
-          .orIgnore() // ← 중복 시 무시
-          .execute();
+        const student = await studentRepo.findOne({
+          where: { userId: user.userId },
+        });
+        if (!student) {
+          await studentRepo
+            .createQueryBuilder()
+            .insert()
+            .into(Student)
+            .values({
+              userId: user.userId,
+              grade: user.signupGrade,
+              school: user.signupSchool,
+            })
+            .orIgnore() // ← 중복 시 무시
+            .execute();
+        }
       }
 
       if (user.role === Role.PARENT) {
-        await parentRepo
-          .createQueryBuilder()
-          .insert()
-          .into(Parent)
-          .values({ userId: user.userId })
-          .orIgnore() // ← 중복 시 무시
-          .execute();
+        const parent = await parentRepo.findOne({
+          where: { userId: user.userId },
+        });
+        if (!parent) {
+          await parentRepo
+            .createQueryBuilder()
+            .insert()
+            .into(Parent)
+            .values({ userId: user.userId })
+            .orIgnore() // ← 중복 시 무시
+            .execute();
+        }
       }
 
       // 로그 저장
