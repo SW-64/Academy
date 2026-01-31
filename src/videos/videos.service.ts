@@ -453,6 +453,7 @@ export class VideosService {
     const video = await this.videoRepository.findOne({
       where: { videoId },
       select: {
+        videoId: true,
         status: true,
         bunnyVideoId: true,
         thumbnailUrl: true,
@@ -460,7 +461,6 @@ export class VideosService {
         duration: true,
       },
     });
-
     if (!video) {
       throw new NotFoundException('영상을 찾을 수 없습니다.');
     }
@@ -507,17 +507,19 @@ export class VideosService {
   private async updateVideoStatus(video: Video): Promise<void> {
     try {
       const bunnyVideo = await this.bunnyService.getVideo(video.bunnyVideoId);
-
       // 인코딩 완료 (status 4)
       if (bunnyVideo.status === 4) {
-        await this.videoRepository.update(video.videoId, {
-          status: VideoStatus.READY,
-          duration: bunnyVideo.length,
-          thumbnailUrl: this.bunnyService.getThumbnailUrl(
-            video.bunnyVideoId,
-            bunnyVideo.thumbnailFileName,
-          ),
-        });
+        await this.videoRepository.update(
+          { videoId: video.videoId },
+          {
+            status: VideoStatus.READY,
+            duration: bunnyVideo.length,
+            thumbnailUrl: this.bunnyService.getThumbnailUrl(
+              video.bunnyVideoId,
+              bunnyVideo.thumbnailFileName,
+            ),
+          },
+        );
         video.status = VideoStatus.READY;
       }
       // 인코딩 중 (status 2, 3)
@@ -528,9 +530,12 @@ export class VideosService {
       }
     } catch (error) {
       // Bunny API 오류 시 FAILED 상태로 변경
-      await this.videoRepository.update(video.videoId, {
-        status: VideoStatus.FAILED,
-      });
+      await this.videoRepository.update(
+        { videoId: video.videoId },
+        {
+          status: VideoStatus.FAILED,
+        },
+      );
     }
   }
 
