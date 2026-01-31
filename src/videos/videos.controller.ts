@@ -63,7 +63,7 @@ export class VideosController {
    * - STUDENT: 자신에게 할당된 영상만
    * @returns
    */
-  @UseGuards(JwtAuthGuard, RolesGuard, VideoAccessGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.STUDENT)
   @Get()
   async getVideos(
