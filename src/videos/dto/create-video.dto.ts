@@ -8,7 +8,7 @@ import {
   IsOptional,
   ArrayMaxSize,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { MESSAGES } from '../../constants/message.constant';
 
 export class CreateVideoDto {
@@ -35,6 +35,10 @@ export class CreateVideoDto {
    * @example [1,2]
    */
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return Array.isArray(value) ? value : [value];
+  })
   @IsArray({
     message: MESSAGES.ADMIN.VIDEO.VALIDATION.CREATE.INVALID_STUDENTS_LIST,
   })
