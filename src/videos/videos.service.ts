@@ -276,7 +276,7 @@ export class VideosService {
         'v.duration',
         'v.status',
         'v.viewCount',
-        'v.createdAt',
+        'v.created_at',
       ])
       .addSelect('COUNT(sv.studentVideoId)', 'assignedStudentCount')
       .where('v.deletedAt IS NULL')
@@ -286,8 +286,8 @@ export class VideosService {
       .addGroupBy('v.duration')
       .addGroupBy('v.status')
       .addGroupBy('v.viewCount')
-      .addGroupBy('v.createdAt')
-      .orderBy('v.createdAt', 'DESC')
+      .addGroupBy('v.created_at')
+      .orderBy('v.created_at', 'DESC')
       .skip(skip)
       .take(limit);
 
@@ -297,7 +297,7 @@ export class VideosService {
     // ✅ total은 별도 쿼리
     const total = await this.videoRepository
       .createQueryBuilder('v')
-      .where('v.deletedAt IS NULL')
+      .where('v.deleted_at IS NULL')
       .getCount();
 
     // ✅ raw 데이터와 entity 매핑
@@ -337,8 +337,8 @@ export class VideosService {
       .innerJoin('v.studentVideos', 'sv')
       .innerJoin('sv.student', 's')
       .where('s.userId = :userId', { userId: userIdOfStudent })
-      .andWhere('v.deletedAt IS NULL')
-      .andWhere('s.deletedAt IS NULL')
+      .andWhere('v.deleted_at IS NULL')
+      .andWhere('s.deleted_at IS NULL')
       .andWhere('v.status = :status', { status: VideoStatus.READY }) //  READY만 노출
       .select([
         'v.videoId',
@@ -347,9 +347,9 @@ export class VideosService {
         'v.duration',
         'v.status',
         'v.viewCount',
-        'v.createdAt',
+        'v.created_at',
       ])
-      .orderBy('v.createdAt', 'DESC')
+      .orderBy('v.created_at', 'DESC')
       .skip(skip)
       .take(limit)
       .getManyAndCount();
