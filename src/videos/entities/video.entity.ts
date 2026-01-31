@@ -48,13 +48,13 @@ export class Video {
   @Column({ type: 'int', default: 0 })
   viewCount: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at', type: 'datetime' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'datetime', nullable: true })
   deletedAt: Date | null;
 
   @OneToMany(() => StudentVideo, (cm) => cm.video)
