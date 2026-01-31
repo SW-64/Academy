@@ -50,7 +50,7 @@ import { VideosModule } from './videos/videos.module';
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       // entities: [__dirname + '/**/*.entity{.ts,.js}'], // 경로를 기반한 엔티티 등록
-      synchronize: true,
+      synchronize: false,
       autoLoadEntities: true, // 각 모듈에서 등록한 엔티티를 자동으로 등록
       logging: true,
     }),

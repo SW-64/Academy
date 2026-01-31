@@ -86,6 +86,28 @@ export class VideosController {
   }
 
   /**
+   * 영상 재생 URL 조회 (ADMIN, 수강 중인 STUDENT)
+   * 학생 기준 엔드포인트
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard, VideoAccessGuard)
+  @Roles(Role.STUDENT, Role.ADMIN)
+  @Get('/:videoId/playback')
+  async getPlaybackUrl(
+    @Param('videoId', ParseIntPipe) videoId: number,
+    @UserInfo() user: PartialUser,
+  ) {
+    console.log('Zzz');
+    const data = await this.videosService.getPlaybackUrl(videoId, user.userId);
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.ADMIN.VIDEO.SUCCESS.PLAYBACK,
+      data: data,
+    };
+  }
+
+  /**
    * 영상 상세 조회 (역할별로 다른 정보 반환)
    * - STUDENT: title, 썸네일만
    * - ADMIN: title, 썸네일, 할당된 학생 목록
@@ -109,27 +131,6 @@ export class VideosController {
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.VIDEO.SUCCESS.ONE,
-      data: data,
-    };
-  }
-
-  /**
-   * 영상 재생 URL 조회 (ADMIN, 수강 중인 STUDENT)
-   * 학생 기준 엔드포인트
-   * @returns
-   */
-  @UseGuards(JwtAuthGuard, RolesGuard, VideoAccessGuard)
-  @Roles(Role.STUDENT, Role.ADMIN)
-  @Get(':videoId/playback')
-  async getPlaybackUrl(
-    @Param('videoId', ParseIntPipe) videoId: number,
-    @UserInfo() user: PartialUser,
-  ) {
-    const data = await this.videosService.getPlaybackUrl(videoId, user.userId);
-
-    return {
-      statusCode: HttpStatus.OK,
-      message: MESSAGES.ADMIN.VIDEO.SUCCESS.PLAYBACK,
       data: data,
     };
   }
