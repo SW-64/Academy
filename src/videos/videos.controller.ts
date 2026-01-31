@@ -37,13 +37,17 @@ export class VideosController {
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @Post('upload')
+  @Post('/upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadVideo(
     @UploadedFile() file: Express.Multer.File,
     @Body() createVideoDto: CreateVideoDto,
     @UserInfo() admin: PartialUser,
   ) {
+    console.log('===== 업로드 요청 받음 =====');
+
+    console.log('File:', file ? file.originalname : 'NO FILE');
+    console.log('Admin:', admin);
     const data = await this.videosService.uploadVideo(
       createVideoDto,
       file,
