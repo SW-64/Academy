@@ -89,6 +89,7 @@ export const MESSAGES = {
         CREATE: {
           NAME_REQUIRED: '영상 제목은 필수 입력 항목입니다.',
           INVALID_TITLE: '영상 제목 형식이 맞지 않습니다.',
+          INVALID_ARRAY: '영상 생성 시, 학생들의 형식이 맞지 않습니다.',
           INVALID_STUDENTS_LIST: '영상에 할당된 학생들의 형식이 맞지 않습니다.',
         },
         UPDATE: {
