@@ -59,14 +59,25 @@ export class UsersService {
 
   // 내 정보 수정
   async updateMyInfo(user: PartialUser, updateUserDto: UpdateUserDto) {
+    const { name, phone, school, grade } = updateUserDto;
     const userId = user.userId;
     const updatedUser = await this.userRepository.update(
       { userId },
-      updateUserDto,
+      { name, phone },
     );
     if (updatedUser.affected === 0) {
       throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
     }
+    if (user.role == Role.STUDENT) {
+      const updatedStudent = await this.studentRepository.update(
+        { userId },
+        { school, grade },
+      );
+      if (updatedStudent.affected === 0) {
+        throw new NotFoundException(MESSAGES.USER.ERROR.NOT_FOUND);
+      }
+    }
+
     // 로그 저장
     await this.actionLogRepository.save({
       actorId: userId,
