@@ -44,10 +44,6 @@ export class VideosController {
     @Body() createVideoDto: CreateVideoDto,
     @UserInfo() admin: PartialUser,
   ) {
-    console.log('===== 업로드 요청 받음 =====');
-
-    console.log('File:', file ? file.originalname : 'NO FILE');
-    console.log('Admin:', admin);
     const data = await this.videosService.uploadVideo(
       createVideoDto,
       file,
@@ -101,7 +97,6 @@ export class VideosController {
     @Param('videoId', ParseIntPipe) videoId: number,
     @UserInfo() user: PartialUser,
   ) {
-    console.log('Zzz');
     const data = await this.videosService.getPlaybackUrl(videoId, user.userId);
 
     return {
