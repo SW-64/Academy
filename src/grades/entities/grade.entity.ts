@@ -28,6 +28,7 @@ export enum Level {
 @Unique('uq_grade_exam_student', ['examId', 'studentId'])
 @Index('idx_grade_exam', ['examId'])
 @Index('idx_grade_student', ['studentId'])
+@Index('idx_grade_exam_taken_ranking', ['examId', 'isTaken', 'ranking'])
 export class Grade {
   @PrimaryGeneratedColumn({ type: 'int', name: 'grade_id' })
   gradeId: number;

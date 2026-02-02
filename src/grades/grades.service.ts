@@ -16,6 +16,8 @@ import {
   paginate,
   Pagination,
 } from 'nestjs-typeorm-paginate';
+import { DUMMY_HERO_NAMES } from './../constants/dummy-hero-names.constant';
+import { User } from './../users/entities/user.entity';
 
 @Injectable()
 export class GradesService {
@@ -28,6 +30,8 @@ export class GradesService {
     private readonly parentRepository: Repository<Parent>,
     @InjectRepository(Exam)
     private readonly examRepository: Repository<Exam>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   /**
@@ -161,7 +165,14 @@ export class GradesService {
     // 1. 학생 정보 조회
     const student = await this.studentRepository.findOne({
       where: { userId: userIdOfStudent },
-      select: { studentId: true },
+      relations: ['user'],
+      select: {
+        studentId: true,
+        user: {
+          userId: true,
+          name: true,
+        },
+      },
     });
 
     if (!student) {
@@ -180,7 +191,7 @@ export class GradesService {
     // 3. 등수 조회 (모든 학생)
     const ranks = await this.gradeRepository.find({
       where: { examId, isTaken: true }, // ← 응시한 학생만
-      relations: ['student', 'student.user'],
+      relations: ['student'],
       select: {
         gradeId: true,
         studentId: true,
@@ -190,10 +201,6 @@ export class GradesService {
         student: {
           studentId: true,
           school: true,
-          user: {
-            userId: true,
-            name: true,
-          },
         },
       },
       order: {
@@ -201,18 +208,26 @@ export class GradesService {
       },
     });
 
-    // 4. 개인정보 보호: 본인만 이름 표시
-    const maskedRanks = ranks.map((grade) => {
-      const isMe = grade.studentId === student.studentId;
+    const myIndex = ranks.findIndex((g) => g.studentId === student.studentId);
+    const N = ranks.length;
+    const aliases = DUMMY_HERO_NAMES.slice(0, N);
 
+    if (ranks.length === 0) return [];
+
+    // 4. 개인정보 보호: 본인만 이름 표시
+    const maskedRanks = ranks.map((grade, i) => {
+      const myRealName = student.user.name;
+      const isMe = i === myIndex;
+      const aliasName = aliases[i] ?? null; // 51등(인덱스 50)부터 null
       return {
         ranking: grade.ranking,
         score: grade.score,
         isTaken: grade.isTaken,
         isMe: isMe,
-        // 본인이면 studentId와 name 표시, 아니면 null
+        school: grade.student.school,
+        // 본인이면 studentId와 name 표시, 아니면 가명
         studentId: isMe ? grade.studentId : null,
-        name: isMe ? grade.student?.user?.name : null,
+        name: isMe ? myRealName : aliasName,
       };
     });
 
@@ -242,8 +257,13 @@ export class GradesService {
         studentId,
         parentId: parent.parentId, // ← 자녀 관계 검증
       },
+      relations: ['user'],
       select: {
         studentId: true,
+        user: {
+          userId: true,
+          name: true,
+        },
       },
     });
     if (!student) {
@@ -282,18 +302,29 @@ export class GradesService {
       },
     });
 
+    const myStudentIndex = ranks.findIndex(
+      (g) => g.studentId === student.studentId,
+    );
+    const N = ranks.length;
+    const aliases = DUMMY_HERO_NAMES.slice(0, N);
+
+    if (ranks.length === 0) return [];
+
     // 5. 개인정보 보호: 자녀만 이름 표시
-    const maskedRanks = ranks.map((grade) => {
-      const isMyChild = grade.studentId === student.studentId;
+    const maskedRanks = ranks.map((grade, i) => {
+      const myStudentRealName = student.user.name;
+      const isMyStudent = i === myStudentIndex;
+      const aliasName = aliases[i] ?? null; // 51등(인덱스 50)부터 null
 
       return {
         ranking: grade.ranking,
         score: grade.score,
         isTaken: grade.isTaken,
-        isMe: isMyChild,
+        isMyStudent: isMyStudent,
+        school: grade.student.school,
         // 자녀이면 studentId와 name 표시, 아니면 null
-        studentId: isMyChild ? grade.studentId : null,
-        name: isMyChild ? grade.student?.user?.name : null,
+        studentId: isMyStudent ? grade.studentId : null,
+        name: isMyStudent ? myStudentRealName : aliasName,
       };
     });
 
