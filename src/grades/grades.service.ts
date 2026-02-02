@@ -189,6 +189,7 @@ export class GradesService {
         ranking: true,
         student: {
           studentId: true,
+          school: true,
           user: {
             userId: true,
             name: true,
