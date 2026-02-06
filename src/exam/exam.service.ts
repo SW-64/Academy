@@ -448,7 +448,14 @@ export class ExamService {
     // 1) exam이 해당 class 소속인지 검증
     const exam = await this.examRepository.findOne({
       where: { examId, classId, deletedAt: IsNull() },
-      select: ['examId', 'examTitle', 'examDate', 'classId'],
+      select: [
+        'examId',
+        'examTitle',
+        'examDate',
+        'classId',
+        'studentAverage',
+        'topStudentAverage',
+      ],
     });
     if (!exam) throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
 
@@ -580,6 +587,8 @@ export class ExamService {
         examId: exam.examId,
         examTitle: exam.examTitle,
         examDate: exam.examDate,
+        studentAverage: exam.studentAverage,
+        topStudentAverage: exam.topStudentAverage,
       },
       questions: questions.map((q) => ({
         examDetailId: q.examDetailId,
@@ -1211,21 +1220,26 @@ export class ExamService {
       const topPercentage = 0.3;
       const topCount = Math.ceil(totalCount * topPercentage);
 
-      // 상위 30% 학생들의 평균 계산
-      const row = await gradeRepo
-        .createQueryBuilder('g')
-        .select('AVG(g.score)', 'avg')
-        .where('g.exam_id = :examId', { examId })
-        .andWhere('g.deleted_at IS NULL')
-        .orderBy('g.score', 'DESC')
-        .limit(topCount)
-        .getRawOne<{ avg: string | null }>();
+      // 순위 기반으로 상위 학생 평균 계산 (동점자 모두 포함)
+      const row = await manager.query(
+        `
+      SELECT AVG(score) as avg
+      FROM (
+        SELECT score
+        FROM grade
+        WHERE exam_id = ? 
+          AND deleted_at IS NULL
+        ORDER BY score DESC
+        LIMIT ?
+      ) AS top_students
+      `,
+        [examId, topCount],
+      );
 
-      if (row.avg == null) {
+      if (!row[0]?.avg) {
         throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.NO_GRADES);
       }
-
-      const avgNumber = Number(row.avg);
+      const avgNumber = Number(row[0].avg);
       const average = avgNumber.toFixed(2);
       existedExam.topStudentAverage = average;
       await examRepo.update(
