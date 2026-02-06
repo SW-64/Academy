@@ -580,6 +580,8 @@ export class ExamService {
         examId: exam.examId,
         examTitle: exam.examTitle,
         examDate: exam.examDate,
+        studentAverage: exam.studentAverage,
+        topStudentAverage: exam.topStudentAverage,
       },
       questions: questions.map((q) => ({
         examDetailId: q.examDetailId,
