@@ -53,10 +53,6 @@ export class GradesService {
     }
 
     // 2. 정렬 옵션 설정
-    const orderOption =
-      sortOption === 'score_desc'
-        ? { 'grades.score': 'DESC' as const }
-        : { examDate: 'ASC' as const };
 
     // 3. 성적 조회 (정렬 적용)
     const queryBuilder = this.examRepository
@@ -71,6 +67,7 @@ export class GradesService {
         'exam.examTitle',
         'exam.examDate',
         'exam.studentAverage',
+        'exam.topStudentAverage',
         'grade.gradeId',
         'grade.studentId',
         'grade.score',
@@ -142,6 +139,7 @@ export class GradesService {
         examTitle: true,
         examDate: true,
         studentAverage: true,
+        topStudentAverage: true,
         grades: {
           gradeId: true,
           studentId: true,
