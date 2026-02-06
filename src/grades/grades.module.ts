@@ -10,6 +10,7 @@ import { Student } from '../students/entities/student.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
 import { Parent } from '../parents/entities/parent.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
+import { User } from '../users/entities/user.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -20,6 +21,7 @@ import { StudentClass } from '../student-class/entities/student-class.entity';
       ActionLog,
       Parent,
       StudentClass,
+      User,
     ]),
   ],
   controllers: [GradesController],
