@@ -49,6 +49,16 @@ export class Exam {
   })
   studentAverage: string | null; // TypeORM은 decimal을 string으로 다루는 게 안전
 
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+    name: 'top_student_average',
+    comment: '상위 학생 평균',
+  })
+  topStudentAverage: string | null;
+
   @CreateDateColumn({ type: 'datetime', name: 'created_at' })
   createdAt: Date;
 

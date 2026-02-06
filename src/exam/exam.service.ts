@@ -622,7 +622,7 @@ export class ExamService {
     }
     const requestedDetailIds = Array.from(requestedDetailSet);
 
-    return this.dataSource.transaction(async (manager) => {
+    await this.dataSource.transaction(async (manager) => {
       // 1) exam이 class 소속인지
       const exam = await manager.getRepository(Exam).findOne({
         where: { examId, classId, deletedAt: IsNull() },
@@ -883,9 +883,9 @@ export class ExamService {
         description: `Admin updated exam wrong answers (examId: ${examId})`,
         createdAt: new Date(),
       });
-
-      return { appliedStudents: studentIds.length };
     });
+    await this.createExamAverage(examId, adminUserId, classId);
+    await this.createHighExamAverage(examId, adminUserId, classId);
   }
 
   // 시험 오답률 계산
@@ -1165,5 +1165,83 @@ export class ExamService {
       .addOrderBy('u.name', 'ASC')
       .getRawMany();
     return rows;
+  }
+
+  // 상위 30% 시험 평균 생성
+  async createHighExamAverage(
+    examId: number,
+    adminId: number,
+    classId: number,
+  ) {
+    return this.dataSource.transaction(async (manager) => {
+      const examRepo = manager.getRepository(Exam);
+      const actionLogRepo = manager.getRepository(ActionLog);
+      const gradeRepo = manager.getRepository(Grade);
+
+      const existedExam = await examRepo.findOne({
+        where: {
+          examId,
+          classId,
+          deletedAt: IsNull(),
+        },
+        select: {
+          examId: true,
+          topStudentAverage: true,
+        },
+      });
+
+      if (!existedExam) {
+        throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
+      }
+
+      // 전체 학생 수 조회
+      const totalCount = await gradeRepo
+        .createQueryBuilder('g')
+        .where('g.exam_id = :examId', { examId })
+        .andWhere('g.deleted_at IS NULL')
+        .getCount();
+
+      if (totalCount === 0) {
+        throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.NO_GRADES);
+      }
+
+      // 상위 30% 학생 수 계산
+      const topPercentage = 0.3;
+      const topCount = Math.ceil(totalCount * topPercentage);
+
+      // 상위 30% 학생들의 평균 계산
+      const row = await gradeRepo
+        .createQueryBuilder('g')
+        .select('AVG(g.score)', 'avg')
+        .where('g.exam_id = :examId', { examId })
+        .andWhere('g.deleted_at IS NULL')
+        .orderBy('g.score', 'DESC')
+        .limit(topCount)
+        .getRawOne<{ avg: string | null }>();
+
+      if (row.avg == null) {
+        throw new BadRequestException(MESSAGES.ADMIN.GRADE.ERROR.NO_GRADES);
+      }
+
+      const avgNumber = Number(row.avg);
+      const average = avgNumber.toFixed(2);
+      existedExam.topStudentAverage = average;
+      await examRepo.update(
+        { examId, classId, deletedAt: IsNull() },
+        { topStudentAverage: average },
+      );
+
+      await actionLogRepo.save({
+        actorId: adminId,
+        actorType: 'admin',
+        action: 'CREATE_TOP_EXAM_AVERAGE',
+        targetType: 'exam',
+        targetId: examId,
+        description: `Admin created exam average for top ${topPercentage * 100}% (examId: ${examId}, count: ${topCount}/${totalCount}, average: ${average})`,
+        createdAt: new Date(),
+      });
+
+      return existedExam;
+    });
   }
 }
