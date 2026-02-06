@@ -448,7 +448,14 @@ export class ExamService {
     // 1) exam이 해당 class 소속인지 검증
     const exam = await this.examRepository.findOne({
       where: { examId, classId, deletedAt: IsNull() },
-      select: ['examId', 'examTitle', 'examDate', 'classId'],
+      select: [
+        'examId',
+        'examTitle',
+        'examDate',
+        'classId',
+        'studentAverage',
+        'topStudentAverage',
+      ],
     });
     if (!exam) throw new NotFoundException(MESSAGES.ADMIN.EXAM.ERROR.NOT_FOUND);
 
