@@ -6,9 +6,21 @@ describe('ParentsController', () => {
   let controller: ParentsController;
 
   beforeEach(async () => {
+    const parentsServiceMock = {
+      getMyStudents: jest.fn(),
+      findAllParents: jest.fn(),
+      findOneParent: jest.fn(),
+      getMyChildClasses: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ParentsController],
-      providers: [ParentsService],
+      providers: [
+        {
+          provide: ParentsService,
+          useValue: parentsServiceMock,
+        },
+      ],
     }).compile();
 
     controller = module.get<ParentsController>(ParentsController);

@@ -4,6 +4,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { TextbookService } from './textbook.service';
 import { ClassTextbook } from '../class-textbook/entities/class-textbook.entity';
 import { Textbook } from './entities/textbook.entity';
+import { TextbookChapter } from './entities/textbook-chapter.entity';
+import { Admin } from '../admin/entities/admin.entity';
+import { ActionLog } from './../action-logs/entities/action-logs.entity';
 
 describe('CRITICAL-1 ClassTextbook race: INSERT IGNORE', () => {
   let service: TextbookService;
@@ -19,6 +22,9 @@ describe('CRITICAL-1 ClassTextbook race: INSERT IGNORE', () => {
         },
         { provide: getRepositoryToken(Textbook), useValue: {} },
         { provide: getRepositoryToken(ClassTextbook), useValue: {} },
+        { provide: getRepositoryToken(TextbookChapter), useValue: {} },
+        { provide: getRepositoryToken(Admin), useValue: {} },
+        { provide: getRepositoryToken(ActionLog), useValue: {} },
       ],
     }).compile();
 

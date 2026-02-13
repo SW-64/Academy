@@ -8,6 +8,7 @@ import { Grade } from './entities/grade.entity';
 import { Student } from '../students/entities/student.entity';
 import { Parent } from '../parents/entities/parent.entity';
 import { Exam } from '../exam/entities/exam.entity';
+import { User } from '../users/entities/user.entity';
 
 describe('GradesService - HIGH-2: getStudentGradeByParent', () => {
   let service: GradesService;
@@ -42,6 +43,12 @@ describe('GradesService - HIGH-2: getStudentGradeByParent', () => {
           useValue: {
             find: jest.fn(),
             existsBy: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            findOne: jest.fn(),
           },
         },
       ],
@@ -149,6 +156,14 @@ describe('GradesService - getStudentGrade order', () => {
   let examRepo: Repository<Exam>;
 
   beforeEach(async () => {
+    const mockQueryBuilder = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
     const moduleRef = await Test.createTestingModule({
       providers: [
         GradesService,
@@ -170,6 +185,13 @@ describe('GradesService - getStudentGrade order', () => {
           provide: getRepositoryToken(Exam),
           useValue: {
             find: jest.fn(),
+            createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+          },
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            findOne: jest.fn(),
           },
         },
       ],
@@ -185,33 +207,27 @@ describe('GradesService - getStudentGrade order', () => {
   it('should apply score_desc order', async () => {
     // given
     (studentRepo.findOne as jest.Mock).mockResolvedValue({ studentId: 10 });
-    (examRepo.find as jest.Mock).mockResolvedValue([]);
 
     // when
     await service.getStudentGrade(1, 100, 'score_desc');
 
     // then
-    expect(examRepo.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        order: { 'grades.score': 'DESC' },
-      }),
-    );
+    const queryBuilder = (examRepo.createQueryBuilder as jest.Mock).mock
+      .results[0].value;
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith('grade.score', 'DESC');
   });
 
   it('should apply name_asc order (examDate)', async () => {
     // given
     (studentRepo.findOne as jest.Mock).mockResolvedValue({ studentId: 10 });
-    (examRepo.find as jest.Mock).mockResolvedValue([]);
 
     // when
     await service.getStudentGrade(1, 100, 'name_asc');
 
     // then
-    expect(examRepo.find).toHaveBeenCalledWith(
-      expect.objectContaining({
-        order: { examDate: 'ASC' },
-      }),
-    );
+    const queryBuilder = (examRepo.createQueryBuilder as jest.Mock).mock
+      .results[0].value;
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith('exam.examDate', 'ASC');
   });
 });
 
@@ -247,6 +263,12 @@ describe('GradesService - Privacy Protection', () => {
             existsBy: jest.fn(),
           },
         },
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            existsBy: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -260,7 +282,10 @@ describe('GradesService - Privacy Protection', () => {
 
   it('should mask other students names (show only my name)', async () => {
     // given: 학생 본인 studentId = 2
-    (studentRepo.findOne as jest.Mock).mockResolvedValue({ studentId: 2 });
+    (studentRepo.findOne as jest.Mock).mockResolvedValue({
+      studentId: 2,
+      user: { name: '김철수' }, // ← user 정보 추가!
+    });
     (examRepo.existsBy as jest.Mock).mockResolvedValue(true);
     (gradeRepo.find as jest.Mock).mockResolvedValue([
       {
@@ -300,7 +325,8 @@ describe('GradesService - Privacy Protection', () => {
         isTaken: true,
         isMe: false,
         studentId: null,
-        name: null, // ← 타인: 익명
+        name: '세종대왕', // ← 타인: 익명
+        school: undefined,
       },
       {
         ranking: 2,
@@ -316,14 +342,18 @@ describe('GradesService - Privacy Protection', () => {
         isTaken: true,
         isMe: false,
         studentId: null,
-        name: null, // ← 타인: 익명
+        name: '장영실', // ← 타인: 익명
+        school: undefined,
       },
     ]);
   });
 
   it('should include isMe flag for identification', async () => {
     // given
-    (studentRepo.findOne as jest.Mock).mockResolvedValue({ studentId: 1 });
+    (studentRepo.findOne as jest.Mock).mockResolvedValue({
+      studentId: 1,
+      user: { name: '홍길동' }, // ← user 정보 추가!
+    });
     (examRepo.existsBy as jest.Mock).mockResolvedValue(true);
     (gradeRepo.find as jest.Mock).mockResolvedValue([
       {

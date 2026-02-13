@@ -40,10 +40,12 @@ describe('UsersService - approveUserAccount (CRITICAL-1)', () => {
 
   const studentRepo = {
     createQueryBuilder: jest.fn(() => studentQB),
+    findOne: jest.fn(),
   } as any;
 
   const parentRepo = {
     createQueryBuilder: jest.fn(() => parentQB),
+    findOne: jest.fn(),
   } as any;
 
   const actionLogRepo = {
@@ -138,6 +140,7 @@ describe('UsersService - linkStudentParent (CRITICAL-2)', () => {
   const studentRepo = {
     update: jest.fn(),
     exist: jest.fn(),
+    findOne: jest.fn(),
   } as any;
 
   const parentRepo = {
