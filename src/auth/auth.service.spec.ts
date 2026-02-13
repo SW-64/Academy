@@ -81,7 +81,7 @@ describe('AuthService - CRITICAL-1: setCurrentRefreshToken', () => {
     // then
     expect(refreshTokenRepo.createQueryBuilder).toHaveBeenCalled();
     expect(qbMock.orUpdate).toHaveBeenCalledWith(
-      ['refreshtoken', 'expiresAt'],
+      ['refreshtoken', 'expires_at'],
       ['userId'],
     );
     expect(qbMock.execute).toHaveBeenCalled();

@@ -158,10 +158,10 @@ describe('NoticesService - LOW-1: updateNotice pinned', () => {
       providers: [
         NoticesService,
         { provide: DataSource, useValue: dataSourceMock },
-        { provide: getRepositoryToken(Notice), useValue: {} },
+        { provide: getRepositoryToken(Notice), useValue: noticeRepo },
         { provide: getRepositoryToken(Admin), useValue: {} },
-        { provide: getRepositoryToken(ActionLog), useValue: {} },
-        { provide: getRepositoryToken(ClassNotice), useValue: {} },
+        { provide: getRepositoryToken(ActionLog), useValue: actionLogRepo },
+        { provide: getRepositoryToken(ClassNotice), useValue: cnRepo },
       ],
     }).compile();
 
