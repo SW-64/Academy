@@ -11,6 +11,7 @@ import { Student } from '../students/entities/student.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
 import { Admin } from '../admin/entities/admin.entity';
 import { S3Service } from '../s3/s3.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('MaterialsService - CRITICAL-1: createMaterial', () => {
   let service: MaterialsService;
@@ -68,6 +69,14 @@ describe('MaterialsService - CRITICAL-1: createMaterial', () => {
         { provide: getRepositoryToken(Class), useValue: {} },
         { provide: getRepositoryToken(Student), useValue: {} },
         { provide: getRepositoryToken(StudentClass), useValue: {} },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -185,6 +194,14 @@ describe('MaterialsService - CRITICAL-2: updateMaterial', () => {
         { provide: getRepositoryToken(Class), useValue: {} },
         { provide: getRepositoryToken(Student), useValue: {} },
         { provide: getRepositoryToken(StudentClass), useValue: {} },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

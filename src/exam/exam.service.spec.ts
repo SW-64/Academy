@@ -11,6 +11,7 @@ import { Student } from '../students/entities/student.entity';
 import { GradeWrongAnswer } from '../grades/entities/grade-wrong-answer.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
 import { Admin } from '../admin/entities/admin.entity';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('ExamService', () => {
   let service: ExamService;
@@ -65,6 +66,14 @@ describe('ExamService', () => {
         {
           provide: getRepositoryToken(Admin),
           useValue: {},
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
         },
       ],
     }).compile();

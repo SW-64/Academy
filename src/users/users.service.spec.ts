@@ -10,6 +10,7 @@ import { Student } from '../students/entities/student.entity';
 import { Parent } from '../parents/entities/parent.entity';
 import { RefreshToken } from '../auth/entities/refreshtoken.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('UsersService - approveUserAccount (CRITICAL-1)', () => {
   let service: UsersService;
@@ -78,6 +79,14 @@ describe('UsersService - approveUserAccount (CRITICAL-1)', () => {
         { provide: getRepositoryToken(RefreshToken), useValue: {} },
         { provide: getRepositoryToken(ActionLog), useValue: {} },
         { provide: getRepositoryToken(Student), useValue: {} },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -176,6 +185,14 @@ describe('UsersService - linkStudentParent (CRITICAL-2)', () => {
         { provide: getRepositoryToken(RefreshToken), useValue: {} },
         { provide: getRepositoryToken(ActionLog), useValue: {} },
         { provide: getRepositoryToken(Student), useValue: {} },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -271,6 +288,14 @@ describe('UsersService - updateMyPassword (HIGH-1)', () => {
         { provide: getRepositoryToken(RefreshToken), useValue: {} },
         { provide: getRepositoryToken(ActionLog), useValue: {} },
         { provide: getRepositoryToken(Student), useValue: {} },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

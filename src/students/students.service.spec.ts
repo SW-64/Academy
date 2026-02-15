@@ -12,8 +12,8 @@ import { Grade, Level } from '../grades/entities/grade.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
 
 import { paginate } from 'nestjs-typeorm-paginate';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
-// ✅ paginate는 외부 함수라 통째로 mock 해두는 게 운영에 안전함(환경/DB 영향 없음)
 jest.mock('nestjs-typeorm-paginate', () => ({
   paginate: jest.fn(),
 }));
@@ -60,6 +60,14 @@ describe('StudentsService', () => {
           provide: getRepositoryToken(StudentClass),
           useValue: {
             createQueryBuilder: jest.fn(),
+          },
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
           },
         },
       ],

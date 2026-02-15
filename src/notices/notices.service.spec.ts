@@ -8,6 +8,7 @@ import { Notice } from './entities/notice.entity';
 import { ClassNotice } from './entities/class-notice.entity';
 import { Admin } from '../admin/entities/admin.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 describe('NoticesService - CRITICAL-1: createNotice', () => {
   let service: NoticesService;
@@ -67,6 +68,14 @@ describe('NoticesService - CRITICAL-1: createNotice', () => {
         { provide: getRepositoryToken(Admin), useValue: {} },
         { provide: getRepositoryToken(ActionLog), useValue: {} },
         { provide: getRepositoryToken(ClassNotice), useValue: {} },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -162,6 +171,14 @@ describe('NoticesService - LOW-1: updateNotice pinned', () => {
         { provide: getRepositoryToken(Admin), useValue: {} },
         { provide: getRepositoryToken(ActionLog), useValue: actionLogRepo },
         { provide: getRepositoryToken(ClassNotice), useValue: cnRepo },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
