@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,20 +13,25 @@ import {
   Pagination,
 } from 'nestjs-typeorm-paginate';
 import { DataSource, In, Repository } from 'typeorm';
+
+import { cacheKey } from '../constants/cache-keys.constant';
 import { MESSAGES } from '../constants/message.constant';
 
 import { Material } from './entities/material.entity';
 import { ClassMaterial } from './entities/class-material.entity';
 import { Class } from '../class/entities/class.entity';
+import { Student } from '../students/entities/student.entity';
+import { StudentClass } from '../student-class/entities/student-class.entity';
+import { Admin } from '../admin/entities/admin.entity';
 
 import { CreateMaterialDto } from './dto/create-material.dto';
 import { UpdateMaterialDto } from './dto/update-material.dto';
 
 import { randomUUID } from 'crypto';
 import { S3Service } from '../s3/s3.service';
-import { Student } from '../students/entities/student.entity';
-import { StudentClass } from '../student-class/entities/student-class.entity';
-import { Admin } from '../admin/entities/admin.entity';
+
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 
 type StudentMaterialListItem = {
   materialId: number;
@@ -37,6 +44,7 @@ type StudentMaterialListItem = {
 @Injectable()
 export class MaterialsService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly dataSource: DataSource,
     private readonly s3Service: S3Service,
     @InjectRepository(Material)
@@ -81,7 +89,7 @@ export class MaterialsService {
    * 생성: material 저장 + class_material 매핑 저장
    */
   async createMaterial(dto: CreateMaterialDto, adminId: number) {
-    return this.dataSource.transaction(async (manager) => {
+    const saved = await this.dataSource.transaction(async (manager) => {
       const materialRepo = manager.getRepository(Material);
       const cmRepo = manager.getRepository(ClassMaterial);
       const classRepo = manager.getRepository(Class);
@@ -116,12 +124,14 @@ export class MaterialsService {
               materialId: saved.materialId,
             })),
           )
-          .orIgnore() // ← 추가
+          .orIgnore()
           .execute();
       }
 
       return saved;
     });
+    //await this.invalidateMaterialsCache(classId);
+    return saved;
   }
 
   /**
@@ -133,6 +143,47 @@ export class MaterialsService {
     sortOption: 'created_desc' | 'title_asc',
     classId: number | null,
   ): Promise<Pagination<Material>> {
+    // const logger = new Logger('MaterialsService:findAllMaterials');
+    // const CACHE_TTL = 10 * 60 * 1000; // 10분 (ms)
+
+    // // 1) page=1일 때만 캐시 사용 (그 외 페이지는 DB로)
+    // const page = Number(options.page ?? 1);
+    // const isFirstPage = page === 1;
+
+    // // 2) 캐시 HIT 시 바로 반환
+    // let listCacheKey: string | null = null;
+
+    // if (isFirstPage) {
+    //   // 2-1) 버전키 조회 (없으면 1로 간주)
+    //   const verKey = cacheKey.adminClassMaterialsVer(classId);
+    //   let ver = 1;
+
+    //   try {
+    //     const cachedVer = await this.cache.get<number>(verKey);
+    //     if (cachedVer !== undefined && cachedVer !== null) {
+    //       ver = cachedVer;
+    //     } else {
+    //       await this.cache.set(verKey, ver, 24 * 60 * 60 * 1000); // 1일
+    //     }
+    //   } catch (error: any) {
+    //     logger.warn(
+    //       `Cache GET/SET ver failed: ${error?.message}`,
+    //       error?.stack,
+    //     );
+    //   }
+
+    //   // 2-2) 목록 캐시 키 생성 (page=1 고정)
+    //   listCacheKey = cacheKey.adminClassMaterialsListPage1(classId, ver);
+
+    //   try {
+    //     const hit = await this.cache.get<Pagination<Material>>(listCacheKey);
+    //     if (hit !== undefined && hit !== null) {
+    //       return hit;
+    //     }
+    //   } catch (error: any) {
+    //     logger.warn(`Cache GET list failed: ${error?.message}`, error?.stack);
+    //   }
+    // }
     const qb = this.materialRepository
       .createQueryBuilder('m')
       // (4) deletedAt은 쿼리에서 조건으로 필터
@@ -168,8 +219,18 @@ export class MaterialsService {
         qb.orderBy('m.created_at', 'DESC').addOrderBy('m.materialId', 'DESC');
         break;
     }
+    const result = await paginate(qb, options);
+    // // page=1이면 캐시 SET
+    // if (isFirstPage && listCacheKey) {
+    //   try {
+    //     await this.cache.set(listCacheKey, result, CACHE_TTL);
+    //     logger.debug(`Cache SET: ${listCacheKey}, TTL: ${CACHE_TTL}ms`);
+    //   } catch (error: any) {
+    //     logger.warn(`Cache SET failed: ${error?.message}`, error?.stack);
+    //   }
+    // }
 
-    return paginate(qb, options);
+    return result;
   }
 
   /**
@@ -584,6 +645,50 @@ export class MaterialsService {
     sortOption: 'created_desc' | 'title_asc',
     classId: number | null,
   ): Promise<Pagination<StudentMaterialListItem>> {
+    // const logger = new Logger('MaterialsService:getStudentMaterials');
+    // const CACHE_TTL = 10 * 60 * 1000; // 10분 (ms)
+
+    // // page=1일 때만 캐시 사용 (그 외 페이지는 DB로)
+    // const _page = Number(options.page ?? 1);
+    // const isFirstPage = _page === 1;
+
+    // // 캐시 HIT 시 바로 반환
+    // let listCacheKey: string | null = null;
+
+    // if (isFirstPage) {
+    //   // 버전키 조회 (없으면 1로 간주)
+    //   const verKey = cacheKey.studentClassMaterialsVer(classId);
+    //   let ver = 1;
+
+    //   try {
+    //     const cachedVer = await this.cache.get<number>(verKey);
+    //     if (cachedVer !== undefined && cachedVer !== null) {
+    //       ver = cachedVer;
+    //     } else {
+    //       await this.cache.set(verKey, ver, 24 * 60 * 60 * 1000); // 1일
+    //     }
+    //   } catch (error: any) {
+    //     logger.warn(
+    //       `Cache GET/SET ver failed: ${error?.message}`,
+    //       error?.stack,
+    //     );
+    //   }
+
+    //   // 목록 캐시 키 생성 (page=1 고정)
+    //   listCacheKey = cacheKey.studentClassMaterialsListPage1(classId, ver);
+
+    //   try {
+    //     const hit =
+    //       await this.cache.get<Pagination<StudentMaterialListItem>>(
+    //         listCacheKey,
+    //       );
+    //     if (hit !== undefined && hit !== null) {
+    //       return hit;
+    //     }
+    //   } catch (error: any) {
+    //     logger.warn(`Cache GET list failed: ${error?.message}`, error?.stack);
+    //   }
+    // }
     // 1) userId -> studentId
     const student = await this.studentRepository.findOne({
       where: { userId, deletedAt: null },
@@ -667,9 +772,40 @@ export class MaterialsService {
       updatedAt: m.updatedAt,
       hasFile: Boolean(m.s3Key),
     }));
-    return {
+    const result = {
       ...page,
       items,
     };
+    // // page=1이면 캐시 SET
+    // if (isFirstPage && listCacheKey) {
+    //   try {
+    //     await this.cache.set(listCacheKey, result, CACHE_TTL);
+    //     logger.debug(`Cache SET: ${listCacheKey}, TTL: ${CACHE_TTL}ms`);
+    //   } catch (error: any) {
+    //     logger.warn(`Cache SET failed: ${error?.message}`, error?.stack);
+    //   }
+    // }
+
+    return result;
+  }
+
+  /**
+   * 학습자료 캐시 무효화 (버전 증가)
+   */
+  private async invalidateMaterialsCache(classId: number): Promise<void> {
+    const logger = new Logger('MaterialsService:invalidateMaterialsCache');
+
+    try {
+      const verKey = cacheKey.adminClassMaterialsVer(classId);
+      const currentVer = await this.cache.get<number>(verKey);
+      const ver = currentVer ?? 1;
+
+      await this.cache.set(verKey, ver + 1, 24 * 60 * 60 * 1000);
+    } catch (error: any) {
+      logger.warn(
+        `Failed to invalidate materials cache for classId=${classId}: ${error?.message}`,
+        error?.stack,
+      );
+    }
   }
 }

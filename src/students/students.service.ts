@@ -1,6 +1,8 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,9 +17,13 @@ import { Role, Status, User } from '../users/entities/user.entity';
 import { Grade, Level } from '../grades/entities/grade.entity';
 import { Student } from './entities/student.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { CACHE_KEYS, cacheKey } from '../constants/cache-keys.constant';
 @Injectable()
 export class StudentsService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Student)
@@ -124,12 +130,27 @@ export class StudentsService {
 
   // 학생 목록 조회
   async findAllStudents(options?: IPaginationOptions) {
+    // 캐시 확인
+    const cacheKey = CACHE_KEYS.ADMIN_STUDENTS_LIST_PAGE_1;
+    const CACHE_TTL = 10 * 60 * 1000; // 10분
+    const logger = new Logger('StudentsService:findAllStudents');
+
+    try {
+      const cached = await this.cache.get<any>(cacheKey);
+
+      if (cached !== undefined && cached !== null) {
+        return cached;
+      }
+    } catch (error) {
+      logger.warn(`Cache GET failed: ${error.message}`, error.stack);
+    }
+
     const where: FindOptionsWhere<User> = {
       role: Role.STUDENT,
       status: Status.approved,
     };
 
-    return paginate(this.userRepository, options, {
+    const students = await paginate(this.userRepository, options, {
       order: { name: 'ASC' },
       relations: ['student', 'student.parent', 'student.parent.user'],
       where,
@@ -155,6 +176,13 @@ export class StudentsService {
         },
       },
     });
+
+    try {
+      await this.cache.set(cacheKey, students, CACHE_TTL);
+    } catch (error) {
+      logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+    }
+    return students;
   }
 
   // 학생 상세 조회
@@ -202,6 +230,20 @@ export class StudentsService {
 
   // 내가 속한 클래스 조회 (학생)
   async getMyClasses(userId: number) {
+    // 캐시 확인
+    const key = cacheKey.studentUserClassesList(userId);
+    const CACHE_TTL = 10 * 60 * 1000; // 10분
+    const logger = new Logger('StudentsService:getMyClasses');
+
+    try {
+      const cached = await this.cache.get<any>(key);
+
+      if (cached !== undefined && cached !== null) {
+        return cached;
+      }
+    } catch (error) {
+      logger.warn(`Cache GET failed: ${error.message}`, error.stack);
+    }
     const student = await this.studentsRepository.findOneBy({ userId });
     if (!student) {
       throw new NotFoundException(MESSAGES.STUDENTS.ERROR.NOT_FOUND);
@@ -214,9 +256,15 @@ export class StudentsService {
       .where('sc.studentId = :studentId', { studentId: student.studentId })
       .getRawMany();
 
-    return rows.map((r) => ({
+    const myClasses = rows.map((r) => ({
       classId: Number(r.classId),
       className: r.className,
     }));
+    try {
+      await this.cache.set(key, myClasses, CACHE_TTL);
+    } catch (error) {
+      logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+    }
+    return myClasses;
   }
 }
