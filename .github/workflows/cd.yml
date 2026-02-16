@@ -28,6 +28,9 @@ jobs:
           #!/bin/bash
           set -e
 
+          # ubuntu 사용자로 전체 스크립트 실행
+          sudo -u ubuntu bash << 'UBUNTU_SCRIPT'
+
 
             # ==========================================
             # 1. 환경 설정
