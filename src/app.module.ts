@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import KeyvRedis from '@keyv/redis';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -27,6 +27,7 @@ import { StudentClassModule } from './student-class/student-class.module';
 import { MaterialsModule } from './materials/materials.module';
 import { DataSource } from 'typeorm';
 import { VideosModule } from './videos/videos.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -70,6 +71,10 @@ import { VideosModule } from './videos/videos.module';
     StudentClassModule,
     MaterialsModule,
     VideosModule,
+    CacheModule.register({
+      isGlobal: true,
+      stores: [new KeyvRedis('redis://127.0.0.1:6379')],
+    }),
   ],
   controllers: [AppController],
   providers: [

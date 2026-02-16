@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Inject,
+  Logger,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Class } from './entities/class.entity';
 import { DataSource, In, IsNull, Repository } from 'typeorm';
@@ -17,25 +21,23 @@ import { Student } from './../students/entities/student.entity';
 import { ClassStudentsResponse } from './dto/class-student.response.dto';
 import { ClassMaterial } from './../materials/entities/class-material.entity';
 import { ClassNotice } from './../notices/entities/class-notice.entity';
+import { ClassListItem } from './dto/class.response.dto';
+import { CACHE_KEYS, cacheKey } from '../constants/cache-keys.constant';
 
 @Injectable()
 export class ClassService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly dataSource: DataSource,
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,
     @InjectRepository(ClassTextbook)
     private readonly classTextbookRepository: Repository<ClassTextbook>,
-    @InjectRepository(StudentClass)
-    private readonly studentClassRepository: Repository<StudentClass>,
-    @InjectRepository(Student)
-    private readonly studentRepository: Repository<Student>,
-    @InjectRepository(ActionLog)
-    private readonly actionLogRepository: Repository<ActionLog>,
   ) {}
   // 클래스 생성
   async createClass({ name, studentIds }: CreateClassDto, adminId: number) {
-    return this.dataSource.transaction(async (manager) => {
+    const logger = new Logger('ClassService:createClass');
+    const data = this.dataSource.transaction(async (manager) => {
       const classRepo = manager.getRepository(Class);
       const studentRepo = manager.getRepository(Student);
       const studentClassRepo = manager.getRepository(StudentClass);
@@ -86,12 +88,39 @@ export class ClassService {
         createdAt: new Date(),
       });
 
-      return { classId: newClass.classId };
+      // 4) 캐시 무효화
+      const cacheKey = 'admin:classes:list';
+      try {
+        await this.cache.del(cacheKey);
+      } catch (e: any) {
+        logger.warn(`Cache DEL failed: ${e?.message}`, e?.stack);
+      }
+
+      const data = { classId: newClass.classId };
+      return data;
     });
+    await this.invalidateClassCache(); // 캐시 무효화
+
+    return data;
   }
 
   // 클래스의 학생 목록 조회
   async getAllStudentsOfClass(classId: number): Promise<ClassStudentsResponse> {
+    // 캐시 확인
+    const _cacheKey = cacheKey.adminClassStudentsList(classId);
+    const CACHE_TTL = 10 * 60 * 1000; // 10분
+    const logger = new Logger('ClassService:getAllStudentsOfClass');
+
+    try {
+      const cached = await this.cache.get<any>(_cacheKey);
+
+      if (cached !== undefined && cached !== null) {
+        return cached;
+      }
+    } catch (error) {
+      logger.warn(`Cache GET failed: ${error.message}`, error.stack);
+    }
+
     // Class를 기준으로 LEFT JOIN → 학생이 0명이어도 class는 유지
     const rows = await this.classRepository
       .createQueryBuilder('c')
@@ -146,12 +175,34 @@ export class ClassService {
         name: r.name,
         loginId: r.loginId,
       }));
-
+    try {
+      await this.cache.set(_cacheKey, { ...classInfo, students }, CACHE_TTL);
+    } catch (error) {
+      logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+    }
     return { ...classInfo, students };
   }
 
   // 클래스 전체 목록 조회
   async getAllClasses() {
+    // 캐시 확인
+    const cacheKey = CACHE_KEYS.ADMIN_CLASSES_LIST;
+    const CACHE_TTL = 10 * 60 * 1000; // 10분
+    const logger = new Logger('ClassService:getAllClasses');
+    try {
+      const cached = await this.cache.get<ClassListItem[]>(cacheKey);
+
+      if (cached !== undefined && cached !== null) {
+        logger.debug(`Cache HIT: ${cacheKey}`);
+        return cached;
+      }
+
+      logger.debug(`Cache MISS: ${cacheKey}`);
+    } catch (error) {
+      // 캐시 조회 실패해도 계속 진행
+      logger.warn(`Cache GET failed: ${error.message}`, error.stack);
+    }
+
     const classes = await this.classRepository.find({
       where: { deletedAt: null },
       select: {
@@ -164,12 +215,20 @@ export class ClassService {
         className: 'ASC',
       },
     });
+
+    try {
+      await this.cache.set(cacheKey, classes, CACHE_TTL);
+      logger.debug(`Cache SET: ${cacheKey}, TTL: ${CACHE_TTL}s`);
+    } catch (error) {
+      logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+    }
+
     return classes;
   }
 
   // 클래스 수정
   async updateClass(dto: UpdateClassDto, adminId: number, classId: number) {
-    return this.dataSource.transaction(async (manager) => {
+    await this.dataSource.transaction(async (manager) => {
       const studentClassRepo = manager.getRepository(StudentClass);
       const logRepo = manager.getRepository(ActionLog);
       const classRepo = manager.getRepository(Class);
@@ -259,11 +318,14 @@ export class ClassService {
       });
       return;
     });
+    await this.invalidateClassCache(); // 클래스 캐시 무효화
+    await this.invalidateClassStudentCache(classId); // 학생 목록 캐시 무효화
+    return;
   }
 
   // 클래스 삭제
   async deleteClass(adminId: number, classId: number) {
-    return this.dataSource.transaction(async (manager) => {
+    await this.dataSource.transaction(async (manager) => {
       const classRepo = manager.getRepository(Class);
       const logRepo = manager.getRepository(ActionLog);
       const classMaterialRepo = manager.getRepository(ClassMaterial);
@@ -307,6 +369,10 @@ export class ClassService {
       });
       return;
     });
+
+    await this.invalidateClassCache(); // 캐시 무효화
+
+    return;
   }
 
   // 클래스의 교재 목록 조회
@@ -336,5 +402,33 @@ export class ClassService {
     });
 
     return textbooks;
+  }
+
+  /**
+   * 클래스 관련 모든 캐시 무효화
+   */
+  private async invalidateClassCache(): Promise<void> {
+    const logger = new Logger('ClassService:invalidateClassCache');
+    try {
+      await this.cache.del(CACHE_KEYS.ADMIN_CLASSES_LIST);
+      logger.debug(`Cache invalidated: ${CACHE_KEYS.ADMIN_CLASSES_LIST}`);
+    } catch (e: any) {
+      logger.warn(`Cache invalidation failed: ${e?.message}`, e?.stack);
+    }
+  }
+
+  /**
+   * 클래스내 학생 관련 모든 캐시 무효화
+   */
+  private async invalidateClassStudentCache(classId: number): Promise<void> {
+    const logger = new Logger('ClassService:invalidateClassStudentCache');
+    try {
+      await this.cache.del(cacheKey.adminClassStudentsList(classId));
+      logger.debug(
+        `Cache invalidated: ${cacheKey.adminClassStudentsList(classId)}`,
+      );
+    } catch (e: any) {
+      logger.warn(`Cache invalidation failed: ${e?.message}`, e?.stack);
+    }
   }
 }

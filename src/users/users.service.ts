@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
@@ -22,9 +24,14 @@ import { PartialUser } from './interfaces/partial-user.entity';
 import { Student } from './../students/entities/student.entity';
 import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
 
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { CACHE_KEYS, cacheKey } from '../constants/cache-keys.constant';
+
 @Injectable()
 export class UsersService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     @InjectRepository(User)
@@ -232,6 +239,8 @@ export class UsersService {
         createdAt: new Date(),
       });
     });
+
+    await this.invalidateUserCache(); // 캐시 무효화
   }
 
   // 유저 계정 거부
@@ -253,6 +262,7 @@ export class UsersService {
       description: 'Admin rejected user account',
       createdAt: new Date(),
     });
+    await this.invalidateUserCache(); // 캐시 무효화
     return;
   }
 
@@ -356,6 +366,8 @@ export class UsersService {
     //   description: 'Admin updated user information',
     //   createdAt: new Date(),
     // });
+    await this.invalidateUserCache(); // 캐시 무효화
+
     return;
   }
 
@@ -498,5 +510,41 @@ export class UsersService {
       createdAt: new Date(),
     });
     return;
+  }
+
+  /**
+   * 유저 캐시 무효화 (버전 증가)
+   */
+  private async invalidateUserCache(): Promise<void> {
+    const logger = new Logger('UsersService:invalidateUserCache');
+
+    try {
+      const studentsListVerKey = CACHE_KEYS.ADMIN_STUDENTS_LIST_PAGE_1;
+      const parentsListVerKey = CACHE_KEYS.ADMIN_PARENTS_LIST_PAGE_1;
+
+      // 학생/학부모 목록 캐시 버전 증가
+      const currentStudentsVer =
+        await this.cache.get<number>(studentsListVerKey);
+      const currentParentsVer = await this.cache.get<number>(parentsListVerKey);
+
+      const studentVer = currentStudentsVer ?? 1;
+      const parentVer = currentParentsVer ?? 1;
+
+      await this.cache.set(
+        studentsListVerKey,
+        studentVer + 1,
+        24 * 60 * 60 * 1000,
+      );
+      await this.cache.set(
+        parentsListVerKey,
+        parentVer + 1,
+        24 * 60 * 60 * 1000,
+      );
+    } catch (error: any) {
+      logger.warn(
+        `Failed to invalidate user cache: ${error?.message}`,
+        error?.stack,
+      );
+    }
   }
 }

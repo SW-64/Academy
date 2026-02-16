@@ -1,6 +1,8 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,9 +16,13 @@ import { MESSAGES } from '../constants/message.constant';
 import { Student } from '../students/entities/student.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
 
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { CACHE_KEYS } from '../constants/cache-keys.constant';
 @Injectable()
 export class ParentsService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectRepository(Parent)
     private readonly parentRepository: Repository<Parent>,
     @InjectRepository(User)
@@ -59,13 +65,27 @@ export class ParentsService {
 
   // 학부모 목록 조회
   async findAllParents(options?: IPaginationOptions) {
+    // 캐시 확인
+    const cacheKey = CACHE_KEYS.ADMIN_PARENTS_LIST_PAGE_1;
+    const CACHE_TTL = 10 * 60 * 1000; // 10분
+    const logger = new Logger('ParentsService:findAllParents');
+
+    try {
+      const cached = await this.cache.get<any>(cacheKey);
+
+      if (cached !== undefined && cached !== null) {
+        return cached;
+      }
+    } catch (error) {
+      logger.warn(`Cache GET failed: ${error.message}`, error.stack);
+    }
     const where: FindOptionsWhere<User> = {
       role: Role.PARENT,
       status: Status.approved,
     };
 
     // paginate 사용
-    return paginate(this.userRepository, options, {
+    const parents = await paginate(this.userRepository, options, {
       order: { name: 'ASC' },
       relations: ['parent', 'parent.student', 'parent.student.user'],
       where,
@@ -89,6 +109,13 @@ export class ParentsService {
         },
       },
     });
+    try {
+      await this.cache.set(cacheKey, parents, CACHE_TTL);
+    } catch (error) {
+      logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+    }
+
+    return parents;
   }
 
   // 학부모 상세 조회

@@ -1,7 +1,9 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -12,22 +14,26 @@ import {
   paginate,
   Pagination,
 } from 'nestjs-typeorm-paginate';
+
 import { MESSAGES } from '../constants/message.constant';
+import { cacheKey } from './../constants/cache-keys.constant';
 
-import { Notice } from './entities/notice.entity';
-
+import { NoticeListItem } from './dto/find-all-notices.return.dto';
 import { CreateNoticeDto } from './dto/create-notice.dto';
 import { UpdateNoticeDto } from '../notices/dto/update-notice.dto';
+
+import { Notice } from './entities/notice.entity';
 import { ActionLog } from './../action-logs/entities/action-logs.entity';
 import { Admin } from './../admin/entities/admin.entity';
 import { ClassNotice } from './entities/class-notice.entity';
 import { Class } from './../class/entities/class.entity';
-import { Type } from 'class-transformer';
-import { NoticeListItem } from './dto/find-all-notices.return.dto';
 
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 @Injectable()
 export class NoticesService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly dataSource: DataSource,
     @InjectRepository(Notice)
     private readonly noticeRepository: Repository<Notice>,
@@ -58,7 +64,7 @@ export class NoticesService {
     { title, content, pinned }: CreateNoticeDto,
     classId: number,
   ) {
-    return this.dataSource.transaction(async (manager) => {
+    const noticeId = await this.dataSource.transaction(async (manager) => {
       const actionLogRepo = manager.getRepository(ActionLog);
       const adminRepo = manager.getRepository(Admin);
       const noticeRepo = manager.getRepository(Notice);
@@ -128,9 +134,10 @@ export class NoticesService {
         description: `Admin created a notice (noticeId: ${noticeId})`,
         createdAt: new Date(),
       });
-
       return noticeId;
     });
+    await this.invalidateNoticeCache(classId); // 캐시 무효화
+    return noticeId;
   }
 
   // 공지사항 전체 조회
@@ -138,6 +145,48 @@ export class NoticesService {
     classId: number,
     options: IPaginationOptions,
   ): Promise<Pagination<NoticeListItem>> {
+    const logger = new Logger('NoticesService:findAllNotices');
+    const CACHE_TTL = 10 * 60 * 1000; // 10분 (ms)
+
+    // 1) page=1일 때만 캐시 사용 (그 외 페이지는 DB로)
+    const page = Number(options.page ?? 1);
+    const isFirstPage = page === 1;
+
+    // 2) 캐시 HIT 시 바로 반환
+    let listCacheKey: string | null = null;
+
+    if (isFirstPage) {
+      // 2-1) 버전키 조회 (없으면 1로 간주)
+      const verKey = cacheKey.adminClassNoticesVer(classId);
+      let ver = 1;
+
+      try {
+        const cachedVer = await this.cache.get<number>(verKey);
+        if (cachedVer !== undefined && cachedVer !== null) {
+          ver = cachedVer;
+        } else {
+          await this.cache.set(verKey, ver, 24 * 60 * 60 * 1000); // 1일
+        }
+      } catch (error: any) {
+        logger.warn(
+          `Cache GET/SET ver failed: ${error?.message}`,
+          error?.stack,
+        );
+      }
+
+      // 2-2) 목록 캐시 키 생성 (page=1 고정)
+      listCacheKey = cacheKey.adminClassNoticesListPage1(classId, ver);
+
+      try {
+        const hit =
+          await this.cache.get<Pagination<NoticeListItem>>(listCacheKey);
+        if (hit !== undefined && hit !== null) {
+          return hit;
+        }
+      } catch (error: any) {
+        logger.warn(`Cache GET list failed: ${error?.message}`, error?.stack);
+      }
+    }
     const qb = this.noticeRepository
       .createQueryBuilder('n')
       .innerJoinAndSelect('n.classNotices', 'cn', 'cn.class_id = :classId', {
@@ -173,7 +222,18 @@ export class NoticesService {
       };
     });
 
-    return { ...paged, items };
+    const result: Pagination<NoticeListItem> = { ...paged, items };
+
+    // page=1만 캐시에 저장
+    if (isFirstPage && listCacheKey) {
+      try {
+        await this.cache.set(listCacheKey, result, CACHE_TTL);
+      } catch (error: any) {
+        logger.warn(`Cache SET list failed: ${error?.message}`, error?.stack);
+      }
+    }
+
+    return result;
   }
 
   // 공지사항 상세 조회
@@ -245,7 +305,7 @@ export class NoticesService {
       );
     }
     //3. undefined 제외하고 업데이트
-    return await this.dataSource.transaction(async (manager) => {
+    await this.dataSource.transaction(async (manager) => {
       const noticeRepo = manager.getRepository(Notice);
       const classNoticeRepo = manager.getRepository(ClassNotice);
       const actionLogRepo = manager.getRepository(ActionLog);
@@ -280,8 +340,9 @@ export class NoticesService {
         changes: { noticePatch, pinned },
         createdAt: new Date(),
       });
-      return;
     });
+    await this.invalidateNoticeCache(classId);
+    return;
   }
 
   // 공지사항 삭제
@@ -308,6 +369,27 @@ export class NoticesService {
       description: `Admin deleted a notice (noticeId: ${noticeId})`,
       createdAt: new Date(),
     });
+    await this.invalidateNoticeCache(classId);
     return;
+  }
+
+  /**
+   * 공지사항 캐시 무효화 (버전 증가)
+   */
+  private async invalidateNoticeCache(classId: number): Promise<void> {
+    const logger = new Logger('NoticesService:invalidateNoticeCache');
+
+    try {
+      const verKey = cacheKey.adminClassNoticesVer(classId);
+      const currentVer = await this.cache.get<number>(verKey);
+      const ver = currentVer ?? 1;
+
+      await this.cache.set(verKey, ver + 1, 24 * 60 * 60 * 1000);
+    } catch (error: any) {
+      logger.warn(
+        `Failed to invalidate notice cache for classId=${classId}: ${error?.message}`,
+        error?.stack,
+      );
+    }
   }
 }
