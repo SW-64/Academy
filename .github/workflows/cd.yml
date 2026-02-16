@@ -177,12 +177,14 @@ jobs:
         # SSM으로 배포
       - name: Deploy via SSM
         run: |
+          ENCODED=$(cat /tmp/deploy.sh | base64 -w 0)
+
           COMMAND_ID=$(aws ssm send-command \
-            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
-            --document-name "AWS-RunShellScript" \
-            --parameters "commands=$(cat /tmp/deploy.sh)" \
-            --output text \
-            --query "Command.CommandId")
+          --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+          --document-name "AWS-RunShellScript" \
+          --parameters "commands=[\"echo '$ENCODED' | base64 -d | bash\"]" \
+          --output text \
+          --query "Command.CommandId")
 
           echo "Command ID: $COMMAND_ID"
           echo "⏳ Waiting for deployment..."
