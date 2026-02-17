@@ -10,7 +10,7 @@ on:
 jobs:
   deploy:
     # CI 성공 시에만 배포
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
 
     steps:
@@ -66,6 +66,7 @@ jobs:
 
             # Node 환경
             echo "NODE_ENV=production" > .env
+            chmod 600 .env
             echo "SERVER_PORT=${{ secrets.SERVER_PORT }}" >> .env
 
             # Database (RDS)
@@ -192,7 +193,7 @@ jobs:
           echo "Command ID: $COMMAND_ID"
           echo "⏳ Waiting for deployment..."
 
-          for i in {1..60}; do
+          for i in {1..90}; do
             sleep 10
             
             STATUS=$(aws ssm get-command-invocation \
