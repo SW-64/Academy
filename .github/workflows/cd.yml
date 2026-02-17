@@ -202,7 +202,7 @@ jobs:
               --query "Status" \
               --output text 2>/dev/null || echo "InProgress")
             
-            echo "[$i/60] Status: $STATUS"
+            echo "[$i/90] Status: $STATUS"
             
             if [ "$STATUS" = "Success" ]; then
               echo "✅ Deployment completed!"
