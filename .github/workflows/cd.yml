@@ -179,7 +179,7 @@ jobs:
             echo "- PM2 Status:"
             pm2 list | grep kwak-math-nest-cicd
 
-            UBUNTU_SCRIPT  
+          UBUNTU_SCRIPT
           SCRIPT
 
         # SSM으로 배포
