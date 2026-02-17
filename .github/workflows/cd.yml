@@ -155,7 +155,7 @@ jobs:
             echo "🏥 Running health check..."
 
             # 헬스체크 엔드포인트 호출
-            HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ secrets.SERVER_PORT }}/health || echo "000")
+            HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${{ secrets.SERVER_PORT }}/api/v1/health || echo "000")
 
             if [ "$HEALTH_STATUS" = "200" ]; then
               echo "✅ Health check passed (Status: $HEALTH_STATUS)"
