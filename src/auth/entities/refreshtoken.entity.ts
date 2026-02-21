@@ -3,7 +3,6 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   OneToOne,
   JoinColumn,
   Index,
@@ -15,7 +14,7 @@ export class RefreshToken {
   @PrimaryGeneratedColumn({ name: 'refreshtoken_id', comment: '토큰 id' })
   refreshtokenId: number;
 
-  @Column({ name: 'user_id', comment: '유저 id' })
+  @Column({ name: 'user_id', comment: '유저 id', unique: true })
   @Index()
   userId: number;
 
