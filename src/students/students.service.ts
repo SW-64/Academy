@@ -156,7 +156,7 @@ export class StudentsService {
 
     const students = await paginate(this.userRepository, options, {
       order: { name: 'ASC' },
-      relations: ['student', 'student.student', 'student.parent.user'],
+      relations: ['student', 'student.parent', 'student.parent.user'],
       where,
       select: {
         userId: true,
