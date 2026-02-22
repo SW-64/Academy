@@ -24,8 +24,8 @@
     "migration:revert": "npm run typeorm -- migration:revert -d src/configs/data-source.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.968.0",
-    "@aws-sdk/s3-request-presigner": "^3.968.0",
+    "@aws-sdk/client-s3": "^3.974.0",
+    "@aws-sdk/s3-request-presigner": "^3.980.0",
     "@keyv/redis": "^5.1.6",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^11.1.8",
@@ -35,7 +35,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.8",
-    "@nestjs/swagger": "^11.2.1",
+    "@nestjs/swagger": "^11.2.6",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
     "bcrypt": "^6.0.0",
