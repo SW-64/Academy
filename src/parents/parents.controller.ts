@@ -17,11 +17,40 @@ import { UserInfo } from '../util/decorators/user-info.decorator';
 import { PartialUser } from '../users/interfaces/partial-user.entity';
 
 import { MESSAGES } from './../constants/message.constant';
+import { StudentsService } from '../students/students.service';
 
 @Controller('parents')
 export class ParentsController {
   constructor(private readonly parentsService: ParentsService) {}
+  /**
+   * 학부모 검색
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/search')
+  async searchParents(
+    @Query('name') name?: string,
+    @Query('phone') phone?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    console.log(name);
+    const _page = Math.max(Number(page) || 1, 1);
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
 
+    const data = await this.parentsService.searchParents(
+      name,
+      phone,
+      _page,
+      _limit,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.PARENTS.SEARCH.SUCCESS,
+      data: data,
+    };
+  }
   // 자녀조회
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PARENT)

@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 
 import { AuthService } from './auth.service';
 import { User } from '../users/entities/user.entity';
@@ -61,6 +61,7 @@ describe('AuthService - CRITICAL-1: setCurrentRefreshToken', () => {
           provide: getRepositoryToken(ActionLog),
           useValue: {},
         },
+        { provide: DataSource, useValue: {} },
       ],
     }).compile();
 
@@ -108,8 +109,14 @@ describe('AuthService - CRITICAL-1: setCurrentRefreshToken', () => {
 describe('AuthService - MEDIUM-1: signUp validation', () => {
   let service: AuthService;
   let userRepo: Repository<User>;
+  let mockManagerSave: jest.Mock;
 
   beforeEach(async () => {
+    mockManagerSave = jest.fn().mockImplementation((entity, data) => {
+      if (entity === User) return Promise.resolve({ userId: 1, ...data });
+      if (entity === ActionLog) return Promise.resolve({});
+    });
+
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -141,6 +148,14 @@ describe('AuthService - MEDIUM-1: signUp validation', () => {
           provide: getRepositoryToken(ActionLog),
           useValue: {
             save: jest.fn(),
+          },
+        },
+        {
+          provide: DataSource,
+          useValue: {
+            transaction: jest.fn((callback) =>
+              callback({ save: mockManagerSave }),
+            ),
           },
         },
       ],
@@ -185,12 +200,10 @@ describe('AuthService - MEDIUM-1: signUp validation', () => {
     // when
     await expect(service.signUp(dto)).resolves.not.toThrow();
 
-    // then
-    expect(userRepo.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        signupSchool: '서울대학교',
-        signupGrade: 2,
-      }),
+    // then - 실제로 호출된 mock으로 검증
+    expect(mockManagerSave).toHaveBeenCalledWith(
+      User,
+      expect.objectContaining({ signupSchool: '서울대학교', signupGrade: 2 }),
     );
   });
 

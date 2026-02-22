@@ -467,6 +467,9 @@ export const MESSAGES = {
       ERROR: {
         NO_EXAM: '시험이 존재하지 않습니다.',
       },
+      SEARCH: {
+        SUCCESS: '학생 검색에 성공했습니다.',
+      },
     },
     HOMEWORK: {
       SUCCESS: {
@@ -490,7 +493,9 @@ export const MESSAGES = {
         NOT_FOUND: '해당 반에 소속되지 않았습니다.',
       },
     },
-    SUCCESS: {},
+    SEARCH: {
+      SUCCESS: '학생 검색에 성공했습니다.',
+    },
   },
 
   PARENTS: {
@@ -529,6 +534,9 @@ export const MESSAGES = {
       ERROR: {
         NO_EXAM: '시험이 존재하지 않습니다.',
       },
+    },
+    SEARCH: {
+      SUCCESS: '학부모 검색에 성공했습니다.',
     },
   },
 } as const;
