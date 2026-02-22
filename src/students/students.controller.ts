@@ -26,7 +26,34 @@ export class StudentsController {
     private readonly studentsService: StudentsService,
     private readonly materialsService: MaterialsService,
   ) {}
+  /**
+   * 학생 검색
+   * @returns
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('/search')
+  async searchStudents(
+    @Query('name') name: string,
+    @Query('phone') phone: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+  ) {
+    const _page = Math.max(Number(page) || 1, 1);
+    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
 
+    const data = await this.studentsService.searchStudents(
+      name,
+      phone,
+      _page,
+      _limit,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: MESSAGES.STUDENTS.SEARCH.SUCCESS,
+      data: data,
+    };
+  }
   /**
    * 학생이 받을 수 있는 학습자료 목록 조회
    * - 내 반에 배포된 자료만

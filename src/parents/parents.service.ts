@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsWhere, Repository, SelectQueryBuilder } from 'typeorm';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
 
 import { Role, Status, User } from '../users/entities/user.entity';
@@ -19,6 +19,8 @@ import { StudentClass } from '../student-class/entities/student-class.entity';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { CACHE_KEYS } from '../constants/cache-keys.constant';
+import { PaginatedResponse } from 'src/students/dto/students-search.response.dto';
+import { ParentSearchResult } from './dto/parents-search.response.dto';
 @Injectable()
 export class ParentsService {
   constructor(
@@ -185,5 +187,66 @@ export class ParentsService {
       classId: Number(r.classId),
       className: r.className,
     }));
+  }
+
+  // 학부모 검색
+  async searchParents(
+    name: string,
+    phone: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResponse<ParentSearchResult>> {
+    if (name && phone) {
+      throw new BadRequestException(
+        '이름과 전화번호는 동시에 검색할 수 없습니다.',
+      );
+    }
+    if (!name && !phone) {
+      throw new BadRequestException('이름 또는 전화번호를 입력해주세요.');
+    }
+    if (name && name.length < 2) {
+      throw new BadRequestException('이름은 2글자 이상 입력해주세요.');
+    }
+    if (phone && phone.length < 4) {
+      throw new BadRequestException('전화번호는 4자리 이상 입력해주세요.');
+    }
+
+    const baseCondition = (qb: SelectQueryBuilder<Parent>) => {
+      qb.innerJoin('parent.user', 'user')
+        .where('user.deleted_at IS NULL')
+        .andWhere('parent.deleted_at IS NULL');
+
+      if (name) qb.andWhere('user.name LIKE :name', { name: `%${name}%` });
+      if (phone) qb.andWhere('user.phone LIKE :phone', { phone: `%${phone}%` });
+    };
+
+    // count 전용 쿼리
+    const countQb = this.parentRepository.createQueryBuilder('parent');
+    baseCondition(countQb);
+    const total = await countQb.getCount();
+
+    // data 쿼리
+    const dataQb = this.parentRepository.createQueryBuilder('parent');
+    baseCondition(dataQb);
+    const raw = await dataQb
+      .select([
+        'user.user_id AS userId',
+        'parent.parent_id AS parentId',
+        'user.name AS name',
+        'user.phone AS phone',
+      ])
+      .offset((page - 1) * limit)
+      .limit(limit)
+      .getRawMany<ParentSearchResult>();
+
+    return {
+      data: raw,
+      meta: {
+        total,
+        page,
+        limit,
+        lastPage: Math.ceil(total / limit),
+      },
+    };
   }
 }
