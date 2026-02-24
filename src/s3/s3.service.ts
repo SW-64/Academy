@@ -10,7 +10,12 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 @Injectable()
 export class S3Service {
   private readonly s3 = new S3Client({
-    region: process.env.AWS_REGION,
+    region: 'auto', // ← 변경
+    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`, // ← 변경
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID, // ← 변경
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY, // ← 변경
+    },
   });
 
   async uploadPdf(params: {
