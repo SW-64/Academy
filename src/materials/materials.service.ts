@@ -494,8 +494,8 @@ export class MaterialsService {
     file: Express.Multer.File,
     adminId: number,
   ) {
-    const bucket = process.env.S3_BUCKET_NAME;
-    if (!bucket) throw new BadRequestException('S3_BUCKET_NAME is not set');
+    const bucket = process.env.R2_BUCKET_NAME;
+    if (!bucket) throw new BadRequestException('R2_BUCKET_NAME is not set');
 
     // 파일 원본명 깨짐 방지
     const safeOriginalName = Buffer.from(file.originalname, 'latin1').toString(
@@ -622,12 +622,12 @@ export class MaterialsService {
       );
     }
 
-    // 4) Presigned URL 발급
+    // 4. R2 presigned URL 방식
     const url = await this.s3Service.getPresignedDownloadUrl({
       bucket: material.s3Bucket,
       key: material.s3Key,
       fileName: material.originalFileName ?? 'material.pdf',
-      expiresInSeconds: 120, // 2분 권장(필요시 조절)
+      expiresInSeconds: 120,
     });
 
     return {

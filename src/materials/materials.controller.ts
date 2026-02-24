@@ -133,7 +133,7 @@ export class MaterialsController {
   }
 
   /**
-   * 학습자료 파일 업로드 (S3 연동)
+   * 학습자료 파일 업로드 (R2 연동)
    */
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
