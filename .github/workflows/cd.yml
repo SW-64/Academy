@@ -111,6 +111,15 @@ jobs:
             echo "BUNNY_LIBRARY_ID=${{ secrets.BUNNY_LIBRARY_ID }}" >> .env
             echo "BUNNY_CDN_HOSTNAME=${{ secrets.BUNNY_CDN_HOSTNAME }}" >> .env
 
+            # R2
+            echo "R2_ACCESS_KEY_ID=${{ secrets.R2_ACCESS_KEY_ID }}" >> .env
+            echo "R2_SECRET_ACCESS_KEY=${{ secrets.R2_SECRET_ACCESS_KEY }}" >> .env
+            echo "R2_ACCOUNT_ID=${{ secrets.R2_ACCOUNT_ID }}" >> .env
+            echo "R2_BUCKET_NAME=${{ secrets.R2_BUCKET_NAME }}" >> .env
+            echo "R2_ENDPOINT=${{ secrets.R2_ENDPOINT }}" >> .env
+            echo "CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" >> .env
+
+
             # ==========================================
             # 5. 의존성 설치
             # ==========================================
