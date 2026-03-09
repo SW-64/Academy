@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - '3000:3000' # 외부에서 NestJS로 직접 접근
+    volumes:
+      # uploads 폴더는 컨테이너 재시작해도 파일 유지되도록 볼륨 연결
+      - uploads_data:/app/uploads
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: always
+
+  redis:
+    image: redis:7-alpine # 직접 빌드 없이 공식 이미지 사용
+    command: >
+      redis-server
+      --maxmemory 200mb           # 메모리 최대 200MB
+      --maxmemory-policy allkeys-lru  # 꽉 차면 오래된 것부터 삭제
+      --save ""                   # 디스크 저장 안 함 (영속성 X)
+      --appendonly no             # AOF 로그도 안 씀 (영속성 X)
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping'] # ping 응답 확인
+      interval: 10s # 10초마다 체크
+      timeout: 5s
+      retries: 3
+
+# 명시적으로 볼륨 선언 (uploads 파일 영구 보존)
+volumes:
+  uploads_data:
+
+# 컨테이너들이 서로 통신할 수 있는 내부 네트워크
+networks:
+  app-network:
+    driver: bridge
