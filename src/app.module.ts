@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import KeyvRedis from '@keyv/redis';
 import { AppController } from './app.controller';
@@ -73,7 +73,12 @@ import { CacheModule } from '@nestjs/cache-manager';
     VideosModule,
     CacheModule.register({
       isGlobal: true,
-      stores: [new KeyvRedis('redis://127.0.0.1:6379')],
+      useFactory: (configService: ConfigService) => ({
+        stores: [
+          new KeyvRedis(`redis://${configService.get('REDIS_HOST')}:6379`),
+        ],
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [AppController],
