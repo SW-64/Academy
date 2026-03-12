@@ -5,12 +5,16 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { Response, Request } from 'express';
 import { QueryFailedError } from 'typeorm';
+import * as Sentry from '@sentry/nestjs';
 
 @Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
+export class AllExceptionsFilter extends SentryGlobalFilter {
   catch(exception: unknown, host: ArgumentsHost) {
+    Sentry.captureException(exception); // 변경
+
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
