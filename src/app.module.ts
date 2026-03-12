@@ -28,6 +28,8 @@ import { MaterialsModule } from './materials/materials.module';
 import { DataSource } from 'typeorm';
 import { VideosModule } from './videos/videos.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { SentryModule } from '@sentry/nestjs/setup';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
   imports: [
@@ -80,6 +82,8 @@ import { CacheModule } from '@nestjs/cache-manager';
       }),
       inject: [ConfigService],
     }),
+    SentryModule.forRoot(),
+    WebhookModule,
   ],
   controllers: [AppController],
   providers: [

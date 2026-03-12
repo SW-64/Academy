@@ -1,3 +1,4 @@
+import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -8,7 +9,9 @@ import { AllExceptionsFilter } from './all-execption.filter';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
   const configService = app.get(ConfigService);
 
   app.use(cookieParser());
@@ -69,6 +72,7 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new AllExceptionsFilter()); // 에러 문 처리
+
   await app.listen(port, '0.0.0.0');
   console.log('Server URL:', await app.getUrl()); // 서버 URL 콘솔 출력
 }
