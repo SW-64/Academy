@@ -119,43 +119,32 @@ jobs:
             echo "R2_ENDPOINT=${{ secrets.R2_ENDPOINT }}" >> .env
             echo "CDN_BASE_URL=${{ secrets.CDN_BASE_URL }}" >> .env
 
+            # Monitoring
+            echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
+            echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> .env
+            echo "SENTRY_WEBHOOK_SECRET=${{ secrets.SENTRY_WEBHOOK_SECRET }}" >> .env
+
+
+
+            
 
             # ==========================================
-            # 5. 의존성 설치
+            # 5. Docker
             # ==========================================
 
-            echo "📦 Installing dependencies..."
-            npm ci 
+            echo "🐳 Deploying with Docker..."
+
+            # 기존 컨테이너 중지 및 제거
+            sudo docker compose down
+
+            # 새 이미지 빌드 및 컨테이너 실행
+            sudo docker compose up -d --build
+
+            # 실행 상태 확인
+            sudo docker compose ps
 
             # ==========================================
-            # 6. 빌드
-            # ==========================================
-
-            echo "🏗️ Building application..."
-            npm run build
-
-            # 빌드 검증
-            if [ ! -d "dist" ]; then
-              echo "❌ Build failed: dist directory not found"
-              exit 1
-            fi
-            echo "✅ Build successful"
-
-            # ==========================================
-            # 7. PM2 무중단 재시작
-            # ==========================================
-
-            echo "🔄 Restarting PM2 process..."
-
-            # reload: 무중단 재시작
-            # 첫 배포면 start, 이후엔 reload
-            pm2 reload kwak-math-nest-cicd --update-env || pm2 start dist/main.js --name kwak-math-nest-cicd
-
-            # PM2 설정 저장
-            pm2 save
-
-            # ==========================================
-            # 8. 헬스체크 (30초 대기)
+            # 6. 헬스체크 (30초 대기)
             # ==========================================
 
             echo "🏥 Waiting 30 seconds for server to start..."
@@ -170,14 +159,15 @@ jobs:
               echo "✅ Health check passed (Status: $HEALTH_STATUS)"
               echo "🎉 Deployment completed successfully!"
             else
-              echo "❌ Health check failed - Rolling back"
-              # 롤백 로직
-              exit 1  # ← CI/CD 실패 처리
+              echo "❌ Health check failed"
+              # 실패 시 Docker 로그 출력
+              sudo docker compose logs --tail=50 backend
+              exit 1
             fi
             
 
             # ==========================================
-            # 9. 배포 정보 출력
+            # 7. 배포 정보 출력
             # ==========================================
 
             echo ""
@@ -185,8 +175,8 @@ jobs:
             echo "- Time: $(date)"
             echo "- Commit: $(git rev-parse --short HEAD)"
             echo "- Branch: $(git branch --show-current)"
-            echo "- PM2 Status:"
-            pm2 list | grep kwak-math-nest-cicd
+            echo "- Docker Status:"
+            sudo docker compose ps
 
           UBUNTU_SCRIPT
           SCRIPT

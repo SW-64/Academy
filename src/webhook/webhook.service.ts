@@ -59,21 +59,6 @@ export class WebhookService {
       timestamp: new Date().toISOString(),
       fields: [
         { name: '이벤트 타입', value: action || 'unknown', inline: true },
-        {
-          name: '프로젝트',
-          value: data?.issue?.project?.name || 'N/A',
-          inline: true,
-        },
-        {
-          name: '환경',
-          value: data?.issue?.metadata?.value || 'N/A',
-          inline: true,
-        },
-        {
-          name: '위치',
-          value: `\`\`\`${data?.issue?.culprit || 'unknown'}\`\`\``,
-          inline: false,
-        },
       ],
     };
   }
