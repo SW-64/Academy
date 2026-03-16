@@ -19,12 +19,18 @@ services:
 
   redis:
     image: redis:7-alpine # 직접 빌드 없이 공식 이미지 사용
-    command: >
-      redis-server
-      --maxmemory 200mb           # 메모리 최대 200MB
-      --maxmemory-policy allkeys-lru  # 꽉 차면 오래된 것부터 삭제
-      --save ""                   # 디스크 저장 안 함 (영속성 X)
-      --appendonly no             # AOF 로그도 안 씀 (영속성 X)
+    command:
+      [
+        'redis-server',
+        '--maxmemory',
+        '200mb',
+        '--maxmemory-policy',
+        'allkeys-lru',
+        '--save',
+        '',
+        '--appendonly',
+        'no',
+      ]
     networks:
       - app-network
       - monitoring
