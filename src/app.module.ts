@@ -15,7 +15,7 @@ import { UsersModule } from './users/users.module';
 import { NoticesModule } from './notices/notices.module';
 import { ExamModule } from './exam/exam.module';
 import { GradesModule } from './grades/grades.module';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { UserIdThrottlerGuard } from './auth/guards/userid-throttler.guard';
 import { ActionLogsModule } from './action-logs/action-logs.module';
@@ -25,11 +25,12 @@ import { HomeworkModule } from './homework/homework.module';
 import { ClassModule } from './class/class.module';
 import { StudentClassModule } from './student-class/student-class.module';
 import { MaterialsModule } from './materials/materials.module';
-import { DataSource } from 'typeorm';
+
 import { VideosModule } from './videos/videos.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { WebhookModule } from './webhook/webhook.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -84,6 +85,12 @@ import { WebhookModule } from './webhook/webhook.module';
     }),
     SentryModule.forRoot(),
     WebhookModule,
+    PrometheusModule.register({
+      defaultMetrics: {
+        enabled: true,
+      },
+      path: '/metrics',
+    }),
   ],
   controllers: [AppController],
   providers: [
