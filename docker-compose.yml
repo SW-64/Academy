@@ -27,18 +27,54 @@ services:
       --appendonly no             # AOF 로그도 안 씀 (영속성 X)
     networks:
       - app-network
+      - monitoring
     restart: always
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping'] # ping 응답 확인
       interval: 10s # 10초마다 체크
       timeout: 5s
       retries: 3
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - '9090:9090'
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - monitoring
+    restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway' # Node Exporter 접근용
+
+  # Grafana 추가
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - '3001:3000'
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=your_password # 변경하세요!
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
 
 # 명시적으로 볼륨 선언 (uploads 파일 영구 보존)
 volumes:
   uploads_data:
+  prometheus_data:
+  grafana_data:
 
 # 컨테이너들이 서로 통신할 수 있는 내부 네트워크
 networks:
   app-network:
+    driver: bridge
+  monitoring:
     driver: bridge
