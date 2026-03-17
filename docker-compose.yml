@@ -51,6 +51,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.retention.time=15d'
     networks:
+      - app-network
       - monitoring
     restart: unless-stopped
     extra_hosts:
@@ -67,7 +68,6 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
     networks:
-      - app-network
       - monitoring
     restart: unless-stopped
     depends_on:
