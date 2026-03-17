@@ -123,6 +123,7 @@ jobs:
             echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
             echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> .env
             echo "SENTRY_WEBHOOK_SECRET=${{ secrets.SENTRY_WEBHOOK_SECRET }}" >> .env
+            echo "GRAFANA_PASSWORD=${{ secrets.GRAFANA_PASSWORD }}" >> .env
 
 
 
