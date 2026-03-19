@@ -19,4 +19,9 @@ export class AppController {
   getError() {
     throw new Error('My first Sentry error!');
   }
+
+  @Get('/debug-double')
+  getDoubleError() {
+    throw new Error('My Second Sentry error!');
+  }
 }
