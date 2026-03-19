@@ -44,6 +44,9 @@ export class WebhookService {
 
   private createDiscordEmbed(sentryEvent: any) {
     const { action, data } = sentryEvent;
+    console.log('Received Sentry event:', sentryEvent);
+    console.log('Extracted action:', action);
+    console.log('Extracted data:', data);
 
     const colorMap = {
       'issue.created': 0xff4949,
