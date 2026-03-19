@@ -35,7 +35,6 @@ export class ParentsController {
     @Query('page') page = 1,
     @Query('limit') limit = 10,
   ) {
-    console.log(name);
     const _page = Math.max(Number(page) || 1, 1);
     const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
 
