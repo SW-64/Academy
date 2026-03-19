@@ -43,25 +43,42 @@ export class WebhookService {
   }
 
   private createDiscordEmbed(sentryEvent: any) {
-    const { action, data } = sentryEvent;
-    console.log('Received Sentry event:', sentryEvent);
-    console.log('Extracted action:', action);
-    console.log('Extracted data:', data);
+    const { data } = sentryEvent;
+    const event = data?.event;
 
-    const colorMap = {
-      'issue.created': 0xff4949,
-      'issue.resolved': 0x43a047,
-      'issue.ignored': 0x9ca3af,
+    const levelEmoji = {
+      fatal: '💀',
+      error: '🔴',
+      warning: '⚠️',
+      info: 'ℹ️',
     };
-    const color = colorMap[action] || 0xffa500;
+    const emoji = levelEmoji[event?.level] || '🔴';
 
     return {
-      title: data?.issue?.title || 'Sentry 알림',
-      url: data?.issue?.web_url,
-      color,
+      title: `${emoji} ${event?.title || 'Sentry 알림'}`,
+      color: 0xff4949,
       timestamp: new Date().toISOString(),
       fields: [
-        { name: '이벤트 타입', value: action || 'unknown', inline: true },
+        {
+          name: '📁 발생 위치',
+          value: `\`${event?.culprit || 'unknown'}\``,
+          inline: false,
+        },
+        {
+          name: '🚨 심각도',
+          value: event?.level || 'unknown',
+          inline: true,
+        },
+        {
+          name: '🌍 환경',
+          value: event?.environment || 'unknown',
+          inline: true,
+        },
+        {
+          name: '📍 위치',
+          value: `\`${event?.location || 'unknown'}\``,
+          inline: false,
+        },
       ],
     };
   }
