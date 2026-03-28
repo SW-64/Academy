@@ -26,6 +26,13 @@ export class AllExceptionsFilter extends SentryGlobalFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const originalResponse = exception.getResponse();
+      if (exception instanceof HttpException) {
+        const status = exception.getStatus();
+        if (status !== 404) {
+          // 404는 Sentry로 안 보내기
+          Sentry.captureException(exception);
+        }
+      }
 
       // 운영에서는 필요 시 logger로 교체 권장 (console.error 남발 방지)
       console.error({
