@@ -323,24 +323,21 @@ export class UsersService {
       throw new BadRequestException(MESSAGES.ADMIN.USER.ERROR.NO_CHANGE);
     }
 
-    // 4) user update (값이 있을 때만)
-    if (hasUserPatch) {
-      const updatedUser = await this.userRepository.update(
-        { userId },
-        userPatch,
-      );
-      if (updatedUser.affected === 0) {
-        throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
-      }
-    } else {
-      // userPatch가 없더라도, studentPatch만 있을 때 user 존재는 확인하는 편이 안전
-      const exists = await this.userRepository.exist({ where: { userId } });
-      if (!exists) {
-        throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
-      }
+    // 4) user 존재 확인 + role 파악 (캐시 무효화에 사용)
+    const user = await this.userRepository.findOne({
+      where: { userId },
+      select: ['userId', 'role'],
+    });
+    if (!user) {
+      throw new NotFoundException(MESSAGES.ADMIN.USER.ERROR.NOT_FOUND);
     }
 
-    // 5) student update (값이 있을 때만)
+    // 5) user update (값이 있을 때만)
+    if (hasUserPatch) {
+      await this.userRepository.update({ userId }, userPatch);
+    }
+
+    // 6) student update (값이 있을 때만)
     if (hasStudentPatch) {
       // 운영 규칙: 학생만 grade/school이 의미 있다면 role 체크 또는 student row 존재 확인 필요
       const updatedStudent = await this.studentRepository.update(
@@ -366,7 +363,7 @@ export class UsersService {
     //   description: 'Admin updated user information',
     //   createdAt: new Date(),
     // });
-    await this.invalidateUserCache(); // 캐시 무효화
+    await this.invalidateUserCache(user.role); // 캐시 무효화
 
     return;
   }
@@ -513,33 +510,19 @@ export class UsersService {
   }
 
   /**
-   * 유저 캐시 무효화 (버전 증가)
+   * 유저 캐시 무효화 (캐시 삭제)
+   * role 지정 시 해당 역할 캐시만 삭제, 미지정 시 전체 삭제
    */
-  private async invalidateUserCache(): Promise<void> {
+  private async invalidateUserCache(role?: Role): Promise<void> {
     const logger = new Logger('UsersService:invalidateUserCache');
 
     try {
-      const studentsListVerKey = CACHE_KEYS.ADMIN_STUDENTS_LIST_PAGE_1;
-      const parentsListVerKey = CACHE_KEYS.ADMIN_PARENTS_LIST_PAGE_1;
-
-      // 학생/학부모 목록 캐시 버전 증가
-      const currentStudentsVer =
-        await this.cache.get<number>(studentsListVerKey);
-      const currentParentsVer = await this.cache.get<number>(parentsListVerKey);
-
-      const studentVer = currentStudentsVer ?? 1;
-      const parentVer = currentParentsVer ?? 1;
-
-      await this.cache.set(
-        studentsListVerKey,
-        studentVer + 1,
-        24 * 60 * 60 * 1000,
-      );
-      await this.cache.set(
-        parentsListVerKey,
-        parentVer + 1,
-        24 * 60 * 60 * 1000,
-      );
+      if (role === Role.STUDENT || role === undefined) {
+        await this.cache.del(CACHE_KEYS.ADMIN_STUDENTS_LIST_PAGE_1);
+      }
+      if (role === Role.PARENT || role === undefined) {
+        await this.cache.del(CACHE_KEYS.ADMIN_PARENTS_LIST_PAGE_1);
+      }
     } catch (error: any) {
       logger.warn(
         `Failed to invalidate user cache: ${error?.message}`,
