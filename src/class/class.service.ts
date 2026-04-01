@@ -88,14 +88,6 @@ export class ClassService {
         createdAt: new Date(),
       });
 
-      // 4) 캐시 무효화
-      const cacheKey = 'admin:classes:list';
-      try {
-        await this.cache.del(cacheKey);
-      } catch (e: any) {
-        logger.warn(`Cache DEL failed: ${e?.message}`, e?.stack);
-      }
-
       const data = { classId: newClass.classId };
       return data;
     });
