@@ -64,16 +64,15 @@ export class ExamController {
   @Roles(Role.ADMIN)
   @Get()
   async getExamsAll(
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
     @Param('classId', ParseIntPipe) classId: number,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
   ) {
-    const _page = Math.max(Number(page) || 1, 1);
-    const _limit = Math.min(Math.max(Number(limit) || 10, 1), 50);
-    const data = await this.examService.findAllExams(classId, {
-      page: _page,
-      limit: _limit,
-    });
+    const _year = Math.max(Number(year) || 2026, 2026);
+    const _monthRaw = Number(month) || 1;
+    const _month = _monthRaw >= 1 && _monthRaw <= 12 ? _monthRaw : 1;
+
+    const data = await this.examService.findAllExams(classId, _year, _month);
     return {
       statusCode: HttpStatus.OK,
       message: MESSAGES.ADMIN.EXAM.SUCCESS.LIST,
