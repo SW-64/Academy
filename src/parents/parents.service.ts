@@ -67,20 +67,22 @@ export class ParentsService {
 
   // 학부모 목록 조회
   async findAllParents(options?: IPaginationOptions) {
-    // 캐시 확인
     const cacheKey = CACHE_KEYS.ADMIN_PARENTS_LIST_PAGE_1;
     const CACHE_TTL = 10 * 60 * 1000; // 10분
     const logger = new Logger('ParentsService:findAllParents');
+    const isFirstPage = Number(options?.page ?? 1) === 1;
 
-    try {
-      const cached = await this.cache.get<any>(cacheKey);
-
-      if (cached !== undefined && cached !== null) {
-        return cached;
+    if (isFirstPage) {
+      try {
+        const cached = await this.cache.get<any>(cacheKey);
+        if (cached !== undefined && cached !== null) {
+          return cached;
+        }
+      } catch (error) {
+        logger.warn(`Cache GET failed: ${error.message}`, error.stack);
       }
-    } catch (error) {
-      logger.warn(`Cache GET failed: ${error.message}`, error.stack);
     }
+
     const where: FindOptionsWhere<User> = {
       role: Role.PARENT,
       status: Status.approved,
@@ -111,10 +113,13 @@ export class ParentsService {
         },
       },
     });
-    try {
-      await this.cache.set(cacheKey, parents, CACHE_TTL);
-    } catch (error) {
-      logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+
+    if (isFirstPage) {
+      try {
+        await this.cache.set(cacheKey, parents, CACHE_TTL);
+      } catch (error) {
+        logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+      }
     }
 
     return parents;
