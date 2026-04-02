@@ -131,6 +131,7 @@ describe('MaterialsService - CRITICAL-1: createMaterial', () => {
 
 describe('MaterialsService - CRITICAL-2: updateMaterial', () => {
   let service: MaterialsService;
+  let classMaterialRepository: any;
 
   const materialRepo = {
     findOne: jest.fn(),
@@ -190,7 +191,10 @@ describe('MaterialsService - CRITICAL-2: updateMaterial', () => {
         { provide: DataSource, useValue: dataSourceMock },
         { provide: S3Service, useValue: {} },
         { provide: getRepositoryToken(Material), useValue: {} },
-        { provide: getRepositoryToken(ClassMaterial), useValue: {} },
+        {
+          provide: getRepositoryToken(ClassMaterial),
+          useValue: { find: jest.fn() },
+        },
         { provide: getRepositoryToken(Class), useValue: {} },
         { provide: getRepositoryToken(Student), useValue: {} },
         { provide: getRepositoryToken(StudentClass), useValue: {} },
@@ -206,31 +210,33 @@ describe('MaterialsService - CRITICAL-2: updateMaterial', () => {
     }).compile();
 
     service = moduleRef.get(MaterialsService);
+    classMaterialRepository = moduleRef.get(getRepositoryToken(ClassMaterial));
   });
 
   it('should use orIgnore when inserting toInsert classes', async () => {
+    (classMaterialRepository.find as jest.Mock).mockResolvedValue([]);
     (materialRepo.findOne as jest.Mock).mockResolvedValue({
       materialId: 1,
       title: '기존자료',
       description: 'desc',
     });
     (classRepo.find as jest.Mock).mockResolvedValue([
-      { classId: 1 },
-      { classId: 2 },
-      { classId: 3 },
-      { classId: 4 },
+      { classId: 14 },
+      { classId: 15 },
+      { classId: 16 },
+      { classId: 17 },
     ]);
-    // 기존 연결: [1,2,3]
+    // 기존 연결: [14, 15, 16]
     (cmRepo.find as jest.Mock).mockResolvedValue([
-      { classMaterialId: 10, classId: 1, deletedAt: null },
-      { classMaterialId: 11, classId: 2, deletedAt: null },
-      { classMaterialId: 12, classId: 3, deletedAt: null },
+      { classMaterialId: 10, classId: 14, deletedAt: null },
+      { classMaterialId: 11, classId: 15, deletedAt: null },
+      { classMaterialId: 12, classId: 16, deletedAt: null },
     ]);
 
     cmInsertExecute.mockResolvedValue({ identifiers: [] });
 
-    // 새로 [1,2,3,4] → toInsert=[4]
-    await service.updateMaterial(1, { classIds: [1, 2, 3, 4] }, 1);
+    // 새로 [14, 15, 16, 17] → toInsert=[14, 15, 16, 17]
+    await service.updateMaterial(1, { classIds: [14, 15, 16, 17] }, 1);
 
     expect(cmRepo.createQueryBuilder).toHaveBeenCalled();
     expect(cmInsertQB.orIgnore).toHaveBeenCalled();
@@ -238,30 +244,31 @@ describe('MaterialsService - CRITICAL-2: updateMaterial', () => {
   });
 
   it('should prevent duplicate insert on concurrent updates', async () => {
+    (classMaterialRepository.find as jest.Mock).mockResolvedValue([]);
     (materialRepo.findOne as jest.Mock).mockResolvedValue({
       materialId: 1,
       title: '자료',
     });
     (classRepo.find as jest.Mock).mockResolvedValue([
-      { classId: 1 },
-      { classId: 2 },
-      { classId: 3 },
-      { classId: 4 },
+      { classId: 14 },
+      { classId: 15 },
+      { classId: 16 },
+      { classId: 17 },
     ]);
     (cmRepo.find as jest.Mock).mockResolvedValue([
-      { classId: 1, deletedAt: null },
-      { classId: 2, deletedAt: null },
-      { classId: 3, deletedAt: null },
+      { classId: 14, deletedAt: null },
+      { classId: 15, deletedAt: null },
+      { classId: 16, deletedAt: null },
     ]);
     cmInsertExecute.mockResolvedValue({ identifiers: [] });
 
     // 동시 요청 시뮬레이션
     await expect(
-      service.updateMaterial(1, { classIds: [1, 2, 3, 4] }, 1),
+      service.updateMaterial(1, { classIds: [14, 15, 16, 17] }, 1),
     ).resolves.not.toThrow();
 
     await expect(
-      service.updateMaterial(1, { classIds: [1, 2, 3, 4] }, 1),
+      service.updateMaterial(1, { classIds: [14, 15, 16, 17] }, 1),
     ).resolves.not.toThrow();
 
     expect(cmInsertExecute).toHaveBeenCalled();

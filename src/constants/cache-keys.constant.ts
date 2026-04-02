@@ -66,15 +66,6 @@ export const cacheKey = {
   studentClassNoticesListPage1: (classId: number, ver: number) =>
     `student:classes:${classId}:notices:list:page:1:v:${ver}`,
 
-  // ===== 학생: 시험(버전 + 월별 목록) =====
-  studentClassExamsVer: (classId: number) =>
-    `student:classes:${classId}:exams:ver`,
-  studentClassExamsListByMonth: (
-    classId: number,
-    yyyymm: string,
-    ver: number,
-  ) => `student:classes:${classId}:exams:list:month:${yyyymm}:v:${ver}`,
-
   // ===== 학생: 학습자료(버전 + 목록) =====
   studentClassMaterialsVer: (classId: number) =>
     `student:classes:${classId}:materials:ver`,
@@ -87,9 +78,4 @@ export const cacheKey = {
   parentClassNoticesListPage1: (classId: number, ver: number) =>
     `parent:classes:${classId}:notices:list:page:1:v:${ver}`,
 
-  // ===== 학부모: 시험(버전 + 월별 목록) =====
-  parentClassExamsVer: (classId: number) =>
-    `parent:classes:${classId}:exams:ver`,
-  parentClassExamsListByMonth: (classId: number, yyyymm: string, ver: number) =>
-    `parent:classes:${classId}:exams:list:month:${yyyymm}:v:${ver}`,
 } as const;

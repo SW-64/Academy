@@ -2,13 +2,9 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  IPaginationOptions,
-  paginate,
-  Pagination,
-} from 'nestjs-typeorm-paginate';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, IsNull, Repository } from 'typeorm';
 
@@ -20,6 +16,7 @@ import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 
 import { MESSAGES } from '../constants/message.constant';
+import { cacheKey } from '../constants/cache-keys.constant';
 import { ActionLog } from './../action-logs/entities/action-logs.entity';
 import { ExamDetail } from './entities/exam-detail.entity';
 import { Student } from './../students/entities/student.entity';
@@ -57,7 +54,7 @@ export class ExamService {
     adminId: number,
     classId: number,
   ) {
-    return this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       const examRepo = manager.getRepository(Exam);
       const examDetailRepo = manager.getRepository(ExamDetail);
       const actionLogRepo = manager.getRepository(ActionLog);
@@ -132,27 +129,80 @@ export class ExamService {
 
       return { examId: exam.examId };
     });
+    await this.invalidateExamCache(classId);
+    return result;
   }
 
   //시험일정 전체조회
   async findAllExams(
     classId: number,
-    options?: IPaginationOptions,
-  ): Promise<Pagination<Exam>> {
-    const exams = await paginate(this.examRepository, options, {
-      order: { examDate: 'DESC' },
-      where: { classId, deletedAt: IsNull() },
-      select: {
-        examId: true,
-        examTitle: true,
-        examDate: true,
-        studentAverage: true,
-        topStudentAverage: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-    return exams;
+    year: number,
+    month: number,
+  ): Promise<Exam[]> {
+    const logger = new Logger('ExamService:findAllExams');
+    const CACHE_TTL = 10 * 60 * 1000; // 10분 (ms)
+    const yyyymm = `${year}${String(month).padStart(2, '0')}`;
+
+    // 1) 버전 키 조회 (없으면 1로 초기화)
+    const verKey = cacheKey.adminClassExamsVer(classId);
+    let ver = 1;
+
+    try {
+      const cachedVer = await this.cache.get<number>(verKey);
+      if (cachedVer !== undefined && cachedVer !== null) {
+        ver = cachedVer;
+      } else {
+        await this.cache.set(verKey, ver, 24 * 60 * 60 * 1000); // 1일
+      }
+    } catch (error: any) {
+      logger.warn(`Cache GET/SET ver failed: ${error?.message}`, error?.stack);
+    }
+
+    // 2) 목록 캐시 HIT 시 바로 반환
+    const listCacheKey = cacheKey.adminClassExamsListByMonth(
+      classId,
+      yyyymm,
+      ver,
+    );
+
+    try {
+      const hit = await this.cache.get<Exam[]>(listCacheKey);
+      if (hit !== undefined && hit !== null) {
+        return hit;
+      }
+    } catch (error: any) {
+      logger.warn(`Cache GET list failed: ${error?.message}`, error?.stack);
+    }
+
+    // 3) DB 조회
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 1);
+
+    const result = await this.examRepository
+      .createQueryBuilder('e')
+      .where('e.class_id = :classId', { classId })
+      .andWhere('e.deleted_at IS NULL')
+      .andWhere('e.exam_date >= :start AND e.exam_date < :end', { start, end })
+      .select([
+        'e.examId',
+        'e.examTitle',
+        'e.examDate',
+        'e.studentAverage',
+        'e.topStudentAverage',
+        'e.createdAt',
+        'e.updatedAt',
+      ])
+      .orderBy('e.exam_date', 'ASC')
+      .getMany();
+
+    // 4) 캐시 저장
+    try {
+      await this.cache.set(listCacheKey, result, CACHE_TTL);
+    } catch (error: any) {
+      logger.warn(`Cache SET list failed: ${error?.message}`, error?.stack);
+    }
+
+    return result;
   }
 
   //시험일정 상세조회
@@ -353,6 +403,7 @@ export class ExamService {
       );
     });
 
+    await this.invalidateExamCache(classId);
     return;
   }
 
@@ -381,6 +432,7 @@ export class ExamService {
       description: `Admin deleted an exam (examId: ${examId})`,
       createdAt: new Date(),
     });
+    await this.invalidateExamCache(classId);
     return;
   }
 
@@ -1264,5 +1316,24 @@ export class ExamService {
 
       return existedExam;
     });
+  }
+
+  /**
+   * 시험 캐시 무효화 (버전 증가)
+   */
+  private async invalidateExamCache(classId: number): Promise<void> {
+    const logger = new Logger('ExamService:invalidateExamCache');
+
+    try {
+      const verKey = cacheKey.adminClassExamsVer(classId);
+      const currentVer = await this.cache.get<number>(verKey);
+      const ver = currentVer ?? 1;
+      await this.cache.set(verKey, ver + 1, 24 * 60 * 60 * 1000);
+    } catch (error: any) {
+      logger.warn(
+        `Failed to invalidate exam cache for classId=${classId}: ${error?.message}`,
+        error?.stack,
+      );
+    }
   }
 }

@@ -134,19 +134,20 @@ export class StudentsService {
 
   // 학생 목록 조회
   async findAllStudents(options?: IPaginationOptions) {
-    // 캐시 확인
     const cacheKey = CACHE_KEYS.ADMIN_STUDENTS_LIST_PAGE_1;
     const CACHE_TTL = 10 * 60 * 1000; // 10분
     const logger = new Logger('StudentsService:findAllStudents');
+    const isFirstPage = Number(options?.page ?? 1) === 1;
 
-    try {
-      const cached = await this.cache.get<any>(cacheKey);
-
-      if (cached !== undefined && cached !== null) {
-        return cached;
+    if (isFirstPage) {
+      try {
+        const cached = await this.cache.get<any>(cacheKey);
+        if (cached !== undefined && cached !== null) {
+          return cached;
+        }
+      } catch (error) {
+        logger.warn(`Cache GET failed: ${error.message}`, error.stack);
       }
-    } catch (error) {
-      logger.warn(`Cache GET failed: ${error.message}`, error.stack);
     }
 
     const where: FindOptionsWhere<User> = {
@@ -181,10 +182,12 @@ export class StudentsService {
       },
     });
 
-    try {
-      await this.cache.set(cacheKey, students, CACHE_TTL);
-    } catch (error) {
-      logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+    if (isFirstPage) {
+      try {
+        await this.cache.set(cacheKey, students, CACHE_TTL);
+      } catch (error) {
+        logger.warn(`Cache SET failed: ${error.message}`, error.stack);
+      }
     }
     return students;
   }

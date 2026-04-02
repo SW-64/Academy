@@ -130,7 +130,7 @@ export class MaterialsService {
 
       return saved;
     });
-    //await this.invalidateMaterialsCache(classId);
+    await this.invalidateMaterialsCache(dto.classIds);
     return saved;
   }
 
@@ -143,47 +143,45 @@ export class MaterialsService {
     sortOption: 'created_desc' | 'title_asc',
     classId: number | null,
   ): Promise<Pagination<Material>> {
-    // const logger = new Logger('MaterialsService:findAllMaterials');
-    // const CACHE_TTL = 10 * 60 * 1000; // 10분 (ms)
+    const logger = new Logger('MaterialsService:getAllMaterials');
+    const CACHE_TTL = 10 * 60 * 1000; // 10분 (ms)
 
-    // // 1) page=1일 때만 캐시 사용 (그 외 페이지는 DB로)
-    // const page = Number(options.page ?? 1);
-    // const isFirstPage = page === 1;
+    const page = Number(options.page ?? 1);
+    const isCacheable = page === 1 && classId !== null && classId > 0;
+    let listCacheKey: string | null = null;
 
-    // // 2) 캐시 HIT 시 바로 반환
-    // let listCacheKey: string | null = null;
+    if (isCacheable) {
+      const verKey = cacheKey.adminClassMaterialsVer(classId as number);
+      let ver = 1;
 
-    // if (isFirstPage) {
-    //   // 2-1) 버전키 조회 (없으면 1로 간주)
-    //   const verKey = cacheKey.adminClassMaterialsVer(classId);
-    //   let ver = 1;
+      try {
+        const cachedVer = await this.cache.get<number>(verKey);
+        if (cachedVer !== undefined && cachedVer !== null) {
+          ver = cachedVer;
+        } else {
+          await this.cache.set(verKey, ver, 24 * 60 * 60 * 1000); // 1일
+        }
+      } catch (error: any) {
+        logger.warn(
+          `Cache GET/SET ver failed: ${error?.message}`,
+          error?.stack,
+        );
+      }
 
-    //   try {
-    //     const cachedVer = await this.cache.get<number>(verKey);
-    //     if (cachedVer !== undefined && cachedVer !== null) {
-    //       ver = cachedVer;
-    //     } else {
-    //       await this.cache.set(verKey, ver, 24 * 60 * 60 * 1000); // 1일
-    //     }
-    //   } catch (error: any) {
-    //     logger.warn(
-    //       `Cache GET/SET ver failed: ${error?.message}`,
-    //       error?.stack,
-    //     );
-    //   }
+      listCacheKey = cacheKey.adminClassMaterialsListPage1(
+        classId as number,
+        ver,
+      );
 
-    //   // 2-2) 목록 캐시 키 생성 (page=1 고정)
-    //   listCacheKey = cacheKey.adminClassMaterialsListPage1(classId, ver);
-
-    //   try {
-    //     const hit = await this.cache.get<Pagination<Material>>(listCacheKey);
-    //     if (hit !== undefined && hit !== null) {
-    //       return hit;
-    //     }
-    //   } catch (error: any) {
-    //     logger.warn(`Cache GET list failed: ${error?.message}`, error?.stack);
-    //   }
-    // }
+      try {
+        const hit = await this.cache.get<Pagination<Material>>(listCacheKey);
+        if (hit !== undefined && hit !== null) {
+          return hit;
+        }
+      } catch (error: any) {
+        logger.warn(`Cache GET list failed: ${error?.message}`, error?.stack);
+      }
+    }
     const qb = this.materialRepository
       .createQueryBuilder('m')
       // (4) deletedAt은 쿼리에서 조건으로 필터
@@ -220,15 +218,14 @@ export class MaterialsService {
         break;
     }
     const result = await paginate(qb, options);
-    // // page=1이면 캐시 SET
-    // if (isFirstPage && listCacheKey) {
-    //   try {
-    //     await this.cache.set(listCacheKey, result, CACHE_TTL);
-    //     logger.debug(`Cache SET: ${listCacheKey}, TTL: ${CACHE_TTL}ms`);
-    //   } catch (error: any) {
-    //     logger.warn(`Cache SET failed: ${error?.message}`, error?.stack);
-    //   }
-    // }
+
+    if (isCacheable && listCacheKey) {
+      try {
+        await this.cache.set(listCacheKey, result, CACHE_TTL);
+      } catch (error: any) {
+        logger.warn(`Cache SET list failed: ${error?.message}`, error?.stack);
+      }
+    }
 
     return result;
   }
@@ -288,6 +285,14 @@ export class MaterialsService {
         MESSAGES.ADMIN.MATERIAL.VALIDATION.UPDATE.NO_CHANGES,
       );
     }
+
+    const existingLinks = await this.classMaterialRepository.find({
+      where: { materialId, deletedAt: null },
+      select: ['classId'],
+    });
+    const oldClassIds = existingLinks.map((x) => x.classId);
+    const newClassIds = dto.classIds ?? [];
+    const affectedClassIds = [...new Set([...oldClassIds, ...newClassIds])];
 
     await this.dataSource.transaction(async (manager) => {
       const materialRepo = manager.getRepository(Material);
@@ -448,6 +453,7 @@ export class MaterialsService {
       await materialRepo.update({ materialId }, patch);
     });
 
+    await this.invalidateMaterialsCache(affectedClassIds);
     return;
   }
 
@@ -464,6 +470,12 @@ export class MaterialsService {
     if (!existed) {
       throw new NotFoundException(MESSAGES.ADMIN.MATERIAL.ERROR.NOT_FOUND);
     }
+
+    const classLinks = await this.classMaterialRepository.find({
+      where: { materialId, deletedAt: null },
+      select: ['classId'],
+    });
+    const affectedClassIds = classLinks.map((x) => x.classId);
 
     await this.dataSource.transaction(async (manager) => {
       const materialRepo = manager.getRepository(Material);
@@ -486,6 +498,7 @@ export class MaterialsService {
         .execute();
     });
 
+    await this.invalidateMaterialsCache(affectedClassIds);
     return;
   }
 
@@ -645,50 +658,48 @@ export class MaterialsService {
     sortOption: 'created_desc' | 'title_asc',
     classId: number | null,
   ): Promise<Pagination<StudentMaterialListItem>> {
-    // const logger = new Logger('MaterialsService:getStudentMaterials');
-    // const CACHE_TTL = 10 * 60 * 1000; // 10분 (ms)
+    const logger = new Logger('MaterialsService:getStudentMaterials');
+    const CACHE_TTL = 10 * 60 * 1000; // 10분 (ms)
 
-    // // page=1일 때만 캐시 사용 (그 외 페이지는 DB로)
-    // const _page = Number(options.page ?? 1);
-    // const isFirstPage = _page === 1;
+    const pageNum = Number(options.page ?? 1);
+    const isCacheable = pageNum === 1 && classId !== null && classId > 0;
+    let listCacheKey: string | null = null;
 
-    // // 캐시 HIT 시 바로 반환
-    // let listCacheKey: string | null = null;
+    if (isCacheable) {
+      const verKey = cacheKey.studentClassMaterialsVer(classId as number);
+      let ver = 1;
 
-    // if (isFirstPage) {
-    //   // 버전키 조회 (없으면 1로 간주)
-    //   const verKey = cacheKey.studentClassMaterialsVer(classId);
-    //   let ver = 1;
+      try {
+        const cachedVer = await this.cache.get<number>(verKey);
+        if (cachedVer !== undefined && cachedVer !== null) {
+          ver = cachedVer;
+        } else {
+          await this.cache.set(verKey, ver, 24 * 60 * 60 * 1000); // 1일
+        }
+      } catch (error: any) {
+        logger.warn(
+          `Cache GET/SET ver failed: ${error?.message}`,
+          error?.stack,
+        );
+      }
 
-    //   try {
-    //     const cachedVer = await this.cache.get<number>(verKey);
-    //     if (cachedVer !== undefined && cachedVer !== null) {
-    //       ver = cachedVer;
-    //     } else {
-    //       await this.cache.set(verKey, ver, 24 * 60 * 60 * 1000); // 1일
-    //     }
-    //   } catch (error: any) {
-    //     logger.warn(
-    //       `Cache GET/SET ver failed: ${error?.message}`,
-    //       error?.stack,
-    //     );
-    //   }
+      listCacheKey = cacheKey.studentClassMaterialsListPage1(
+        classId as number,
+        ver,
+      );
 
-    //   // 목록 캐시 키 생성 (page=1 고정)
-    //   listCacheKey = cacheKey.studentClassMaterialsListPage1(classId, ver);
-
-    //   try {
-    //     const hit =
-    //       await this.cache.get<Pagination<StudentMaterialListItem>>(
-    //         listCacheKey,
-    //       );
-    //     if (hit !== undefined && hit !== null) {
-    //       return hit;
-    //     }
-    //   } catch (error: any) {
-    //     logger.warn(`Cache GET list failed: ${error?.message}`, error?.stack);
-    //   }
-    // }
+      try {
+        const hit =
+          await this.cache.get<Pagination<StudentMaterialListItem>>(
+            listCacheKey,
+          );
+        if (hit !== undefined && hit !== null) {
+          return hit;
+        }
+      } catch (error: any) {
+        logger.warn(`Cache GET list failed: ${error?.message}`, error?.stack);
+      }
+    }
     // 1) userId -> studentId
     const student = await this.studentRepository.findOne({
       where: { userId, deletedAt: null },
@@ -776,15 +787,14 @@ export class MaterialsService {
       ...page,
       items,
     };
-    // // page=1이면 캐시 SET
-    // if (isFirstPage && listCacheKey) {
-    //   try {
-    //     await this.cache.set(listCacheKey, result, CACHE_TTL);
-    //     logger.debug(`Cache SET: ${listCacheKey}, TTL: ${CACHE_TTL}ms`);
-    //   } catch (error: any) {
-    //     logger.warn(`Cache SET failed: ${error?.message}`, error?.stack);
-    //   }
-    // }
+
+    if (isCacheable && listCacheKey) {
+      try {
+        await this.cache.set(listCacheKey, result, CACHE_TTL);
+      } catch (error: any) {
+        logger.warn(`Cache SET list failed: ${error?.message}`, error?.stack);
+      }
+    }
 
     return result;
   }
@@ -792,20 +802,37 @@ export class MaterialsService {
   /**
    * 학습자료 캐시 무효화 (버전 증가)
    */
-  private async invalidateMaterialsCache(classId: number): Promise<void> {
+  private async invalidateMaterialsCache(classIds: number[]): Promise<void> {
     const logger = new Logger('MaterialsService:invalidateMaterialsCache');
 
-    try {
-      const verKey = cacheKey.adminClassMaterialsVer(classId);
-      const currentVer = await this.cache.get<number>(verKey);
-      const ver = currentVer ?? 1;
+    for (const classId of classIds) {
+      try {
+        const adminVerKey = cacheKey.adminClassMaterialsVer(classId);
+        const currentAdminVer = await this.cache.get<number>(adminVerKey);
+        const adminVer = currentAdminVer ?? 1;
+        await this.cache.set(adminVerKey, adminVer + 1, 24 * 60 * 60 * 1000);
+      } catch (error: any) {
+        logger.warn(
+          `Failed to invalidate admin materials cache for classId=${classId}: ${error?.message}`,
+          error?.stack,
+        );
+      }
 
-      await this.cache.set(verKey, ver + 1, 24 * 60 * 60 * 1000);
-    } catch (error: any) {
-      logger.warn(
-        `Failed to invalidate materials cache for classId=${classId}: ${error?.message}`,
-        error?.stack,
-      );
+      try {
+        const studentVerKey = cacheKey.studentClassMaterialsVer(classId);
+        const currentStudentVer = await this.cache.get<number>(studentVerKey);
+        const studentVer = currentStudentVer ?? 1;
+        await this.cache.set(
+          studentVerKey,
+          studentVer + 1,
+          24 * 60 * 60 * 1000,
+        );
+      } catch (error: any) {
+        logger.warn(
+          `Failed to invalidate student materials cache for classId=${classId}: ${error?.message}`,
+          error?.stack,
+        );
+      }
     }
   }
 }
