@@ -5,121 +5,121 @@ import { sleep, check } from 'k6';
 // 설정
 // ─────────────────────────────────────────────
 // TODO: EC2 서버 주소로 교체
-const BASE_URL = 'http://<EC2_HOST>:<PORT>/api/v1';
+const BASE_URL = 'https://api.kwakmath.co.kr/api/v1';
 
 const STUDENTS = [
-  { loginId: 'student1',   password: 'Example1!' },
-  { loginId: 'student2',   password: 'Example1!' },
-  { loginId: 'student3',   password: 'Example1!' },
-  { loginId: 'student4',   password: 'Example1!' },
-  { loginId: 'student5',   password: 'Example1!' },
-  { loginId: 'student6',   password: 'Example1!' },
-  { loginId: 'student7',   password: 'Example1!' },
-  { loginId: 'student8',   password: 'Example1!' },
-  { loginId: 'student9',   password: 'Example1!' },
-  { loginId: 'student10',  password: 'Example1!' },
-  { loginId: 'student11',  password: 'Example1!' },
-  { loginId: 'student12',  password: 'Example1!' },
-  { loginId: 'student13',  password: 'Example1!' },
-  { loginId: 'student14',  password: 'Example1!' },
-  { loginId: 'student15',  password: 'Example1!' },
-  { loginId: 'student16',  password: 'Example1!' },
-  { loginId: 'student17',  password: 'Example1!' },
-  { loginId: 'student18',  password: 'Example1!' },
-  { loginId: 'student19',  password: 'Example1!' },
-  { loginId: 'student20',  password: 'Example1!' },
-  { loginId: 'student21',  password: 'Example1!' },
-  { loginId: 'student22',  password: 'Example1!' },
-  { loginId: 'student23',  password: 'Example1!' },
-  { loginId: 'student24',  password: 'Example1!' },
-  { loginId: 'student25',  password: 'Example1!' },
-  { loginId: 'student26',  password: 'Example1!' },
-  { loginId: 'student27',  password: 'Example1!' },
-  { loginId: 'student28',  password: 'Example1!' },
-  { loginId: 'student29',  password: 'Example1!' },
-  { loginId: 'student30',  password: 'Example1!' },
-  { loginId: 'student31',  password: 'Example1!' },
-  { loginId: 'student32',  password: 'Example1!' },
-  { loginId: 'student33',  password: 'Example1!' },
-  { loginId: 'student34',  password: 'Example1!' },
-  { loginId: 'student35',  password: 'Example1!' },
-  { loginId: 'student36',  password: 'Example1!' },
-  { loginId: 'student37',  password: 'Example1!' },
-  { loginId: 'student38',  password: 'Example1!' },
-  { loginId: 'student39',  password: 'Example1!' },
-  { loginId: 'student40',  password: 'Example1!' },
-  { loginId: 'student41',  password: 'Example1!' },
-  { loginId: 'student42',  password: 'Example1!' },
-  { loginId: 'student43',  password: 'Example1!' },
-  { loginId: 'student44',  password: 'Example1!' },
-  { loginId: 'student45',  password: 'Example1!' },
-  { loginId: 'student46',  password: 'Example1!' },
-  { loginId: 'student47',  password: 'Example1!' },
-  { loginId: 'student48',  password: 'Example1!' },
-  { loginId: 'student49',  password: 'Example1!' },
-  { loginId: 'student50',  password: 'Example1!' },
-  { loginId: 'student51',  password: 'Example1!' },
-  { loginId: 'student52',  password: 'Example1!' },
-  { loginId: 'student53',  password: 'Example1!' },
-  { loginId: 'student54',  password: 'Example1!' },
-  { loginId: 'student55',  password: 'Example1!' },
-  { loginId: 'student56',  password: 'Example1!' },
-  { loginId: 'student57',  password: 'Example1!' },
-  { loginId: 'student58',  password: 'Example1!' },
-  { loginId: 'student59',  password: 'Example1!' },
-  { loginId: 'student60',  password: 'Example1!' },
-  { loginId: 'student61',  password: 'Example1!' },
-  { loginId: 'student62',  password: 'Example1!' },
-  { loginId: 'student63',  password: 'Example1!' },
-  { loginId: 'student64',  password: 'Example1!' },
-  { loginId: 'student65',  password: 'Example1!' },
-  { loginId: 'student66',  password: 'Example1!' },
-  { loginId: 'student67',  password: 'Example1!' },
-  { loginId: 'student68',  password: 'Example1!' },
-  { loginId: 'student69',  password: 'Example1!' },
-  { loginId: 'student70',  password: 'Example1!' },
-  { loginId: 'student71',  password: 'Example1!' },
-  { loginId: 'student72',  password: 'Example1!' },
-  { loginId: 'student73',  password: 'Example1!' },
-  { loginId: 'student74',  password: 'Example1!' },
-  { loginId: 'student75',  password: 'Example1!' },
-  { loginId: 'student76',  password: 'Example1!' },
-  { loginId: 'student77',  password: 'Example1!' },
-  { loginId: 'student78',  password: 'Example1!' },
-  { loginId: 'student79',  password: 'Example1!' },
-  { loginId: 'student80',  password: 'Example1!' },
-  { loginId: 'student81',  password: 'Example1!' },
-  { loginId: 'student82',  password: 'Example1!' },
-  { loginId: 'student83',  password: 'Example1!' },
-  { loginId: 'student84',  password: 'Example1!' },
-  { loginId: 'student85',  password: 'Example1!' },
-  { loginId: 'student86',  password: 'Example1!' },
-  { loginId: 'student87',  password: 'Example1!' },
-  { loginId: 'student88',  password: 'Example1!' },
-  { loginId: 'student89',  password: 'Example1!' },
-  { loginId: 'student90',  password: 'Example1!' },
-  { loginId: 'student91',  password: 'Example1!' },
-  { loginId: 'student92',  password: 'Example1!' },
-  { loginId: 'student93',  password: 'Example1!' },
-  { loginId: 'student94',  password: 'Example1!' },
-  { loginId: 'student95',  password: 'Example1!' },
-  { loginId: 'student96',  password: 'Example1!' },
-  { loginId: 'student97',  password: 'Example1!' },
-  { loginId: 'student98',  password: 'Example1!' },
-  { loginId: 'student99',  password: 'Example1!' },
+  { loginId: 'student1', password: 'Example1!' },
+  { loginId: 'student2', password: 'Example1!' },
+  { loginId: 'student3', password: 'Example1!' },
+  { loginId: 'student4', password: 'Example1!' },
+  { loginId: 'student5', password: 'Example1!' },
+  { loginId: 'student6', password: 'Example1!' },
+  { loginId: 'student7', password: 'Example1!' },
+  { loginId: 'student8', password: 'Example1!' },
+  { loginId: 'student9', password: 'Example1!' },
+  { loginId: 'student10', password: 'Example1!' },
+  { loginId: 'student11', password: 'Example1!' },
+  { loginId: 'student12', password: 'Example1!' },
+  { loginId: 'student13', password: 'Example1!' },
+  { loginId: 'student14', password: 'Example1!' },
+  { loginId: 'student15', password: 'Example1!' },
+  { loginId: 'student16', password: 'Example1!' },
+  { loginId: 'student17', password: 'Example1!' },
+  { loginId: 'student18', password: 'Example1!' },
+  { loginId: 'student19', password: 'Example1!' },
+  { loginId: 'student20', password: 'Example1!' },
+  { loginId: 'student21', password: 'Example1!' },
+  { loginId: 'student22', password: 'Example1!' },
+  { loginId: 'student23', password: 'Example1!' },
+  { loginId: 'student24', password: 'Example1!' },
+  { loginId: 'student25', password: 'Example1!' },
+  { loginId: 'student26', password: 'Example1!' },
+  { loginId: 'student27', password: 'Example1!' },
+  { loginId: 'student28', password: 'Example1!' },
+  { loginId: 'student29', password: 'Example1!' },
+  { loginId: 'student30', password: 'Example1!' },
+  { loginId: 'student31', password: 'Example1!' },
+  { loginId: 'student32', password: 'Example1!' },
+  { loginId: 'student33', password: 'Example1!' },
+  { loginId: 'student34', password: 'Example1!' },
+  { loginId: 'student35', password: 'Example1!' },
+  { loginId: 'student36', password: 'Example1!' },
+  { loginId: 'student37', password: 'Example1!' },
+  { loginId: 'student38', password: 'Example1!' },
+  { loginId: 'student39', password: 'Example1!' },
+  { loginId: 'student40', password: 'Example1!' },
+  { loginId: 'student41', password: 'Example1!' },
+  { loginId: 'student42', password: 'Example1!' },
+  { loginId: 'student43', password: 'Example1!' },
+  { loginId: 'student44', password: 'Example1!' },
+  { loginId: 'student45', password: 'Example1!' },
+  { loginId: 'student46', password: 'Example1!' },
+  { loginId: 'student47', password: 'Example1!' },
+  { loginId: 'student48', password: 'Example1!' },
+  { loginId: 'student49', password: 'Example1!' },
+  { loginId: 'student50', password: 'Example1!' },
+  { loginId: 'student51', password: 'Example1!' },
+  { loginId: 'student52', password: 'Example1!' },
+  { loginId: 'student53', password: 'Example1!' },
+  { loginId: 'student54', password: 'Example1!' },
+  { loginId: 'student55', password: 'Example1!' },
+  { loginId: 'student56', password: 'Example1!' },
+  { loginId: 'student57', password: 'Example1!' },
+  { loginId: 'student58', password: 'Example1!' },
+  { loginId: 'student59', password: 'Example1!' },
+  { loginId: 'student60', password: 'Example1!' },
+  { loginId: 'student61', password: 'Example1!' },
+  { loginId: 'student62', password: 'Example1!' },
+  { loginId: 'student63', password: 'Example1!' },
+  { loginId: 'student64', password: 'Example1!' },
+  { loginId: 'student65', password: 'Example1!' },
+  { loginId: 'student66', password: 'Example1!' },
+  { loginId: 'student67', password: 'Example1!' },
+  { loginId: 'student68', password: 'Example1!' },
+  { loginId: 'student69', password: 'Example1!' },
+  { loginId: 'student70', password: 'Example1!' },
+  { loginId: 'student71', password: 'Example1!' },
+  { loginId: 'student72', password: 'Example1!' },
+  { loginId: 'student73', password: 'Example1!' },
+  { loginId: 'student74', password: 'Example1!' },
+  { loginId: 'student75', password: 'Example1!' },
+  { loginId: 'student76', password: 'Example1!' },
+  { loginId: 'student77', password: 'Example1!' },
+  { loginId: 'student78', password: 'Example1!' },
+  { loginId: 'student79', password: 'Example1!' },
+  { loginId: 'student80', password: 'Example1!' },
+  { loginId: 'student81', password: 'Example1!' },
+  { loginId: 'student82', password: 'Example1!' },
+  { loginId: 'student83', password: 'Example1!' },
+  { loginId: 'student84', password: 'Example1!' },
+  { loginId: 'student85', password: 'Example1!' },
+  { loginId: 'student86', password: 'Example1!' },
+  { loginId: 'student87', password: 'Example1!' },
+  { loginId: 'student88', password: 'Example1!' },
+  { loginId: 'student89', password: 'Example1!' },
+  { loginId: 'student90', password: 'Example1!' },
+  { loginId: 'student91', password: 'Example1!' },
+  { loginId: 'student92', password: 'Example1!' },
+  { loginId: 'student93', password: 'Example1!' },
+  { loginId: 'student94', password: 'Example1!' },
+  { loginId: 'student95', password: 'Example1!' },
+  { loginId: 'student96', password: 'Example1!' },
+  { loginId: 'student97', password: 'Example1!' },
+  { loginId: 'student98', password: 'Example1!' },
+  { loginId: 'student99', password: 'Example1!' },
   { loginId: 'student100', password: 'Example1!' },
 ];
 
 const PARENTS = [
-  { loginId: 'parent1',  password: 'Example1!' },
-  { loginId: 'parent2',  password: 'Example1!' },
-  { loginId: 'parent3',  password: 'Example1!' },
-  { loginId: 'parent4',  password: 'Example1!' },
-  { loginId: 'parent5',  password: 'Example1!' },
-  { loginId: 'parent6',  password: 'Example1!' },
-  { loginId: 'parent7',  password: 'Example1!' },
-  { loginId: 'parent8',  password: 'Example1!' },
-  { loginId: 'parent9',  password: 'Example1!' },
+  { loginId: 'parent1', password: 'Example1!' },
+  { loginId: 'parent2', password: 'Example1!' },
+  { loginId: 'parent3', password: 'Example1!' },
+  { loginId: 'parent4', password: 'Example1!' },
+  { loginId: 'parent5', password: 'Example1!' },
+  { loginId: 'parent6', password: 'Example1!' },
+  { loginId: 'parent7', password: 'Example1!' },
+  { loginId: 'parent8', password: 'Example1!' },
+  { loginId: 'parent9', password: 'Example1!' },
   { loginId: 'parent10', password: 'Example1!' },
   { loginId: 'parent11', password: 'Example1!' },
   { loginId: 'parent12', password: 'Example1!' },
@@ -175,7 +175,7 @@ export const options = {
       stages: [
         { duration: '90s', target: 100 }, // 1단계: 100명까지 증가
         { duration: '3m', target: 100 }, // 2단계: 3분 유지
-        { duration: '30s', target: 0 },  // 3단계: 종료
+        { duration: '30s', target: 0 }, // 3단계: 종료
       ],
       gracefulRampDown: '15s',
     },
@@ -222,7 +222,10 @@ function parseData(res) {
 function login(credentials) {
   const res = http.post(
     `${BASE_URL}/auth/sign-in`,
-    JSON.stringify({ loginId: credentials.loginId, password: credentials.password }),
+    JSON.stringify({
+      loginId: credentials.loginId,
+      password: credentials.password,
+    }),
     { headers: JSON_HEADERS },
   );
   check(res, { '[login] status 200': (r) => r.status === 200 });
@@ -230,7 +233,9 @@ function login(credentials) {
 }
 
 function logout() {
-  const res = http.post(`${BASE_URL}/auth/sign-out`, null, { headers: JSON_HEADERS });
+  const res = http.post(`${BASE_URL}/auth/sign-out`, null, {
+    headers: JSON_HEADERS,
+  });
   check(res, { '[logout] status 200': (r) => r.status === 200 });
 }
 
@@ -268,8 +273,12 @@ export function studentScenario() {
     const noticeItems = noticesData?.items ?? noticesData;
     if (Array.isArray(noticeItems) && noticeItems.length > 0) {
       const noticeId = randomItem(noticeItems).noticeId;
-      const detailRes = http.get(`${BASE_URL}/classes/${classId}/notices/${noticeId}`);
-      check(detailRes, { '[student] notice detail 200': (r) => r.status === 200 });
+      const detailRes = http.get(
+        `${BASE_URL}/classes/${classId}/notices/${noticeId}`,
+      );
+      check(detailRes, {
+        '[student] notice detail 200': (r) => r.status === 200,
+      });
       sleep(10);
     }
   }
@@ -303,7 +312,9 @@ export function studentScenario() {
     if (Array.isArray(materials) && materials.length > 0) {
       const materialId = randomItem(materials).materialId;
       const detailRes = http.get(`${BASE_URL}/materials/${materialId}`);
-      check(detailRes, { '[student] material detail 200': (r) => r.status === 200 });
+      check(detailRes, {
+        '[student] material detail 200': (r) => r.status === 200,
+      });
       sleep(10);
     }
   }
@@ -353,7 +364,9 @@ export function parentScenario() {
   const studentId = randomItem(children).studentId;
 
   // 3. 내 클래스 전체 목록 조회 (자녀 기준) → 랜덤 선택
-  const classesRes = http.get(`${BASE_URL}/parents/me/students/${studentId}/classes`);
+  const classesRes = http.get(
+    `${BASE_URL}/parents/me/students/${studentId}/classes`,
+  );
   check(classesRes, { '[parent] classes 200': (r) => r.status === 200 });
   sleep(5);
 
@@ -374,8 +387,12 @@ export function parentScenario() {
     const noticeItems = noticesData?.items ?? noticesData;
     if (Array.isArray(noticeItems) && noticeItems.length > 0) {
       const noticeId = randomItem(noticeItems).noticeId;
-      const detailRes = http.get(`${BASE_URL}/classes/${classId}/notices/${noticeId}`);
-      check(detailRes, { '[parent] notice detail 200': (r) => r.status === 200 });
+      const detailRes = http.get(
+        `${BASE_URL}/classes/${classId}/notices/${noticeId}`,
+      );
+      check(detailRes, {
+        '[parent] notice detail 200': (r) => r.status === 200,
+      });
       sleep(10);
     }
   }
