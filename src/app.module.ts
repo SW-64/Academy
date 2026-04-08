@@ -31,6 +31,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { WebhookModule } from './webhook/webhook.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { AnalysisModule } from './analysis/analysis.module';
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     }),
     SentryModule.forRoot(),
     WebhookModule,
+    AnalysisModule,
     PrometheusModule.register({
       defaultMetrics: {
         enabled: true,

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -102,11 +103,12 @@ export class VideosService {
     try {
       bunnyVideo = await this.bunnyService.createVideo(title);
     } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error('Bunny API 호출 실패', {
         method: 'createVideo',
         title,
-        error: error.message,
-        stack: error.stack,
+        error: err.message,
+        stack: err.stack,
       });
       throw new InternalServerErrorException(
         '영상 생성 중 오류가 발생했습니다.',
@@ -179,10 +181,11 @@ export class VideosService {
       try {
         await this.bunnyService.deleteVideo(bunnyVideo.guid);
       } catch (deleteError) {
+        const delErr = deleteError instanceof Error ? deleteError : new Error(String(deleteError));
         this.logger.error('Bunny 영상 삭제 실패', {
           bunnyVideoId: bunnyVideo.guid,
-          error: deleteError.message,
-          stack: deleteError.stack,
+          error: delErr.message,
+          stack: delErr.stack,
         });
       }
 
@@ -238,12 +241,13 @@ export class VideosService {
         });
       });
     } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
       this.logger.error('Bunny 업로드 실패:', {
         videoId,
         bunnyVideoId,
         filePath,
-        error: error.message,
-        stack: error.stack,
+        error: err.message,
+        stack: err.stack,
       });
 
       // ✅ 실패 시 StudentVideo는 생성되지 않고 상태만 FAILED로
@@ -774,10 +778,11 @@ export class VideosService {
       // ✅ 성공 시 완전 삭제 (선택적)
       // await this.videoRepository.delete(videoId);
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
       this.logger.error('Bunny 영상 삭제 실패 (배치에서 재시도)', {
         videoId,
         bunnyVideoId,
-        error: error.message,
+        error: errMsg,
       });
       // 실패는 배치 작업에서 처리
     }
@@ -815,7 +820,7 @@ export class VideosService {
         // await this.videoRepository.delete(video.videoId);
       } catch (error) {
         // Bunny에서 404면 이미 삭제됨 → DB에서도 삭제
-        if (error.status === 404) {
+        if (error instanceof HttpException && error.getStatus() === 404) {
           this.logger.log('Bunny에 영상 없음 (이미 삭제됨)', {
             videoId: video.videoId,
             bunnyVideoId: video.bunnyVideoId,
@@ -824,10 +829,11 @@ export class VideosService {
           // await this.videoRepository.delete(video.videoId);
         } else {
           // 다음 배치에서 재시도
+          const errMsg = error instanceof Error ? error.message : String(error);
           this.logger.warn('Bunny 삭제 재실패 (다음 배치에서 재시도)', {
             videoId: video.videoId,
             bunnyVideoId: video.bunnyVideoId,
-            error: error.message,
+            error: errMsg,
           });
         }
       }

@@ -102,7 +102,7 @@ export class BunnyService {
           return await response.json();
         } catch (error) {
           // AbortSignal timeout
-          if (error.name === 'TimeoutError') {
+          if (error instanceof Error && error.name === 'TimeoutError') {
             throw new Error('Request timeout - will retry');
           }
 
@@ -172,7 +172,7 @@ export class BunnyService {
 
           return await response.json();
         } catch (error) {
-          if (error.name === 'TimeoutError') {
+          if (error instanceof Error && error.name === 'TimeoutError') {
             throw new Error('Upload timeout - will retry');
           }
           if (error instanceof BadRequestException) {
@@ -228,7 +228,7 @@ export class BunnyService {
 
           return await response.json();
         } catch (error) {
-          if (error.name === 'TimeoutError') {
+          if (error instanceof Error && error.name === 'TimeoutError') {
             throw new Error('Get video timeout - will retry');
           }
           if (error instanceof BadRequestException) {
@@ -282,7 +282,7 @@ export class BunnyService {
             );
           }
         } catch (error) {
-          if (error.name === 'TimeoutError') {
+          if (error instanceof Error && error.name === 'TimeoutError') {
             throw new Error('Delete timeout - will retry');
           }
           if (error instanceof BadRequestException) {
