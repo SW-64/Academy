@@ -19,6 +19,8 @@ services:
 
   redis:
     image: redis:7-alpine # 직접 빌드 없이 공식 이미지 사용
+    ports:
+      - '6379:6379' # 로컬 개발 시 호스트에서 접근
     command:
       [
         'redis-server',

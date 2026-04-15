@@ -19,7 +19,7 @@ import { StudentClass } from '../student-class/entities/student-class.entity';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { CACHE_KEYS } from '../constants/cache-keys.constant';
-import { PaginatedResponse } from 'src/students/dto/students-search.response.dto';
+import { PaginatedResponse } from '../students/dto/students-search.response.dto';
 import { ParentSearchResult } from './dto/parents-search.response.dto';
 @Injectable()
 export class ParentsService {

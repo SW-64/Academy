@@ -77,4 +77,9 @@ export const configModuleValidationSchema = Joi.object({
   COOKIE_DOMAIN: Joi.string().allow('').optional().messages({
     'string.base': 'COOKIE_DOMAIN must be a string',
   }),
+
+  ANTHROPIC_API_KEY: Joi.string().required().messages({
+    'any.required': 'ANTHROPIC_API_KEY is required',
+    'string.empty': 'ANTHROPIC_API_KEY cannot be empty',
+  }),
 });

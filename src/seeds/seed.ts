@@ -141,8 +141,8 @@ async function seed() {
   const hashedPw = await bcrypt.hash('Example1!', rounds);
   console.log('  완료');
 
-  // ── 2. 유저 생성 (Admin 1 + Parent 50 + Student 100) ───────────────────────
-  console.log('\n[2/11] 유저 생성 (151명)...');
+  // ── 2. 유저 생성 (Admin 1 + Parent 100 + Student 200) ──────────────────────
+  console.log('\n[2/11] 유저 생성 (301명)...');
 
   const adminUserId = await insertBatch(User, [
     {
@@ -155,7 +155,7 @@ async function seed() {
     },
   ]);
 
-  const parentUserRows = Array.from({ length: 50 }, (_, i) => ({
+  const parentUserRows = Array.from({ length: 100 }, (_, i) => ({
     loginId: `parent${i + 1}`,
     name: `학부모${i + 1}`,
     role: Role.PARENT,
@@ -165,7 +165,7 @@ async function seed() {
   }));
   const firstParentUserId = await insertBatch(User, parentUserRows);
 
-  const studentUserRows = Array.from({ length: 100 }, (_, i) => ({
+  const studentUserRows = Array.from({ length: 200 }, (_, i) => ({
     loginId: `student${i + 1}`,
     name: `학생${i + 1}`,
     role: Role.STUDENT,
@@ -183,21 +183,21 @@ async function seed() {
 
   const firstParentId = await insertBatch(
     Parent,
-    Array.from({ length: 50 }, (_, i) => ({ userId: firstParentUserId + i })),
+    Array.from({ length: 100 }, (_, i) => ({ userId: firstParentUserId + i })),
   );
 
   const schools = ['서울중학교', '경기중학교', '인천중학교', '부산중학교', '대구중학교'];
   const firstStudentId = await insertBatch(
     Student,
-    Array.from({ length: 100 }, (_, i) => ({
+    Array.from({ length: 200 }, (_, i) => ({
       userId: firstStudentUserId + i,
-      parentId: i < 50 ? firstParentId + i : null, // student1~50 ↔ parent1~50
+      parentId: i < 100 ? firstParentId + i : null, // student1~100 ↔ parent1~100
       grade: (i % 3) + 1,
       school: schools[i % 5],
     })),
   );
 
-  const studentIds = Array.from({ length: 100 }, (_, i) => firstStudentId + i);
+  const studentIds = Array.from({ length: 200 }, (_, i) => firstStudentId + i);
   console.log('  완료');
 
   // ── 4. 클래스 5개 ────────────────────────────────────────────────────────────
@@ -210,14 +210,14 @@ async function seed() {
   const classIds = Array.from({ length: 5 }, (_, i) => firstClassId + i);
   console.log('  완료');
 
-  // ── 5. StudentClass: 학생당 2개 클래스, 클래스당 40명 ─────────────────────────
-  //  블록 분할 (20명씩):
-  //    block 0 (학생  1~20) → 클래스 0, 1
-  //    block 1 (학생 21~40) → 클래스 1, 2
-  //    block 2 (학생 41~60) → 클래스 2, 3
-  //    block 3 (학생 61~80) → 클래스 3, 4
-  //    block 4 (학생 81~100) → 클래스 4, 0
-  console.log('\n[5/11] StudentClass 생성 (200건)...');
+  // ── 5. StudentClass: 학생당 2개 클래스, 클래스당 80명 ─────────────────────────
+  //  블록 분할 (40명씩):
+  //    block 0 (학생   1~ 40) → 클래스 0, 1
+  //    block 1 (학생  41~ 80) → 클래스 1, 2
+  //    block 2 (학생  81~120) → 클래스 2, 3
+  //    block 3 (학생 121~160) → 클래스 3, 4
+  //    block 4 (학생 161~200) → 클래스 4, 0
+  console.log('\n[5/11] StudentClass 생성 (400건)...');
 
   const studentClassRows: Array<{ studentId: number; classId: number }> = [];
   /** classId → 소속 studentId 목록 (40명) */
@@ -227,8 +227,8 @@ async function seed() {
   for (let block = 0; block < 5; block++) {
     const cidA = classIds[block];
     const cidB = classIds[(block + 1) % 5];
-    for (let j = 0; j < 20; j++) {
-      const sid = studentIds[block * 20 + j];
+    for (let j = 0; j < 40; j++) {
+      const sid = studentIds[block * 40 + j];
       studentClassRows.push({ studentId: sid, classId: cidA });
       studentClassRows.push({ studentId: sid, classId: cidB });
       classStudentMap[cidA].push(sid);
@@ -287,8 +287,8 @@ async function seed() {
 
   // ── 8. 숙제 진도: 소단원 1-1, 1-2, 1-3만 채움 ───────────────────────────────
   //  학생당 소속 클래스(2) × 클래스당 교재(2) = Progress 4개
-  //  총 Progress: 100 × 4 = 400건 / ProgressChapter: 400 × 3 = 1,200건
-  console.log('\n[8/11] 숙제 진도 생성 (Progress 400 · ProgressChapter 1,200)...');
+  //  총 Progress: 200 × 4 = 800건 / ProgressChapter: 800 × 3 = 2,400건
+  console.log('\n[8/11] 숙제 진도 생성 (Progress 800 · ProgressChapter 2,400)...');
 
   const classToCtbIds: Record<number, number[]> = {};
   for (let i = 0; i < 10; i++) {
@@ -301,8 +301,8 @@ async function seed() {
   for (let block = 0; block < 5; block++) {
     const cidA = classIds[block];
     const cidB = classIds[(block + 1) % 5];
-    for (let j = 0; j < 20; j++) {
-      const sid = studentIds[block * 20 + j];
+    for (let j = 0; j < 40; j++) {
+      const sid = studentIds[block * 40 + j];
       for (const ctbId of [...classToCtbIds[cidA], ...classToCtbIds[cidB]]) {
         progressRows.push({ studentId: sid, classTextbookId: ctbId });
       }
@@ -422,7 +422,7 @@ async function seed() {
   }
 
   // ── 11-B. Grade 삽입 (점수 포함) ────────────────────────────────────────────
-  console.log('  성적 삽입 (2,400건)...');
+  console.log('  성적 삽입 (4,800건)...');
   const gradeRows: Array<{
     examId: number;
     studentId: number;
@@ -454,7 +454,7 @@ async function seed() {
     if (wrongDetailOffsets.length === 0) continue; // 100점 → 삽입 없음
 
     const gradeId = firstGradeId + planIdx;
-    const examIdx = Math.floor(planIdx / 40);
+    const examIdx = Math.floor(planIdx / 80);
     const baseDetailId = firstExamDetailId + examIdx * 20;
 
     for (const offset of wrongDetailOffsets) {
@@ -473,8 +473,8 @@ async function seed() {
   for (let examIdx = 0; examIdx < 60; examIdx++) {
     const wrongCountByOffset = new Array(20).fill(0) as number[];
 
-    for (let si = 0; si < 40; si++) {
-      for (const offset of wrongPlans[examIdx * 40 + si].wrongDetailOffsets) {
+    for (let si = 0; si < 80; si++) {
+      for (const offset of wrongPlans[examIdx * 80 + si].wrongDetailOffsets) {
         wrongCountByOffset[offset]++;
       }
     }
@@ -483,7 +483,7 @@ async function seed() {
     for (let q = 0; q < 20; q++) {
       errorRateUpdates.push({
         examDetailId: baseDetailId + q,
-        errorRate: ((wrongCountByOffset[q] / 40) * 100).toFixed(2),
+        errorRate: ((wrongCountByOffset[q] / 80) * 100).toFixed(2),
       });
     }
   }
@@ -503,14 +503,14 @@ async function seed() {
   //  서비스 로직(calculateExamRankings)과 동일:
   //    score DESC 정렬 후 동점이면 gradeId ASC,
   //    동점자는 같은 순위 (1, 1, 3 방식: rank = 배열상 위치+1)
-  console.log('  순위 계산 및 갱신 (grade 2,400건)...');
+  console.log('  순위 계산 및 갱신 (grade 4,800건)...');
 
   const rankingUpdates: Array<{ gradeId: number; ranking: number }> = [];
   for (let examIdx = 0; examIdx < 60; examIdx++) {
     const gradesForExam: Array<{ gradeId: number; score: number }> = [];
 
-    for (let si = 0; si < 40; si++) {
-      const planIdx = examIdx * 40 + si;
+    for (let si = 0; si < 80; si++) {
+      const planIdx = examIdx * 80 + si;
       gradesForExam.push({
         gradeId: firstGradeId + planIdx,
         score: 100 - wrongPlans[planIdx].wrongCount * 5,
@@ -553,7 +553,7 @@ async function seed() {
   console.log('\n' + '━'.repeat(60));
   console.log('  시딩 완료 요약');
   console.log('━'.repeat(60));
-  console.log(`  User:            ${1 + 50 + 100}명 (Admin 1 · Parent 50 · Student 100)`);
+  console.log(`  User:            ${1 + 100 + 200}명 (Admin 1 · Parent 100 · Student 200)`);
   console.log(`  Class:           ${classIds.length}개`);
   console.log(`  StudentClass:    ${studentClassRows.length}건 (클래스당 40명)`);
   console.log(`  Notice:          ${noticeRows.length}개 · ClassNotice: ${classNoticeRows.length}건`);
