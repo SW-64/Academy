@@ -6,9 +6,8 @@ services:
     env_file:
       - .env
     ports:
-      - '3000:3000' # 외부에서 NestJS로 직접 접근
+      - '3000:3000'
     volumes:
-      # uploads 폴더는 컨테이너 재시작해도 파일 유지되도록 볼륨 연결
       - uploads_data:/app/uploads
     depends_on:
       redis:
@@ -18,9 +17,9 @@ services:
     restart: always
 
   redis:
-    image: redis:7-alpine # 직접 빌드 없이 공식 이미지 사용
+    image: redis:7-alpine
     ports:
-      - '6379:6379' # 로컬 개발 시 호스트에서 접근
+      - '6379:6379'
     command:
       [
         'redis-server',
@@ -35,55 +34,16 @@ services:
       ]
     networks:
       - app-network
-      - monitoring
     restart: always
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping'] # ping 응답 확인
-      interval: 10s # 10초마다 체크
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
       timeout: 5s
       retries: 3
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    ports:
-      - '9090:9090'
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.retention.time=15d'
-    networks:
-      - app-network
-      - monitoring
-    restart: unless-stopped
-    extra_hosts:
-      - 'host.docker.internal:host-gateway' # Node Exporter 접근용
 
-  # Grafana 추가
-  grafana:
-    image: grafana/grafana:latest
-    volumes:
-      - grafana_data:/var/lib/grafana
-    ports:
-      - '3001:3000'
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
-    networks:
-      - monitoring
-    restart: unless-stopped
-    depends_on:
-      - prometheus
-
-# 명시적으로 볼륨 선언 (uploads 파일 영구 보존)
 volumes:
   uploads_data:
-  prometheus_data:
-  grafana_data:
 
-# 컨테이너들이 서로 통신할 수 있는 내부 네트워크
 networks:
   app-network:
-    driver: bridge
-  monitoring:
     driver: bridge

@@ -342,9 +342,30 @@ export const options = {
     },
   },
   thresholds: {
+    // ── type 기준 ──────────────────────────────────
     'http_req_duration{type:normal}': ['p(95)<2000', 'p(99)<3000'],
     'http_req_duration{type:heavy}': ['p(95)<2000', 'p(99)<4000'],
     http_req_failed: ['rate<0.01'],
+
+    // ── API별 (normal) ────────────────────────────
+    'http_req_duration{name:login}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:logout}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /students/me/classes}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /classes/:classId/notices}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /classes/:classId/notices/:noticeId}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /class/:classId/textbooks}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /students/materials}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /materials/:materialId}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /parents/me/students}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /parents/me/students/:studentId/classes}': ['p(95)<2000', 'p(99)<3000'],
+
+    // ── API별 (heavy) ─────────────────────────────
+    'http_req_duration{name:GET /students/me/classes/:classId/textbooks/:textbookId/homework}': ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /classes/:classId/exams/grades/me}': ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /classes/:classId/exams/:examId/rank/me}': ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /parents/me/students/:studentId/classes/:classId/textbooks/:textbookId/homework}': ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /classes/:classId/exams/grades/my-students/:studentId}': ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /classes/:classId/exams/:examId/rank/my-student/:studentId}': ['p(95)<2000', 'p(99)<4000'],
   },
 };
 
