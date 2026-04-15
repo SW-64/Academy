@@ -4,8 +4,7 @@ import { sleep, check } from 'k6';
 // ─────────────────────────────────────────────
 // 설정
 // ─────────────────────────────────────────────
-// TODO: EC2 서버 주소로 교체
-const BASE_URL = __ENV.BASE_URL;
+const BASE_URL = 'https://api.kwakmath.co.kr/api/v1';
 
 const STUDENTS = [
   { loginId: 'student1', password: 'Example1!' },
@@ -108,106 +107,6 @@ const STUDENTS = [
   { loginId: 'student98', password: 'Example1!' },
   { loginId: 'student99', password: 'Example1!' },
   { loginId: 'student100', password: 'Example1!' },
-  { loginId: 'student101', password: 'Example1!' },
-  { loginId: 'student102', password: 'Example1!' },
-  { loginId: 'student103', password: 'Example1!' },
-  { loginId: 'student104', password: 'Example1!' },
-  { loginId: 'student105', password: 'Example1!' },
-  { loginId: 'student106', password: 'Example1!' },
-  { loginId: 'student107', password: 'Example1!' },
-  { loginId: 'student108', password: 'Example1!' },
-  { loginId: 'student109', password: 'Example1!' },
-  { loginId: 'student110', password: 'Example1!' },
-  { loginId: 'student111', password: 'Example1!' },
-  { loginId: 'student112', password: 'Example1!' },
-  { loginId: 'student113', password: 'Example1!' },
-  { loginId: 'student114', password: 'Example1!' },
-  { loginId: 'student115', password: 'Example1!' },
-  { loginId: 'student116', password: 'Example1!' },
-  { loginId: 'student117', password: 'Example1!' },
-  { loginId: 'student118', password: 'Example1!' },
-  { loginId: 'student119', password: 'Example1!' },
-  { loginId: 'student120', password: 'Example1!' },
-  { loginId: 'student121', password: 'Example1!' },
-  { loginId: 'student122', password: 'Example1!' },
-  { loginId: 'student123', password: 'Example1!' },
-  { loginId: 'student124', password: 'Example1!' },
-  { loginId: 'student125', password: 'Example1!' },
-  { loginId: 'student126', password: 'Example1!' },
-  { loginId: 'student127', password: 'Example1!' },
-  { loginId: 'student128', password: 'Example1!' },
-  { loginId: 'student129', password: 'Example1!' },
-  { loginId: 'student130', password: 'Example1!' },
-  { loginId: 'student131', password: 'Example1!' },
-  { loginId: 'student132', password: 'Example1!' },
-  { loginId: 'student133', password: 'Example1!' },
-  { loginId: 'student134', password: 'Example1!' },
-  { loginId: 'student135', password: 'Example1!' },
-  { loginId: 'student136', password: 'Example1!' },
-  { loginId: 'student137', password: 'Example1!' },
-  { loginId: 'student138', password: 'Example1!' },
-  { loginId: 'student139', password: 'Example1!' },
-  { loginId: 'student140', password: 'Example1!' },
-  { loginId: 'student141', password: 'Example1!' },
-  { loginId: 'student142', password: 'Example1!' },
-  { loginId: 'student143', password: 'Example1!' },
-  { loginId: 'student144', password: 'Example1!' },
-  { loginId: 'student145', password: 'Example1!' },
-  { loginId: 'student146', password: 'Example1!' },
-  { loginId: 'student147', password: 'Example1!' },
-  { loginId: 'student148', password: 'Example1!' },
-  { loginId: 'student149', password: 'Example1!' },
-  { loginId: 'student150', password: 'Example1!' },
-  { loginId: 'student151', password: 'Example1!' },
-  { loginId: 'student152', password: 'Example1!' },
-  { loginId: 'student153', password: 'Example1!' },
-  { loginId: 'student154', password: 'Example1!' },
-  { loginId: 'student155', password: 'Example1!' },
-  { loginId: 'student156', password: 'Example1!' },
-  { loginId: 'student157', password: 'Example1!' },
-  { loginId: 'student158', password: 'Example1!' },
-  { loginId: 'student159', password: 'Example1!' },
-  { loginId: 'student160', password: 'Example1!' },
-  { loginId: 'student161', password: 'Example1!' },
-  { loginId: 'student162', password: 'Example1!' },
-  { loginId: 'student163', password: 'Example1!' },
-  { loginId: 'student164', password: 'Example1!' },
-  { loginId: 'student165', password: 'Example1!' },
-  { loginId: 'student166', password: 'Example1!' },
-  { loginId: 'student167', password: 'Example1!' },
-  { loginId: 'student168', password: 'Example1!' },
-  { loginId: 'student169', password: 'Example1!' },
-  { loginId: 'student170', password: 'Example1!' },
-  { loginId: 'student171', password: 'Example1!' },
-  { loginId: 'student172', password: 'Example1!' },
-  { loginId: 'student173', password: 'Example1!' },
-  { loginId: 'student174', password: 'Example1!' },
-  { loginId: 'student175', password: 'Example1!' },
-  { loginId: 'student176', password: 'Example1!' },
-  { loginId: 'student177', password: 'Example1!' },
-  { loginId: 'student178', password: 'Example1!' },
-  { loginId: 'student179', password: 'Example1!' },
-  { loginId: 'student180', password: 'Example1!' },
-  { loginId: 'student181', password: 'Example1!' },
-  { loginId: 'student182', password: 'Example1!' },
-  { loginId: 'student183', password: 'Example1!' },
-  { loginId: 'student184', password: 'Example1!' },
-  { loginId: 'student185', password: 'Example1!' },
-  { loginId: 'student186', password: 'Example1!' },
-  { loginId: 'student187', password: 'Example1!' },
-  { loginId: 'student188', password: 'Example1!' },
-  { loginId: 'student189', password: 'Example1!' },
-  { loginId: 'student190', password: 'Example1!' },
-  { loginId: 'student191', password: 'Example1!' },
-  { loginId: 'student192', password: 'Example1!' },
-  { loginId: 'student193', password: 'Example1!' },
-  { loginId: 'student194', password: 'Example1!' },
-  { loginId: 'student195', password: 'Example1!' },
-  { loginId: 'student196', password: 'Example1!' },
-  { loginId: 'student197', password: 'Example1!' },
-  { loginId: 'student198', password: 'Example1!' },
-  { loginId: 'student199', password: 'Example1!' },
-  { loginId: 'student200', password: 'Example1!' },
 ];
 
 const PARENTS = [
@@ -261,56 +160,6 @@ const PARENTS = [
   { loginId: 'parent48', password: 'Example1!' },
   { loginId: 'parent49', password: 'Example1!' },
   { loginId: 'parent50', password: 'Example1!' },
-  { loginId: 'parent51', password: 'Example1!' },
-  { loginId: 'parent52', password: 'Example1!' },
-  { loginId: 'parent53', password: 'Example1!' },
-  { loginId: 'parent54', password: 'Example1!' },
-  { loginId: 'parent55', password: 'Example1!' },
-  { loginId: 'parent56', password: 'Example1!' },
-  { loginId: 'parent57', password: 'Example1!' },
-  { loginId: 'parent58', password: 'Example1!' },
-  { loginId: 'parent59', password: 'Example1!' },
-  { loginId: 'parent60', password: 'Example1!' },
-  { loginId: 'parent61', password: 'Example1!' },
-  { loginId: 'parent62', password: 'Example1!' },
-  { loginId: 'parent63', password: 'Example1!' },
-  { loginId: 'parent64', password: 'Example1!' },
-  { loginId: 'parent65', password: 'Example1!' },
-  { loginId: 'parent66', password: 'Example1!' },
-  { loginId: 'parent67', password: 'Example1!' },
-  { loginId: 'parent68', password: 'Example1!' },
-  { loginId: 'parent69', password: 'Example1!' },
-  { loginId: 'parent70', password: 'Example1!' },
-  { loginId: 'parent71', password: 'Example1!' },
-  { loginId: 'parent72', password: 'Example1!' },
-  { loginId: 'parent73', password: 'Example1!' },
-  { loginId: 'parent74', password: 'Example1!' },
-  { loginId: 'parent75', password: 'Example1!' },
-  { loginId: 'parent76', password: 'Example1!' },
-  { loginId: 'parent77', password: 'Example1!' },
-  { loginId: 'parent78', password: 'Example1!' },
-  { loginId: 'parent79', password: 'Example1!' },
-  { loginId: 'parent80', password: 'Example1!' },
-  { loginId: 'parent81', password: 'Example1!' },
-  { loginId: 'parent82', password: 'Example1!' },
-  { loginId: 'parent83', password: 'Example1!' },
-  { loginId: 'parent84', password: 'Example1!' },
-  { loginId: 'parent85', password: 'Example1!' },
-  { loginId: 'parent86', password: 'Example1!' },
-  { loginId: 'parent87', password: 'Example1!' },
-  { loginId: 'parent88', password: 'Example1!' },
-  { loginId: 'parent89', password: 'Example1!' },
-  { loginId: 'parent90', password: 'Example1!' },
-  { loginId: 'parent91', password: 'Example1!' },
-  { loginId: 'parent92', password: 'Example1!' },
-  { loginId: 'parent93', password: 'Example1!' },
-  { loginId: 'parent94', password: 'Example1!' },
-  { loginId: 'parent95', password: 'Example1!' },
-  { loginId: 'parent96', password: 'Example1!' },
-  { loginId: 'parent97', password: 'Example1!' },
-  { loginId: 'parent98', password: 'Example1!' },
-  { loginId: 'parent99', password: 'Example1!' },
-  { loginId: 'parent100', password: 'Example1!' },
 ];
 
 // ─────────────────────────────────────────────
@@ -323,9 +172,13 @@ export const options = {
       exec: 'studentScenario',
       startVUs: 0,
       stages: [
-        { duration: '90s', target: 200 }, // 1단계: 200명까지 증가
-        { duration: '3m', target: 200 }, // 2단계: 3분 유지
-        { duration: '30s', target: 0 }, // 3단계: 종료
+        { duration: '90s', target: 100 }, // 1단계: 100명까지 증가
+        { duration: '2m', target: 100 },  // 2단계: 2분 유지
+        { duration: '90s', target: 150 }, // 3단계: 150명까지 증가
+        { duration: '2m', target: 150 },  // 4단계: 2분 유지
+        { duration: '90s', target: 200 }, // 5단계: 200명까지 증가
+        { duration: '2m', target: 200 },  // 6단계: 2분 유지
+        { duration: '30s', target: 0 },   // 7단계: 종료
       ],
       gracefulRampDown: '15s',
     },
@@ -334,8 +187,12 @@ export const options = {
       exec: 'parentScenario',
       startVUs: 0,
       stages: [
+        { duration: '90s', target: 50 },
+        { duration: '2m', target: 50 },
+        { duration: '90s', target: 75 },
+        { duration: '2m', target: 75 },
         { duration: '90s', target: 100 },
-        { duration: '3m', target: 100 },
+        { duration: '2m', target: 100 },
         { duration: '30s', target: 0 },
       ],
       gracefulRampDown: '15s',
@@ -377,18 +234,18 @@ function login(credentials) {
       loginId: credentials.loginId,
       password: credentials.password,
     }),
-    { headers: JSON_HEADERS, tags: { type: 'normal', name: 'login' } },
+    { headers: JSON_HEADERS, tags: { type: 'normal' } },
   );
-  const success = check(res, { '[login] status 201': (r) => r.status === 201 });
+  const success = check(res, { '[login] status 200': (r) => r.status === 200 });
   return success;
 }
 
 function logout() {
   const res = http.post(`${BASE_URL}/auth/sign-out`, null, {
     headers: JSON_HEADERS,
-    tags: { type: 'normal', name: 'logout' },
+    tags: { type: 'normal' },
   });
-  check(res, { '[logout] status 201': (r) => r.status === 201 });
+  check(res, { '[logout] status 200': (r) => r.status === 200 });
 }
 
 // ─────────────────────────────────────────────
@@ -404,9 +261,7 @@ export function studentScenario() {
   if (!loginOk) return;
 
   // 2. 내 클래스 전체 목록 조회 → 랜덤 선택
-  const classesRes = http.get(`${BASE_URL}/students/me/classes`, {
-    tags: { type: 'normal', name: 'GET /students/me/classes' },
-  });
+  const classesRes = http.get(`${BASE_URL}/students/me/classes`, { tags: { type: 'normal' } });
   check(classesRes, { '[student] classes 200': (r) => r.status === 200 });
   sleep(2);
 
@@ -418,9 +273,7 @@ export function studentScenario() {
   const classId = randomItem(classes).classId;
 
   // 3. 해당 클래스 공지사항 전체 조회 → 50% 확률로 공지사항 상세 조회
-  const noticesRes = http.get(`${BASE_URL}/classes/${classId}/notices`, {
-    tags: { type: 'normal', name: 'GET /classes/:classId/notices' },
-  });
+  const noticesRes = http.get(`${BASE_URL}/classes/${classId}/notices`, { tags: { type: 'normal' } });
   check(noticesRes, { '[student] notices 200': (r) => r.status === 200 });
   sleep(5);
 
@@ -432,7 +285,7 @@ export function studentScenario() {
       const noticeId = randomItem(noticeItems).noticeId;
       const detailRes = http.get(
         `${BASE_URL}/classes/${classId}/notices/${noticeId}`,
-        { tags: { type: 'normal', name: 'GET /classes/:classId/notices/:noticeId' } },
+        { tags: { type: 'normal' } },
       );
       check(detailRes, {
         '[student] notice detail 200': (r) => r.status === 200,
@@ -442,9 +295,7 @@ export function studentScenario() {
   }
 
   // 4. 교재 목록 조회
-  const textbooksRes = http.get(`${BASE_URL}/class/${classId}/textbooks`, {
-    tags: { type: 'normal', name: 'GET /class/:classId/textbooks' },
-  });
+  const textbooksRes = http.get(`${BASE_URL}/class/${classId}/textbooks`, { tags: { type: 'normal' } });
   check(textbooksRes, { '[student] textbooks 200': (r) => r.status === 200 });
   sleep(5);
 
@@ -456,7 +307,7 @@ export function studentScenario() {
     if (textbookId) {
       const hwRes = http.get(
         `${BASE_URL}/students/me/classes/${classId}/textbooks/${textbookId}/homework`,
-        { tags: { type: 'heavy', name: 'GET /students/me/classes/:classId/textbooks/:textbookId/homework' } },
+        { tags: { type: 'heavy' } },
       );
       check(hwRes, { '[student] homework 200': (r) => r.status === 200 });
       sleep(10);
@@ -464,12 +315,7 @@ export function studentScenario() {
   }
 
   // 6. 학습자료 목록 조회 → 50% 확률로 학습자료 상세 조회
-  const materialsRes = http.get(
-    `${BASE_URL}/students/materials?classId=${classId}`,
-    {
-      tags: { type: 'normal', name: 'GET /students/materials' },
-    },
-  );
+  const materialsRes = http.get(`${BASE_URL}/materials?classId=${classId}`, { tags: { type: 'normal' } });
   check(materialsRes, { '[student] materials 200': (r) => r.status === 200 });
   sleep(5);
 
@@ -477,9 +323,7 @@ export function studentScenario() {
     const materials = parseData(materialsRes);
     if (Array.isArray(materials) && materials.length > 0) {
       const materialId = randomItem(materials).materialId;
-      const detailRes = http.get(`${BASE_URL}/materials/${materialId}`, {
-        tags: { type: 'normal', name: 'GET /materials/:materialId' },
-      });
+      const detailRes = http.get(`${BASE_URL}/materials/${materialId}`, { tags: { type: 'normal' } });
       check(detailRes, {
         '[student] material detail 200': (r) => r.status === 200,
       });
@@ -488,9 +332,7 @@ export function studentScenario() {
   }
 
   // 7. 학생 본인 시험점수 전체 조회
-  const gradesRes = http.get(`${BASE_URL}/classes/${classId}/exams/grades/me`, {
-    tags: { type: 'heavy', name: 'GET /classes/:classId/exams/grades/me' },
-  });
+  const gradesRes = http.get(`${BASE_URL}/classes/${classId}/exams/grades/me`, { tags: { type: 'heavy' } });
   check(gradesRes, { '[student] grades 200': (r) => r.status === 200 });
   sleep(10);
 
@@ -501,7 +343,7 @@ export function studentScenario() {
     if (examId) {
       const rankRes = http.get(
         `${BASE_URL}/classes/${classId}/exams/${examId}/rank/me`,
-        { tags: { type: 'heavy', name: 'GET /classes/:classId/exams/:examId/rank/me' } },
+        { tags: { type: 'heavy' } },
       );
       check(rankRes, { '[student] rank 200': (r) => r.status === 200 });
       sleep(10);
@@ -524,9 +366,7 @@ export function parentScenario() {
   if (!loginOk) return;
 
   // 2. 자녀 조회 → 랜덤 선택
-  const childrenRes = http.get(`${BASE_URL}/parents/me/students`, {
-    tags: { type: 'normal', name: 'GET /parents/me/students' },
-  });
+  const childrenRes = http.get(`${BASE_URL}/parents/me/students`, { tags: { type: 'normal' } });
   check(childrenRes, { '[parent] children 200': (r) => r.status === 200 });
   sleep(2);
 
@@ -540,7 +380,7 @@ export function parentScenario() {
   // 3. 내 클래스 전체 목록 조회 (자녀 기준) → 랜덤 선택
   const classesRes = http.get(
     `${BASE_URL}/parents/me/students/${studentId}/classes`,
-    { tags: { type: 'normal', name: 'GET /parents/me/students/:studentId/classes' } },
+    { tags: { type: 'normal' } },
   );
   check(classesRes, { '[parent] classes 200': (r) => r.status === 200 });
   sleep(2);
@@ -553,9 +393,7 @@ export function parentScenario() {
   const classId = randomItem(classes).classId;
 
   // 4. 해당 클래스 공지사항 전체 조회 → 50% 확률로 공지사항 상세 조회
-  const noticesRes = http.get(`${BASE_URL}/classes/${classId}/notices`, {
-    tags: { type: 'normal', name: 'GET /classes/:classId/notices' },
-  });
+  const noticesRes = http.get(`${BASE_URL}/classes/${classId}/notices`, { tags: { type: 'normal' } });
   check(noticesRes, { '[parent] notices 200': (r) => r.status === 200 });
   sleep(5);
 
@@ -566,7 +404,7 @@ export function parentScenario() {
       const noticeId = randomItem(noticeItems).noticeId;
       const detailRes = http.get(
         `${BASE_URL}/classes/${classId}/notices/${noticeId}`,
-        { tags: { type: 'normal', name: 'GET /classes/:classId/notices/:noticeId' } },
+        { tags: { type: 'normal' } },
       );
       check(detailRes, {
         '[parent] notice detail 200': (r) => r.status === 200,
@@ -576,9 +414,7 @@ export function parentScenario() {
   }
 
   // 5. 학생(자녀) 본인의 숙제 진도 목록 조회 (textbookId 필요)
-  const textbooksRes = http.get(`${BASE_URL}/class/${classId}/textbooks`, {
-    tags: { type: 'normal', name: 'GET /class/:classId/textbooks' },
-  });
+  const textbooksRes = http.get(`${BASE_URL}/class/${classId}/textbooks`, { tags: { type: 'normal' } });
   check(textbooksRes, { '[parent] textbooks 200': (r) => r.status === 200 });
   sleep(5);
 
@@ -588,7 +424,7 @@ export function parentScenario() {
     if (textbookId) {
       const hwRes = http.get(
         `${BASE_URL}/parents/me/students/${studentId}/classes/${classId}/textbooks/${textbookId}/homework`,
-        { tags: { type: 'heavy', name: 'GET /parents/me/students/:studentId/classes/:classId/textbooks/:textbookId/homework' } },
+        { tags: { type: 'heavy' } },
       );
       check(hwRes, { '[parent] homework 200': (r) => r.status === 200 });
       sleep(10);
@@ -598,7 +434,7 @@ export function parentScenario() {
   // 6. 학생 본인 시험점수 전체 조회
   const gradesRes = http.get(
     `${BASE_URL}/classes/${classId}/exams/grades/my-students/${studentId}`,
-    { tags: { type: 'heavy', name: 'GET /classes/:classId/exams/grades/my-students/:studentId' } },
+    { tags: { type: 'heavy' } },
   );
   check(gradesRes, { '[parent] grades 200': (r) => r.status === 200 });
   sleep(10);
@@ -610,7 +446,7 @@ export function parentScenario() {
     if (examId) {
       const rankRes = http.get(
         `${BASE_URL}/classes/${classId}/exams/${examId}/rank/my-student/${studentId}`,
-        { tags: { type: 'heavy', name: 'GET /classes/:classId/exams/:examId/rank/my-student/:studentId' } },
+        { tags: { type: 'heavy' } },
       );
       check(rankRes, { '[parent] rank 200': (r) => r.status === 200 });
       sleep(10);
