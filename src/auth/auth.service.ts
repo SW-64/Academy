@@ -179,16 +179,16 @@ export class AuthService {
 
   // refreshtoken 데이터베이스에 저장
   async setCurrentRefreshToken(refreshToken: string, userId: number) {
-    const saltRounds = this.configService.get<number>('REFRESH_TOKEN_HASH');
+    // const saltRounds = this.configService.get<number>('REFRESH_TOKEN_HASH');
     const expiresSec = this.configService.get<number>(
       'REFRESH_TOKEN_EXPIRES_IN',
     );
 
     // 1. refreshToken 암호화
-    const currentHashedRefreshToken = await bcrypt.hash(
-      refreshToken,
-      saltRounds,
-    );
+    // const currentHashedRefreshToken = await bcrypt.hash(
+    //   refreshToken,
+    //   saltRounds,
+    // );
     // 2. refreshToken 만료시간 계산
     const expiresAt = new Date(Date.now() + expiresSec * 1000);
 
@@ -199,7 +199,7 @@ export class AuthService {
       .into(RefreshToken)
       .values({
         userId: userId,
-        refreshtoken: currentHashedRefreshToken,
+        refreshtoken: refreshToken,
         createdAt: new Date(),
         expiresAt: expiresAt,
       })
@@ -217,14 +217,8 @@ export class AuthService {
     if (!saved || !saved.refreshtoken) {
       return null;
     }
-    // 2. bcrypt로 비교
-    const isRefreshTokenMatching = await bcrypt.compare(
-      refreshToken,
-      saved.refreshtoken,
-    );
-    if (!isRefreshTokenMatching) {
-      return null;
-    }
+    // 2. 토큰 일치 여부 검사 (argon2 교체 전 임시)
+    if (refreshToken !== saved.refreshtoken) return null;
     // 3. 만료 여부 검사
     if (!saved.expiresAt || Date.now() > saved.expiresAt.getTime()) {
       return null;
