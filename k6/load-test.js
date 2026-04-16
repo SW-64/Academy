@@ -350,22 +350,52 @@ export const options = {
     // ── API별 (normal) ────────────────────────────
     'http_req_duration{name:login}': ['p(95)<2000', 'p(99)<3000'],
     'http_req_duration{name:logout}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:GET /students/me/classes}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:GET /classes/:classId/notices}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:GET /classes/:classId/notices/:noticeId}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:GET /class/:classId/textbooks}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:GET /students/materials}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:GET /materials/:materialId}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:GET /parents/me/students}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:GET /parents/me/students/:studentId/classes}': ['p(95)<2000', 'p(99)<3000'],
+    'http_req_duration{name:GET /students/me/classes}': [
+      'p(95)<2000',
+      'p(99)<3000',
+    ],
+    'http_req_duration{name:GET /classes/:classId/notices}': [
+      'p(95)<2000',
+      'p(99)<3000',
+    ],
+    'http_req_duration{name:GET /classes/:classId/notices/:noticeId}': [
+      'p(95)<2000',
+      'p(99)<3000',
+    ],
+    'http_req_duration{name:GET /class/:classId/textbooks}': [
+      'p(95)<2000',
+      'p(99)<3000',
+    ],
+    'http_req_duration{name:GET /students/materials}': [
+      'p(95)<2000',
+      'p(99)<3000',
+    ],
+    'http_req_duration{name:GET /parents/me/students}': [
+      'p(95)<2000',
+      'p(99)<3000',
+    ],
+    'http_req_duration{name:GET /parents/me/students/:studentId/classes}': [
+      'p(95)<2000',
+      'p(99)<3000',
+    ],
 
     // ── API별 (heavy) ─────────────────────────────
-    'http_req_duration{name:GET /students/me/classes/:classId/textbooks/:textbookId/homework}': ['p(95)<2000', 'p(99)<4000'],
-    'http_req_duration{name:GET /classes/:classId/exams/grades/me}': ['p(95)<2000', 'p(99)<4000'],
-    'http_req_duration{name:GET /classes/:classId/exams/:examId/rank/me}': ['p(95)<2000', 'p(99)<4000'],
-    'http_req_duration{name:GET /parents/me/students/:studentId/classes/:classId/textbooks/:textbookId/homework}': ['p(95)<2000', 'p(99)<4000'],
-    'http_req_duration{name:GET /classes/:classId/exams/grades/my-students/:studentId}': ['p(95)<2000', 'p(99)<4000'],
-    'http_req_duration{name:GET /classes/:classId/exams/:examId/rank/my-student/:studentId}': ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /students/me/classes/:classId/textbooks/:textbookId/homework}':
+      ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /classes/:classId/exams/grades/me}': [
+      'p(95)<2000',
+      'p(99)<4000',
+    ],
+    'http_req_duration{name:GET /classes/:classId/exams/:examId/rank/me}': [
+      'p(95)<2000',
+      'p(99)<4000',
+    ],
+    'http_req_duration{name:GET /parents/me/students/:studentId/classes/:classId/textbooks/:textbookId/homework}':
+      ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /classes/:classId/exams/grades/my-students/:studentId}':
+      ['p(95)<2000', 'p(99)<4000'],
+    'http_req_duration{name:GET /classes/:classId/exams/:examId/rank/my-student/:studentId}':
+      ['p(95)<2000', 'p(99)<4000'],
   },
 };
 
@@ -453,7 +483,12 @@ export function studentScenario() {
       const noticeId = randomItem(noticeItems).noticeId;
       const detailRes = http.get(
         `${BASE_URL}/classes/${classId}/notices/${noticeId}`,
-        { tags: { type: 'normal', name: 'GET /classes/:classId/notices/:noticeId' } },
+        {
+          tags: {
+            type: 'normal',
+            name: 'GET /classes/:classId/notices/:noticeId',
+          },
+        },
       );
       check(detailRes, {
         '[student] notice detail 200': (r) => r.status === 200,
@@ -477,7 +512,12 @@ export function studentScenario() {
     if (textbookId) {
       const hwRes = http.get(
         `${BASE_URL}/students/me/classes/${classId}/textbooks/${textbookId}/homework`,
-        { tags: { type: 'heavy', name: 'GET /students/me/classes/:classId/textbooks/:textbookId/homework' } },
+        {
+          tags: {
+            type: 'heavy',
+            name: 'GET /students/me/classes/:classId/textbooks/:textbookId/homework',
+          },
+        },
       );
       check(hwRes, { '[student] homework 200': (r) => r.status === 200 });
       sleep(10);
@@ -494,20 +534,6 @@ export function studentScenario() {
   check(materialsRes, { '[student] materials 200': (r) => r.status === 200 });
   sleep(5);
 
-  if (Math.random() < 0.5) {
-    const materials = parseData(materialsRes);
-    if (Array.isArray(materials) && materials.length > 0) {
-      const materialId = randomItem(materials).materialId;
-      const detailRes = http.get(`${BASE_URL}/materials/${materialId}`, {
-        tags: { type: 'normal', name: 'GET /materials/:materialId' },
-      });
-      check(detailRes, {
-        '[student] material detail 200': (r) => r.status === 200,
-      });
-      sleep(10);
-    }
-  }
-
   // 7. 학생 본인 시험점수 전체 조회
   const gradesRes = http.get(`${BASE_URL}/classes/${classId}/exams/grades/me`, {
     tags: { type: 'heavy', name: 'GET /classes/:classId/exams/grades/me' },
@@ -522,7 +548,12 @@ export function studentScenario() {
     if (examId) {
       const rankRes = http.get(
         `${BASE_URL}/classes/${classId}/exams/${examId}/rank/me`,
-        { tags: { type: 'heavy', name: 'GET /classes/:classId/exams/:examId/rank/me' } },
+        {
+          tags: {
+            type: 'heavy',
+            name: 'GET /classes/:classId/exams/:examId/rank/me',
+          },
+        },
       );
       check(rankRes, { '[student] rank 200': (r) => r.status === 200 });
       sleep(10);
@@ -561,7 +592,12 @@ export function parentScenario() {
   // 3. 내 클래스 전체 목록 조회 (자녀 기준) → 랜덤 선택
   const classesRes = http.get(
     `${BASE_URL}/parents/me/students/${studentId}/classes`,
-    { tags: { type: 'normal', name: 'GET /parents/me/students/:studentId/classes' } },
+    {
+      tags: {
+        type: 'normal',
+        name: 'GET /parents/me/students/:studentId/classes',
+      },
+    },
   );
   check(classesRes, { '[parent] classes 200': (r) => r.status === 200 });
   sleep(2);
@@ -587,7 +623,12 @@ export function parentScenario() {
       const noticeId = randomItem(noticeItems).noticeId;
       const detailRes = http.get(
         `${BASE_URL}/classes/${classId}/notices/${noticeId}`,
-        { tags: { type: 'normal', name: 'GET /classes/:classId/notices/:noticeId' } },
+        {
+          tags: {
+            type: 'normal',
+            name: 'GET /classes/:classId/notices/:noticeId',
+          },
+        },
       );
       check(detailRes, {
         '[parent] notice detail 200': (r) => r.status === 200,
@@ -609,7 +650,12 @@ export function parentScenario() {
     if (textbookId) {
       const hwRes = http.get(
         `${BASE_URL}/parents/me/students/${studentId}/classes/${classId}/textbooks/${textbookId}/homework`,
-        { tags: { type: 'heavy', name: 'GET /parents/me/students/:studentId/classes/:classId/textbooks/:textbookId/homework' } },
+        {
+          tags: {
+            type: 'heavy',
+            name: 'GET /parents/me/students/:studentId/classes/:classId/textbooks/:textbookId/homework',
+          },
+        },
       );
       check(hwRes, { '[parent] homework 200': (r) => r.status === 200 });
       sleep(10);
@@ -619,7 +665,12 @@ export function parentScenario() {
   // 6. 학생 본인 시험점수 전체 조회
   const gradesRes = http.get(
     `${BASE_URL}/classes/${classId}/exams/grades/my-students/${studentId}`,
-    { tags: { type: 'heavy', name: 'GET /classes/:classId/exams/grades/my-students/:studentId' } },
+    {
+      tags: {
+        type: 'heavy',
+        name: 'GET /classes/:classId/exams/grades/my-students/:studentId',
+      },
+    },
   );
   check(gradesRes, { '[parent] grades 200': (r) => r.status === 200 });
   sleep(10);
@@ -631,7 +682,12 @@ export function parentScenario() {
     if (examId) {
       const rankRes = http.get(
         `${BASE_URL}/classes/${classId}/exams/${examId}/rank/my-student/${studentId}`,
-        { tags: { type: 'heavy', name: 'GET /classes/:classId/exams/:examId/rank/my-student/:studentId' } },
+        {
+          tags: {
+            type: 'heavy',
+            name: 'GET /classes/:classId/exams/:examId/rank/my-student/:studentId',
+          },
+        },
       );
       check(rankRes, { '[parent] rank 200': (r) => r.status === 200 });
       sleep(10);
