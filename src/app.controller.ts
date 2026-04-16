@@ -14,14 +14,4 @@ export class AppController {
   health() {
     return { status: 'ok' };
   }
-
-  @Get('/debug-sentry')
-  getError() {
-    throw new Error('My first Sentry error!');
-  }
-
-  @Get('/debug-double')
-  getDoubleError() {
-    throw new Error('My Second Sentry error!');
-  }
 }
