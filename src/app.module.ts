@@ -8,7 +8,6 @@ import { AppService } from './app.service';
 import { configModuleValidationSchema } from './configs/env-validation.config';
 
 import { AuthModule } from './auth/auth.module';
-import { Argon2AuthModule } from './auth/argon2/argon2-auth.module';
 import { StudentsModule } from './students/students.module';
 import { ParentsModule } from './parents/parents.module';
 import { AdminModule } from './admin/admin.module';
@@ -64,7 +63,6 @@ import { AnalysisModule } from './analysis/analysis.module';
       },
     }),
     AuthModule,
-    Argon2AuthModule,
     StudentsModule,
     ParentsModule,
     AdminModule,

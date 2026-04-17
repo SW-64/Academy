@@ -21,7 +21,7 @@ const ADMIN_ID = 'admin';
 const ADMIN_PW = 'Example1!';
 export function setup() {
   const res = http.post(
-    `${BASE_URL}/api/v1/argon2-auth/sign-in`,
+    `${BASE_URL}/api/v1/auth/sign-in`,
     JSON.stringify({ loginId: ADMIN_ID, password: ADMIN_PW }),
     { headers: { 'Content-Type': 'application/json' } }
   );
