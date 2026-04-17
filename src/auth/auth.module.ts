@@ -26,5 +26,6 @@ import { ActionLog } from '../action-logs/entities/action-logs.entity';
     JwtStrategy,
     JwtRefreshStrategy,
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}

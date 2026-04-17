@@ -229,7 +229,7 @@ function parseData(res) {
 
 function login(credentials) {
   const res = http.post(
-    `${BASE_URL}/auth/sign-in`,
+    `${BASE_URL}/argon2-auth/sign-in`,
     JSON.stringify({
       loginId: credentials.loginId,
       password: credentials.password,
