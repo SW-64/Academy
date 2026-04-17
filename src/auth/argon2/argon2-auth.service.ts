@@ -53,8 +53,12 @@ export class Argon2AuthService {
       }
     }
 
-    // argon2id로 해싱 (기본값: argon2id, memoryCost: 65536, timeCost: 3, parallelism: 4)
-    const hashedPassword = await argon2.hash(password);
+    const hashedPassword = await argon2.hash(password, {
+      type: argon2.argon2id,
+      memoryCost: 19 * 1024,
+      timeCost: 2,
+      parallelism: 1,
+    });
 
     const user = await this.dataSource.transaction(async (manager) => {
       const savedUser = await manager.save(User, {

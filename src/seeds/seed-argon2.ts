@@ -135,7 +135,12 @@ async function seed() {
 
   // ── 1. 비밀번호 해시 (argon2id) ──────────────────────────────────────────────
   console.log('\n[1/11] 비밀번호 해시 (argon2id)...');
-  const hashedPw = await argon2.hash('Example1!');
+  const hashedPw = await argon2.hash('Example1!', {
+    type: argon2.argon2id,
+    memoryCost: 19 * 1024,
+    timeCost: 2,
+    parallelism: 1,
+  });
   console.log('  완료');
 
   // ── 2. 유저 생성 (Admin 1 + Parent 100 + Student 200) ──────────────────────
