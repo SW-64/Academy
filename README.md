@@ -9,12 +9,12 @@
 1. [프로젝트 소개](#1-프로젝트-소개)
 2. [기술 스택](#2-기술-스택)
 3. [시스템 아키텍처](#3-시스템-아키텍처)
-4. [ERD](#4-erd)
-5. [API 명세](#5-api-명세)
-6. [인증 플로우](#6-인증-플로우)
-7. [Redis 캐싱 전략](#7-redis-캐싱-전략)
-8. [성능 테스트](#8-성능-테스트)
-9. [폴더 구조](#9-폴더-구조)
+4. [API 명세](#4-api-명세)
+5. [인증 플로우](#5-인증-플로우)
+6. [Redis 캐싱 전략](#6-redis-캐싱-전략)
+7. [성능 테스트](#7-성능-테스트)
+8. [폴더 구조](#8-폴더-구조)
+9. [모니터링](#9-모니터링)
 
 ---
 
@@ -105,12 +105,26 @@ POST /auth/sign-out
 ## 6. Redis 캐싱 전략
 
 읽기 빈도가 높고 변경 빈도가 낮은 목록 API를 대상으로 Cache-Aside 패턴을 적용했습니다.
-캐시 무효화는 버전 키(`ver`) 증가 방식을 사용해 삭제 없이 자연 만료되도록 처리합니다.
+캐시 무효화는 키 구조에 따라 두 가지 전략으로 나눠 설계했습니다.
 
+### 전략 A — 버전 카운터 증가 (동적 키)
 ```
+시험·공지·학습자료처럼 classId, 월별 필터 등 조건에 따라 
+캐시 키가 동적으로 생성되는 경우 적용
 조회 시: ver 키 조회 → {resource}:list:...:v:{ver} 조회 → 없으면 DB 조회 후 캐시 저장
 변경 시: ver 키 +1 증가 → 이전 캐시는 TTL(10분) 후 자연 만료
 ```
+### 전략 B — 직접 삭제 (고정 키)
+```
+학생·학부모·클래스처럼 캐시 키가 고정된 경우 적용
+조회 시: 고정 키로 캐시 조회 → 없으면 DB 조회 후 캐시 저장
+변경 시: 해당 고정 키 직접 삭제
+```
+### 공통
+- 캐시 장애 시 DB fallback으로 서비스 안정성 보장
+- Redis 설정: LRU 정책, 최대 200MB
+- TTL: 목록 키 10분, 버전 키 1일
+
 
 ### 캐시 적용 API
 
@@ -128,13 +142,34 @@ POST /auth/sign-out
 | Student | 반별 학습자료 목록 (1페이지) | `student:classes:{classId}:materials:list:page:1:v:{ver}`   |
 | Parent  | 반별 공지사항 목록 (1페이지) | `parent:classes:{classId}:notices:list:page:1:v:{ver}`      |
 
-> Redis 설정: LRU 정책, 최대 200MB / TTL: 목록 키 10분, 버전 키 1일
 
 ---
 
 ## 7. 성능 테스트
+### 테스트 환경
 
-<!-- 부하테스트 시나리오, Grafana 스크린샷, 측정 결과를 여기에 추가해주세요 -->
+- **도구**: k6
+- **시나리오**: 로그인 후 주요 API 순차 호출 (Ramp-up)
+- **서버**: AWS EC2 t4g.small
+
+### 200명일때 테스트 결과
+<img width="1876" height="839" alt="image" src="https://github.com/user-attachments/assets/9ca03aed-d882-481a-8bb5-870e5e715d74" />
+<img width="1537" height="566" alt="image" src="https://github.com/user-attachments/assets/f57744ec-1f91-461c-9375-0e8acaa5576b" />
+<img width="1908" height="740" alt="image" src="https://github.com/user-attachments/assets/f3d3dc8b-ef6d-45c9-80be-2ec5a347809e" />
+
+### VU별 전체 지표 비교
+<img width="718" height="291" alt="image" src="https://github.com/user-attachments/assets/583fd414-2b43-47a7-a7e5-60297cd368d9" />
+
+### API별 속도 비교 
+<img width="740" height="658" alt="image" src="https://github.com/user-attachments/assets/9a150073-ff9a-4121-a58c-d13c41a8ad9a" />
+
+### 주요 결과
+- ✅ 100VU ~ 200VU 구간에서 실패율 0% 유지
+- ✅ 모든 API p95 500ms 이하 달성
+- ⚠️ 로그인 API는 bcrypt 특성상 부하 증가 시 응답시간 상승
+
+
+
 
 ---
 
@@ -172,3 +207,64 @@ academy/
 ├── docker-compose.yml
 └── .env
 ```
+
+## 9. 모니터링
+
+### 모니터링 전략
+```
+Vercel 대시보드 (직접 확인)
+├── 배포 성공/실패
+├── Edge Requests (트래픽 패턴)
+├── Fast Data Transfer (데이터량)
+├── Analytics (방문자, 유입 경로)
+└── Speed Insights (LCP, FID, CLS)
+
+Sentry + Discord (알림 + 상세 추적)
+├── 에러 발생 즉시 알림
+└── 에러 상세 내용, 스택트레이스
+
+Grafana (지표 시각화 + 알림)
+├── EC2 서버 상태
+├── NestJS 앱 응답 시간, 요청 수
+├── 임계값 초과하게되면 Discord 알림
+└── 서버
+    1. SWAP Used 70% 이상
+    2. RAM Used 85% 이상
+    3. CPU Busy 30% 이상
+    4. Root FS 80% 이상
+└── NestJS 앱
+    5. Event Loop Latency 100ms 이상
+    6. Heap Used 95% 이상
+    7. CPU 사용량 50% 이상
+
+UptimeRobot (생존 확인)
+└── 서버 다운 즉시 Discord 알림
+
+
+Bunny (영상 트래픽 )
+├── Views — 영상별 재생 횟수
+├── Watch Time — 평균 시청 시간 (영상을 끝까지 보는지)
+├── Bandwidth — 영상별 트래픽 사용량
+├── Cache Hit Rate — 높을수록 좋아요. 70~80% 이상이면 정상
+├── Cache Miss — 이게 높으면 원본 서버(EC2)로 요청이 많이 가는 것
+└── 서버 다운 즉시 알림
+
+
+RDS 
+├── CPUUtilization                    - 50% 이상 주의, 80% 이상 위험
+├── DatabaseConnections               - 50 이상 주의, 100 이상 위험
+├── FreeStorageSpace ( 현재 20기가 ) - 20% 이하 주의, 10% 이하 위험
+└── ReadLatency / WriteLatency        - 20ms 이상 주의, 100ms 이상 위험
+
+R2 한달에 한번 용량 확인
+무료 한도
+→ 저장 용량: 10GB/월
+→ Class A (쓰기): 1,000,000회/월
+→ Class B (읽기): 10,000,000회/월
+```
+
+### 모니터링 체크리스트
+매일 다음과 같이 체크리스트를 활용하여 점검했습니다. 
+<img width="456" height="279" alt="image" src="https://github.com/user-attachments/assets/f0bf8f17-9af2-4d62-9764-492ff49bf0d2" />
+
+
