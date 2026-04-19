@@ -1,100 +1,174 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Academy Management System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+학원 선생님이 학생과 학부모를 편리하게 관리할 수 있도록 설계된 NestJS 기반 백엔드 서비스입니다.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 목차
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+1. [프로젝트 소개](#1-프로젝트-소개)
+2. [기술 스택](#2-기술-스택)
+3. [시스템 아키텍처](#3-시스템-아키텍처)
+4. [ERD](#4-erd)
+5. [API 명세](#5-api-명세)
+6. [인증 플로우](#6-인증-플로우)
+7. [Redis 캐싱 전략](#7-redis-캐싱-전략)
+8. [성능 테스트](#8-성능-테스트)
+9. [폴더 구조](#9-폴더-구조)
 
-## Project setup
+---
 
-```bash
-$ npm install
+## 1. 프로젝트 소개
+
+### 서비스 개요
+
+학원 운영에 필요한 학생 관리, 수업 배정, 시험 성적, 숙제 진도, 공지사항, 학습자료 등을 하나의 플랫폼에서 처리합니다.
+선생님(Admin), 학생(Student), 학부모(Parent) 세 역할이 각자의 권한 범위 안에서 서비스를 이용합니다.
+
+### 주요 기능
+
+| 역할        | 기능                                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------------------- |
+| **Admin**   | 학생·학부모 계정 승인 / 반 관리 및 수강생 배정 / 시험 출제 및 성적 입력 / 공지사항·학습자료·교재 관리 |
+| **Student** | 내 반 조회 / 성적 및 오답 확인 / 숙제 진도 조회 / 공지사항·학습자료 열람 / 동영상 수강                |
+| **Parent**  | 자녀 성적 및 진도 조회 / 공지사항 열람                                                                |
+
+---
+
+## 2. 기술 스택
+
+![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=flat&logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazonaws&logoColor=white)
+
+---
+
+## 3. 시스템 아키텍처
+
+<img width="960" height="531" alt="Image" src="https://github.com/user-attachments/assets/b279f5ef-9370-4617-baf8-10f47342623a" />
+
+---
+
+## 4. API 명세
+
+Swagger UI를 통해 전체 API 명세를 확인할 수 있습니다.
+
+> [https://api.kwakmath.co.kr/docs](https://api.kwakmath.co.kr/docs)
+
+---
+
+## 5. 인증 플로우
+
+### 사용자 등록 및 승인
+
+신규 가입 시 계정은 `PENDING` 상태로 생성되며, Admin이 승인해야 `APPROVED`로 전환되어 서비스를 이용할 수 있습니다.
+
+```
+회원가입 → PENDING → Admin 승인 → APPROVED → 로그인 가능
 ```
 
-## Compile and run the project
+### JWT + Refresh Token
 
-```bash
-# development
-$ npm run start
+```
+POST /auth/sign-in
+  └─ Local Strategy: loginId + bcrypt 비밀번호 검증
+  └─ Access Token (Cookie: Authentication) + Refresh Token (Cookie: Refresh) 발급
 
-# watch mode
-$ npm run start:dev
+POST /auth/token
+  └─ Refresh Token 검증 → 새 Access Token 재발급
 
-# production mode
-$ npm run start:prod
+POST /auth/sign-out
+  └─ 쿠키 삭제 + DB의 Refresh Token 제거
 ```
 
-## Run tests
+- **Access Token**: HttpOnly 쿠키로 전달, 짧은 만료시간
+- **Refresh Token**: HttpOnly 쿠키로 전달, DB 저장, 재발급 시 교체
+- **비밀번호 해싱**: bcrypt (argon2id 대비 부하테스트에서 서버 자원 효율이 높아 채택)
 
-```bash
-# unit tests
-$ npm run test
+### 역할별 권한
 
-# e2e tests
-$ npm run test:e2e
+| Guard                             | 설명                                 |
+| --------------------------------- | ------------------------------------ |
+| `JwtAuthGuard`                    | Access Token 검증                    |
+| `JwtRefreshAuthGuard`             | Refresh Token 검증                   |
+| `RolesGuard` + `@Roles()`         | ADMIN / STUDENT / PARENT 역할 제한   |
+| `ClassAccessGuard`                | 해당 반 소속 여부 확인               |
+| `VideoAccessGuard`                | 영상 접근 권한 확인                  |
+| `StudentOrParentOwnsStudentGuard` | 본인 또는 자녀 데이터 접근만 허용    |
+| `UserIdThrottlerGuard`            | 전역 Rate Limit (유저당 120 req/min) |
 
-# test coverage
-$ npm run test:cov
+---
+
+## 6. Redis 캐싱 전략
+
+읽기 빈도가 높고 변경 빈도가 낮은 목록 API를 대상으로 Cache-Aside 패턴을 적용했습니다.
+캐시 무효화는 버전 키(`ver`) 증가 방식을 사용해 삭제 없이 자연 만료되도록 처리합니다.
+
+```
+조회 시: ver 키 조회 → {resource}:list:...:v:{ver} 조회 → 없으면 DB 조회 후 캐시 저장
+변경 시: ver 키 +1 증가 → 이전 캐시는 TTL(10분) 후 자연 만료
 ```
 
-## Deployment
+### 캐시 적용 API
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+| 역할    | API                          | 캐시 키                                                     |
+| ------- | ---------------------------- | ----------------------------------------------------------- |
+| Admin   | 반 목록 조회                 | `admin:classes:list`                                        |
+| Admin   | 학생 목록 조회 (1페이지)     | `admin:students:list:page:1`                                |
+| Admin   | 학부모 목록 조회 (1페이지)   | `admin:parents:list:page:1`                                 |
+| Admin   | 반별 수강생 목록 조회        | `admin:classes:{classId}:students:list`                     |
+| Admin   | 반별 시험 월별 목록          | `admin:classes:{classId}:exams:list:month:{yyyymm}:v:{ver}` |
+| Admin   | 반별 학습자료 목록 (1페이지) | `admin:classes:{classId}:materials:list:page:1:v:{ver}`     |
+| Admin   | 반별 공지사항 목록 (1페이지) | `admin:classes:{classId}:notices:list:page:1:v:{ver}`       |
+| Student | 내 반 목록 조회              | `student:user:{userId}:classes:list`                        |
+| Student | 반별 공지사항 목록 (1페이지) | `student:classes:{classId}:notices:list:page:1:v:{ver}`     |
+| Student | 반별 학습자료 목록 (1페이지) | `student:classes:{classId}:materials:list:page:1:v:{ver}`   |
+| Parent  | 반별 공지사항 목록 (1페이지) | `parent:classes:{classId}:notices:list:page:1:v:{ver}`      |
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+> Redis 설정: LRU 정책, 최대 200MB / TTL: 목록 키 10분, 버전 키 1일
 
-```bash
-$ npm install -g mau
-$ mau deploy
+---
+
+## 7. 성능 테스트
+
+<!-- 부하테스트 시나리오, Grafana 스크린샷, 측정 결과를 여기에 추가해주세요 -->
+
+---
+
+## 8. 폴더 구조
+
 ```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-# Academy
+academy/
+├── src/
+│   ├── action-logs/        # 사용자 액션 감사 로그
+│   ├── admin/              # 관리자 프로필
+│   ├── analysis/           # 데이터 분석
+│   ├── auth/               # 인증 (JWT, Passport, Guards)
+│   ├── class/              # 반 관리
+│   ├── class-textbook/     # 반-교재 연결
+│   ├── configs/            # DB, 환경변수 설정
+│   ├── constants/          # 공통 상수 (메시지, 캐시 키)
+│   ├── exam/               # 시험 출제 및 관리
+│   ├── grades/             # 성적 및 오답
+│   ├── homework/           # 숙제 진도
+│   ├── materials/          # 학습자료 (S3 연동)
+│   ├── migrations/         # TypeORM 마이그레이션
+│   ├── notices/            # 공지사항
+│   ├── parents/            # 학부모 프로필
+│   ├── s3/                 # AWS S3 + CloudFront 연동
+│   ├── seeds/              # 더미 데이터 시딩
+│   ├── student-class/      # 학생-반 수강 관계
+│   ├── students/           # 학생 프로필
+│   ├── textbook/           # 교재 및 단원
+│   ├── users/              # 공통 유저 (승인 워크플로우)
+│   ├── util/               # 공통 유틸리티, 데코레이터
+│   ├── videos/             # 영상 (Bunny CDN 연동)
+│   └── webhook/            # Sentry → Discord 웹훅
+├── k6/                     # 부하테스트 시나리오
+├── hooks/                  # Claude Code 훅
+├── docker-compose.yml
+└── .env
+```
