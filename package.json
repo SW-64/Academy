@@ -22,8 +22,7 @@
     "migration:generate": "npm run typeorm -- migration:generate -d src/configs/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/configs/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/configs/data-source.ts",
-    "seed": "ts-node --transpile-only -r tsconfig-paths/register src/seeds/seed.ts",
-    "seed:argon2": "ts-node --transpile-only -r tsconfig-paths/register src/seeds/seed-argon2.ts"
+    "seed": "ts-node --transpile-only -r tsconfig-paths/register src/seeds/seed.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.85.0",
@@ -46,7 +45,6 @@
     "@sentry/nestjs": "^10.43.0",
     "@sentry/profiling-node": "^10.43.0",
     "@willsoto/nestjs-prometheus": "^6.0.2",
-    "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.73.1",
     "cache-manager": "^7.2.8",
