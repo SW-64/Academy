@@ -20,6 +20,7 @@ describe('AuthService - CRITICAL-1: setCurrentRefreshToken', () => {
     into: jest.fn().mockReturnThis(),
     values: jest.fn().mockReturnThis(),
     orUpdate: jest.fn().mockReturnThis(),
+    updateEntity: jest.fn().mockReturnThis(),
     execute: jest.fn().mockResolvedValue({
       identifiers: [],
       generatedMaps: [],
