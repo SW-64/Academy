@@ -1,12 +1,11 @@
-import { workerData, parentPort } from 'worker_threads';
+import { parentPort } from 'worker_threads';
 import * as bcrypt from 'bcrypt';
 
 type WorkerInput =
   | { type: 'hash'; password: string; rounds: number }
   | { type: 'compare'; password: string; hash: string };
 
-async function run() {
-  const input = workerData as WorkerInput;
+parentPort!.on('message', async (input: WorkerInput) => {
   try {
     let result: string | boolean;
     if (input.type === 'hash') {
@@ -18,6 +17,4 @@ async function run() {
   } catch (err: any) {
     parentPort!.postMessage({ error: err.message });
   }
-}
-
-run();
+});
