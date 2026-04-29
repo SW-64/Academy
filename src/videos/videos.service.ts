@@ -250,10 +250,22 @@ export class VideosService {
         stack: err.stack,
       });
 
-      // ✅ 실패 시 StudentVideo는 생성되지 않고 상태만 FAILED로
+      // 실패 시 StudentVideo는 생성되지 않고 상태만 FAILED로
       await this.videoRepository.update(videoId, {
         status: VideoStatus.FAILED,
       });
+
+      // Bunny에 생성된 영상 객체 보상 삭제
+      try {
+        await this.bunnyService.deleteVideo(bunnyVideoId);
+      } catch (deleteError) {
+        const delErr = deleteError instanceof Error ? deleteError : new Error(String(deleteError));
+        this.logger.error('Bunny 보상 삭제 실패 (배치에서 재시도)', {
+          videoId,
+          bunnyVideoId,
+          error: delErr.message,
+        });
+      }
 
       // 실패해도 임시 파일 삭제 시도
       await unlink(filePath).catch(() => {});
@@ -789,56 +801,65 @@ export class VideosService {
   }
 
   /**
-   * 배치: 삭제 실패한 영상 정리 (매시간 실행)
+   * 배치: Bunny 영상 객체 정리 (매시간 실행)
+   * - DELETING: 삭제 요청 후 Bunny 삭제가 실패한 영상 (soft-deleted)
+   * - FAILED:   업로드 실패 후 Bunny 보상 삭제까지 실패한 영상
    */
   async cleanupDeletedVideos(): Promise<void> {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-    const deletedVideos = await this.videoRepository.find({
+    const deletingVideos = await this.videoRepository.find({
       where: {
         status: VideoStatus.DELETING,
-        deletedAt: LessThan(oneDayAgo), // 1일 이상 지난 것만
+        deletedAt: LessThan(oneDayAgo),
       },
-      withDeleted: true, // Soft Delete된 것 포함
+      withDeleted: true,
       select: ['videoId', 'bunnyVideoId'],
     });
 
-    this.logger.log(`배치 시작: 삭제 실패 영상 ${deletedVideos.length}개 정리`);
+    const failedVideos = await this.videoRepository.find({
+      where: {
+        status: VideoStatus.FAILED,
+        updatedAt: LessThan(oneDayAgo),
+      },
+      select: ['videoId', 'bunnyVideoId'],
+    });
 
-    for (const video of deletedVideos) {
-      try {
-        // Bunny에서 삭제 시도
-        await this.bunnyService.deleteVideo(video.bunnyVideoId);
+    this.logger.log(
+      `배치 시작: DELETING ${deletingVideos.length}개, FAILED(Bunny 잔존) ${failedVideos.length}개`,
+    );
 
-        this.logger.log('Bunny 영상 삭제 성공 (배치)', {
-          videoId: video.videoId,
-          bunnyVideoId: video.bunnyVideoId,
-        });
+    for (const video of deletingVideos) {
+      await this.cleanupBunnyVideo(video.videoId, video.bunnyVideoId, 'DELETING');
+    }
 
-        // 성공 시 완전 삭제 (선택적)
-        // await this.videoRepository.delete(video.videoId);
-      } catch (error) {
-        // Bunny에서 404면 이미 삭제됨 → DB에서도 삭제
-        if (error instanceof HttpException && error.getStatus() === 404) {
-          this.logger.log('Bunny에 영상 없음 (이미 삭제됨)', {
-            videoId: video.videoId,
-            bunnyVideoId: video.bunnyVideoId,
-          });
-
-          // await this.videoRepository.delete(video.videoId);
-        } else {
-          // 다음 배치에서 재시도
-          const errMsg = error instanceof Error ? error.message : String(error);
-          this.logger.warn('Bunny 삭제 재실패 (다음 배치에서 재시도)', {
-            videoId: video.videoId,
-            bunnyVideoId: video.bunnyVideoId,
-            error: errMsg,
-          });
-        }
-      }
+    for (const video of failedVideos) {
+      await this.cleanupBunnyVideo(video.videoId, video.bunnyVideoId, 'FAILED');
     }
 
     this.logger.log('배치 완료');
+  }
+
+  private async cleanupBunnyVideo(
+    videoId: number,
+    bunnyVideoId: string,
+    label: string,
+  ): Promise<void> {
+    try {
+      await this.bunnyService.deleteVideo(bunnyVideoId);
+      this.logger.log(`Bunny 영상 삭제 성공 (배치/${label})`, { videoId, bunnyVideoId });
+    } catch (error) {
+      if (error instanceof HttpException && error.getStatus() === 404) {
+        this.logger.log(`Bunny에 영상 없음 (이미 삭제됨/${label})`, { videoId, bunnyVideoId });
+      } else {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Bunny 삭제 재실패 (다음 배치에서 재시도/${label})`, {
+          videoId,
+          bunnyVideoId,
+          error: errMsg,
+        });
+      }
+    }
   }
 }

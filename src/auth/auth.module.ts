@@ -11,6 +11,7 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt-strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh-token.strategy';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
+import { BcryptService } from '../utils/bcrypt.service';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ActionLog } from '../action-logs/entities/action-logs.entity';
     LocalStrategy,
     JwtStrategy,
     JwtRefreshStrategy,
+    BcryptService,
   ],
 })
 export class AuthModule {}
