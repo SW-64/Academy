@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import { BcryptService } from '../utils/bcrypt.service';
 import { ConfigService } from '@nestjs/config';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
 
@@ -34,6 +34,7 @@ export class UsersService {
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
+    private readonly bcryptService: BcryptService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
@@ -131,7 +132,7 @@ export class UsersService {
       }
 
       // 2-2) 락을 잡은 상태에서 현재 비밀번호 재검증
-      const isValid = await bcrypt.compare(
+      const isValid = await this.bcryptService.compare(
         currentPassword,
         lockedUser.password,
       );
@@ -145,7 +146,7 @@ export class UsersService {
       const hashRounds = Number(
         this.configService.get<number>('PASSWORD_HASH') ?? 10,
       );
-      const hashedPassword = await bcrypt.hash(newPassword, hashRounds);
+      const hashedPassword = await this.bcryptService.hash(newPassword, hashRounds);
 
       // 2-4) 업데이트 + RefreshToken 삭제
       await userRepo.update({ userId }, { password: hashedPassword });
@@ -414,7 +415,7 @@ export class UsersService {
       const hashRounds = Number(
         this.configService.get<number>('PASSWORD_HASH') ?? 10,
       );
-      const hashedPassword = await bcrypt.hash(newPassword, hashRounds);
+      const hashedPassword = await this.bcryptService.hash(newPassword, hashRounds);
 
       // 2-3) 업데이트 + RefreshToken 삭제
       await userRepo.update({ userId }, { password: hashedPassword });

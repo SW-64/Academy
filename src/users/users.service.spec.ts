@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 
 import { UsersService } from './users.service';
+import { BcryptService } from '../utils/bcrypt.service';
 import { User, Role, Status } from './entities/user.entity';
 import { Student } from '../students/entities/student.entity';
 import { Parent } from '../parents/entities/parent.entity';
@@ -86,6 +87,10 @@ describe('UsersService - approveUserAccount (CRITICAL-1)', () => {
             set: jest.fn(),
             del: jest.fn(),
           },
+        },
+        {
+          provide: BcryptService,
+          useValue: { hash: jest.fn().mockResolvedValue('hashed'), compare: jest.fn().mockResolvedValue(true) },
         },
       ],
     }).compile();
@@ -193,6 +198,10 @@ describe('UsersService - linkStudentParent (CRITICAL-2)', () => {
             del: jest.fn(),
           },
         },
+        {
+          provide: BcryptService,
+          useValue: { hash: jest.fn().mockResolvedValue('hashed'), compare: jest.fn().mockResolvedValue(true) },
+        },
       ],
     }).compile();
 
@@ -296,6 +305,10 @@ describe('UsersService - updateMyPassword (HIGH-1)', () => {
             del: jest.fn(),
           },
         },
+        {
+          provide: BcryptService,
+          useValue: { hash: jest.fn().mockResolvedValue('hashed'), compare: jest.fn().mockResolvedValue(true) },
+        },
       ],
     }).compile();
 
@@ -310,15 +323,9 @@ describe('UsersService - updateMyPassword (HIGH-1)', () => {
       newPasswordConfirm: 'NewPw!1',
     };
 
-    const bcrypt = require('bcrypt');
-    jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
-    jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashed');
-
     await service.updateMyPassword(user, changePasswordDto);
 
     expect(qb.setLock).toHaveBeenCalledWith('pessimistic_write');
     expect(qb.getOne).toHaveBeenCalled();
-
-    jest.restoreAllMocks();
   });
 });

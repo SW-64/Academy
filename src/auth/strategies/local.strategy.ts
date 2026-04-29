@@ -12,12 +12,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MESSAGES } from '../../constants/message.constant';
 import { Status, User } from '../../users/entities/user.entity';
 import { PartialUser } from '../../users/interfaces/partial-user.entity';
-import * as bcrypt from 'bcrypt';
+import { BcryptService } from '../../utils/bcrypt.service';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly bcryptService: BcryptService,
   ) {
     super({
       usernameField: 'loginId',
@@ -40,7 +41,7 @@ export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
     });
     if (!user) return null; // 아이디 없음 → null → Guard가 401
 
-    const comparePassword = await bcrypt.compare(password, user.password);
+    const comparePassword = await this.bcryptService.compare(password, user.password);
     if (!comparePassword) return null; // 비번 틀림 → null → Guard가 401
 
     if (user.status !== Status.approved) {

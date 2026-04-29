@@ -9,6 +9,7 @@ import { AuthService } from './auth.service';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from './entities/refreshtoken.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
+import { BcryptService } from '../utils/bcrypt.service';
 
 describe('AuthService - CRITICAL-1: setCurrentRefreshToken', () => {
   let service: AuthService;
@@ -62,6 +63,10 @@ describe('AuthService - CRITICAL-1: setCurrentRefreshToken', () => {
           useValue: {},
         },
         { provide: DataSource, useValue: {} },
+        {
+          provide: BcryptService,
+          useValue: { hash: jest.fn().mockResolvedValue('hashed'), compare: jest.fn().mockResolvedValue(true) },
+        },
       ],
     }).compile();
 
@@ -157,6 +162,10 @@ describe('AuthService - MEDIUM-1: signUp validation', () => {
               callback({ save: mockManagerSave }),
             ),
           },
+        },
+        {
+          provide: BcryptService,
+          useValue: { hash: jest.fn().mockResolvedValue('hashed'), compare: jest.fn().mockResolvedValue(true) },
         },
       ],
     }).compile();

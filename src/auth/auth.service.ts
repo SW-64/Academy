@@ -9,7 +9,7 @@ import { MESSAGES } from './../constants/message.constant';
 import { JwtService } from '@nestjs/jwt';
 import { RefreshToken } from './entities/refreshtoken.entity';
 import { Response } from 'express';
-import * as bcrypt from 'bcrypt';
+import { BcryptService } from '../utils/bcrypt.service';
 import { ActionLog } from './../action-logs/entities/action-logs.entity';
 @Injectable()
 export class AuthService {
@@ -17,6 +17,7 @@ export class AuthService {
     private readonly dataSource: DataSource, // 추가
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly bcryptService: BcryptService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(RefreshToken)
@@ -77,7 +78,7 @@ export class AuthService {
 
     // 비밀번호 암호화
     const hashRounds = this.configService.get<number>('PASSWORD_HASH');
-    const hashedPassword = await bcrypt.hash(password, hashRounds);
+    const hashedPassword = await this.bcryptService.hash(password, hashRounds);
 
     // 트랜잭션으로 묶기
     const user = await this.dataSource.transaction(async (manager) => {
