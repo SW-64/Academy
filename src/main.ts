@@ -11,8 +11,12 @@ import * as cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
+    bodyParser: false,
   });
   const configService = app.get(ConfigService);
+
+  app.use(require('express').json({ limit: '20mb' }));
+  app.use(require('express').urlencoded({ extended: true, limit: '20mb' }));
 
   app.use(cookieParser());
 

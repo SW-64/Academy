@@ -5,7 +5,10 @@ import { ConfigService } from '@nestjs/config';
 import { AnalysisController } from './analysis.controller';
 import { AnalysisService } from './analysis.service';
 import { AnalysisProcessor } from './analysis.processor';
+import { PdfAnalysisController } from './pdf-analysis.controller';
+import { PdfAnalysisService } from './pdf-analysis.service';
 import { Analysis } from './entities/analysis.entity';
+import { S3Module } from '../s3/s3.module';
 
 @Module({
   imports: [
@@ -16,15 +19,14 @@ import { Analysis } from './entities/analysis.entity';
         connection: {
           host: configService.get<string>('REDIS_HOST'),
           port: 6379,
-          db: 1, // db:0은 캐시용, db:1은 BullMQ용
+          db: 1,
         },
       }),
     }),
-    BullModule.registerQueue({
-      name: 'analysis',
-    }),
+    BullModule.registerQueue({ name: 'analysis' }),
+    S3Module,
   ],
-  controllers: [AnalysisController],
-  providers: [AnalysisService, AnalysisProcessor],
+  controllers: [AnalysisController, PdfAnalysisController],
+  providers: [AnalysisService, AnalysisProcessor, PdfAnalysisService],
 })
 export class AnalysisModule {}

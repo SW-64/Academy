@@ -126,7 +126,7 @@ jobs:
             echo "GRAFANA_PASSWORD=${{ secrets.GRAFANA_PASSWORD }}" >> .env
 
             # AI
-            echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> .env
+            echo "MOONSHOT_API_KEY=${{ secrets.MOONSHOT_API_KEY }}" >> .env
 
 
 

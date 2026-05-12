@@ -1,69 +1,55 @@
 import {
+  Body,
   Controller,
-  Post,
   Get,
   Param,
-  UploadedFile,
+  ParseIntPipe,
+  Patch,
+  Post,
+  UploadedFiles,
   UseInterceptors,
   BadRequestException,
-  HttpStatus,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as path from 'path';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { AnalysisService } from './analysis.service';
 
-@Controller('analysis')
+const ALLOWED_MIMETYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+
+@Controller('solve')
 export class AnalysisController {
   constructor(private readonly analysisService: AnalysisService) {}
 
-  /**
-   * PDF 업로드 → BullMQ 큐에 등록 → jobId 즉시 반환
-   */
-  @Post('upload')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const uniqueName = `${Date.now()}_${file.originalname}`;
-          cb(null, uniqueName);
-        },
-      }),
-      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
-      fileFilter: (req, file, cb) => {
-        if (file.mimetype !== 'application/pdf') {
-          return cb(new BadRequestException('PDF 파일만 업로드 가능합니다.'), false);
-        }
-        cb(null, true);
-      },
-    }),
-  )
-  async uploadPdf(@UploadedFile() file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('PDF 파일을 첨부해주세요.');
-    }
-
-    const filePath = path.resolve(file.path);
-    const jobId = await this.analysisService.enqueueAnalysis(filePath, file.originalname);
-
-    return {
-      statusCode: HttpStatus.ACCEPTED,
-      message: '분석 요청이 접수되었습니다.',
-      data: { jobId },
-    };
+  @Post()
+  @UseInterceptors(FilesInterceptor('images'))
+  async solve(@UploadedFiles() files: Express.Multer.File[]) {
+    this.validateFiles(files);
+    return this.analysisService.enqueue(files);
   }
 
-  /**
-   * jobId로 분석 진행 상태 조회
-   */
-  @Get(':jobId/status')
+  @Get(':jobId')
   async getStatus(@Param('jobId') jobId: string) {
-    const data = await this.analysisService.getStatus(jobId);
-    return {
-      statusCode: HttpStatus.OK,
-      message: '분석 상태 조회 성공',
-      data,
-    };
+    return this.analysisService.getStatus(jobId);
+  }
+
+  @Patch(':jobId/problem/:problemNum')
+  async retryProblem(
+    @Param('jobId') jobId: string,
+    @Param('problemNum', ParseIntPipe) problemNum: number,
+    @Body() body: { customPrompt?: string },
+  ) {
+    return this.analysisService.retryProblem(jobId, problemNum, body.customPrompt);
+  }
+
+  private validateFiles(files: Express.Multer.File[]): void {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('이미지를 하나 이상 업로드해야 합니다.');
+    }
+    for (const file of files) {
+      if (!ALLOWED_MIMETYPES.includes(file.mimetype)) {
+        throw new BadRequestException(
+          `${file.originalname}은 허용되지 않는 파일 형식입니다. jpg, jpeg, png만 허용됩니다.`,
+        );
+      }
+    }
   }
 }
