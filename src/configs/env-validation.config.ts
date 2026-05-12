@@ -78,8 +78,24 @@ export const configModuleValidationSchema = Joi.object({
     'string.base': 'COOKIE_DOMAIN must be a string',
   }),
 
-  ANTHROPIC_API_KEY: Joi.string().required().messages({
-    'any.required': 'ANTHROPIC_API_KEY is required',
-    'string.empty': 'ANTHROPIC_API_KEY cannot be empty',
+  MOONSHOT_API_KEY: Joi.string().required().messages({
+    'any.required': 'MOONSHOT_API_KEY is required',
+    'string.empty': 'MOONSHOT_API_KEY cannot be empty',
+  }),
+  R2_ACCOUNT_ID: Joi.string().required().messages({
+    'any.required': 'R2_ACCOUNT_ID is required',
+    'string.empty': 'R2_ACCOUNT_ID cannot be empty',
+  }),
+  R2_ACCESS_KEY_ID: Joi.string().required().messages({
+    'any.required': 'R2_ACCESS_KEY_ID is required',
+    'string.empty': 'R2_ACCESS_KEY_ID cannot be empty',
+  }),
+  R2_SECRET_ACCESS_KEY: Joi.string().required().messages({
+    'any.required': 'R2_SECRET_ACCESS_KEY is required',
+    'string.empty': 'R2_SECRET_ACCESS_KEY cannot be empty',
+  }),
+  R2_BUCKET_NAME: Joi.string().required().messages({
+    'any.required': 'R2_BUCKET_NAME is required',
+    'string.empty': 'R2_BUCKET_NAME cannot be empty',
   }),
 });

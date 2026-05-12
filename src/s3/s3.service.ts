@@ -49,6 +49,20 @@ export class S3Service {
     );
   }
 
+  async getObject(params: { bucket: string; key: string }): Promise<Buffer> {
+    const { bucket, key } = params;
+
+    const response = await this.s3.send(
+      new GetObjectCommand({ Bucket: bucket, Key: key }),
+    );
+
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+  }
+
   // 다운로드용 프리사인드 URL 발급
   async getPresignedDownloadUrl(params: {
     bucket: string;
