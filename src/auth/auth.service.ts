@@ -205,7 +205,7 @@ export class AuthService {
         expiresAt: expiresAt,
       })
       .orUpdate(['refreshtoken', 'expires_at'], ['userId'])
-      .updateEntity(false)
+      //.updateEntity(false)
       .execute();
   }
 
