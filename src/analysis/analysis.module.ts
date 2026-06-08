@@ -2,16 +2,16 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AnalysisController } from './analysis.controller';
 import { AnalysisService } from './analysis.service';
 import { AnalysisProcessor } from './analysis.processor';
 import { PdfAnalysisController } from './pdf-analysis.controller';
 import { PdfAnalysisService } from './pdf-analysis.service';
 import { Analysis } from './entities/analysis.entity';
-import { S3Module } from '../s3/s3.module';
-
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([Analysis]),
     BullModule.forRootAsync({
       inject: [ConfigService],
@@ -24,7 +24,6 @@ import { S3Module } from '../s3/s3.module';
       }),
     }),
     BullModule.registerQueue({ name: 'analysis' }),
-    S3Module,
   ],
   controllers: [AnalysisController, PdfAnalysisController],
   providers: [AnalysisService, AnalysisProcessor, PdfAnalysisService],
