@@ -18,7 +18,7 @@ export class Analysis {
   @Column({ type: 'varchar', length: 255, name: 'original_file_name', comment: '원본 파일명' })
   originalFileName: string;
 
-  @Column({ type: 'longtext', name: 'images', nullable: true, comment: '원본 이미지 base64 JSON 배열' })
+  @Column({ type: 'longtext', name: 'images', nullable: true, comment: 'Moonshot file_id JSON 배열' })
   images: string | null;
 
   @Column({ type: 'longtext', name: 'result', nullable: true, comment: 'Claude 분석 결과' })

@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Queue } from 'bullmq';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import OpenAI, { RateLimitError } from 'openai';
+import OpenAI, { RateLimitError, toFile } from 'openai';
 import { Analysis } from './entities/analysis.entity';
 
 export interface ProblemResult {
@@ -128,19 +129,25 @@ export class AnalysisService {
     });
   }
 
-  async enqueueFromR2Keys(jobId: string, keys: string[]): Promise<{ jobId: string }> {
+  async uploadFileToMoonshot(buffer: Buffer, filename: string, mimetype: string): Promise<string> {
+    const file = await toFile(buffer, filename, { type: mimetype });
+    const uploaded = await this.client.files.create({ file, purpose: 'vision' });
+    return uploaded.id;
+  }
+
+  async enqueueFromFileIds(jobId: string, fileIds: string[]): Promise<{ jobId: string }> {
     await this.analysisRepository.save(
       this.analysisRepository.create({
         jobId,
         originalFileName: '',
         status: 'pending',
-        images: JSON.stringify(keys),
+        images: JSON.stringify(fileIds),
       }),
     );
 
     await this.analysisQueue.add(
       'solve',
-      { jobId, keys },
+      { jobId, fileIds },
       {
         jobId,
         attempts: 3,
@@ -154,21 +161,24 @@ export class AnalysisService {
   }
 
   async enqueue(files: Express.Multer.File[]): Promise<{ jobId: string }> {
-    const images = files.map((f) => `data:${f.mimetype};base64,${f.buffer.toString('base64')}`);
     const jobId = uuidv4();
+
+    const fileIds = await Promise.all(
+      files.map((f) => this.uploadFileToMoonshot(f.buffer, f.originalname, f.mimetype)),
+    );
 
     await this.analysisRepository.save(
       this.analysisRepository.create({
         jobId,
         originalFileName: '',
         status: 'pending',
-        images: JSON.stringify(images),
+        images: JSON.stringify(fileIds),
       }),
     );
 
     await this.analysisQueue.add(
       'solve',
-      { jobId, images },
+      { jobId, fileIds },
       {
         jobId,
         attempts: 3,
@@ -227,7 +237,7 @@ export class AnalysisService {
     if (!targetImage || !targetImageResult)
       throw new NotFoundException(`${problemNum}번 문제를 찾을 수 없습니다.`);
 
-    const updated = await this.callKimiSolve(targetImage, problemNum, 0, customPrompt);
+    const updated = await this.callKimiSolve(`ms://${targetImage}`, problemNum, 0, customPrompt);
 
     const problemIndex = targetImageResult.problems.findIndex(
       (p) => p.problem_number === problemNum,
@@ -241,6 +251,37 @@ export class AnalysisService {
     await this.analysisRepository.update({ jobId }, { result: JSON.stringify(result) });
 
     return updated;
+  }
+
+  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_MIDNIGHT)
+  async cleanupMoonshotFiles(): Promise<void> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const records = await this.analysisRepository.find({
+      where: { status: 'completed', createdAt: LessThan(thirtyDaysAgo) },
+    });
+
+    const targets = records.filter((r) => r.images !== null);
+    if (targets.length === 0) {
+      this.logger.log('[cleanup] 삭제 대상 없음');
+      return;
+    }
+
+    this.logger.log(`[cleanup] 삭제 대상 ${targets.length}건`);
+
+    for (const record of targets) {
+      const fileIds = JSON.parse(record.images!) as string[];
+      const results = await Promise.allSettled(fileIds.map((id) => this.client.files.delete(id)));
+
+      const failed = results.filter((r) => r.status === 'rejected');
+      if (failed.length > 0) {
+        this.logger.warn(`[cleanup] jobId=${record.jobId} 파일 ${failed.length}개 삭제 실패`);
+      }
+
+      await this.analysisRepository.update({ jobId: record.jobId }, { images: null });
+      this.logger.log(`[cleanup] jobId=${record.jobId} 완료`);
+    }
   }
 
   async processImages(images: string[]): Promise<SolveResponse> {
@@ -269,7 +310,7 @@ export class AnalysisService {
 
   private async processImage(image: string, index: number): Promise<ImageResult> {
     this.logger.log(`[image:${index}] 감지 시작`);
-    const { problemNumbers, usage: detectionUsage } = await this.callKimiDetect(image);
+    const { problemNumbers, usage: detectionUsage } = await this.callKimiDetect(image, index);
     this.logger.log(`[image:${index}] 감지 완료 → 문제 번호: ${JSON.stringify(problemNumbers)}`);
 
     const problems = await Promise.all(
@@ -293,6 +334,7 @@ export class AnalysisService {
 
   private async callKimiDetect(
     image: string,
+    imageIndex: number,
     attempt = 0,
     emptyAttempt = 0,
   ): Promise<{ problemNumbers: number[]; usage: { input_tokens: number; output_tokens: number } }> {
@@ -324,8 +366,13 @@ export class AnalysisService {
         const problemNumbers: number[] = match ? (JSON.parse(match[0]) as number[]) : [];
 
         if (problemNumbers.length === 0 && emptyAttempt < 3) {
-          this.logger.warn(`빈 배열 반환 - 재시도 (${emptyAttempt + 1}/3)`);
-          return this.callKimiDetect(image, attempt, emptyAttempt + 1);
+          this.logger.warn(`[image:${imageIndex}] 빈 배열 반환 - 재시도 (${emptyAttempt + 1}/3)`);
+          await new Promise((r) => setTimeout(r, 500));
+          return this.callKimiDetect(image, imageIndex, attempt, emptyAttempt + 1);
+        }
+
+        if (problemNumbers.length === 0) {
+          this.logger.warn(`[image:${imageIndex}] 3번 재시도 후에도 문제 미감지`);
         }
 
         return {
@@ -340,7 +387,7 @@ export class AnalysisService {
       if (error instanceof RateLimitError && attempt < 5) {
         const retryAfter = parseInt(error.headers?.['retry-after'] ?? '2', 10);
         await new Promise((r) => setTimeout(r, (retryAfter + 1) * 1000));
-        return this.callKimiDetect(image, attempt + 1, emptyAttempt);
+        return this.callKimiDetect(image, imageIndex, attempt + 1, emptyAttempt);
       }
       throw error;
     }
