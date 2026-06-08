@@ -327,18 +327,19 @@ export const options = {
         { duration: '3m', target: 200 }, // 2단계: 3분 유지
         { duration: '30s', target: 0 }, // 3단계: 종료
       ],
-      gracefulRampDown: '15s',
+      gracefulRampDown: '120s',
     },
     parent_scenario: {
       executor: 'ramping-vus',
       exec: 'parentScenario',
+      startTime: '90s',
       startVUs: 0,
       stages: [
         { duration: '90s', target: 100 },
         { duration: '3m', target: 100 },
         { duration: '30s', target: 0 },
       ],
-      gracefulRampDown: '15s',
+      gracefulRampDown: '120s',
     },
   },
   thresholds: {
@@ -349,7 +350,6 @@ export const options = {
 
     // ── API별 (normal) ────────────────────────────
     'http_req_duration{name:login}': ['p(95)<2000', 'p(99)<3000'],
-    'http_req_duration{name:logout}': ['p(95)<2000', 'p(99)<3000'],
     'http_req_duration{name:GET /students/me/classes}': [
       'p(95)<2000',
       'p(99)<3000',
@@ -431,30 +431,44 @@ function login(credentials) {
     { headers: JSON_HEADERS, tags: { type: 'normal', name: 'login' } },
   );
   const success = check(res, { '[login] status 201': (r) => r.status === 201 });
+  if (success) {
+    savedCookies.Authentication = res.cookies['Authentication']?.[0]?.value ?? null;
+    savedCookies.Refresh = res.cookies['Refresh']?.[0]?.value ?? null;
+  }
   return success;
 }
 
-function logout() {
-  const res = http.post(`${BASE_URL}/auth/sign-out`, null, {
-    headers: JSON_HEADERS,
-    tags: { type: 'normal', name: 'logout' },
-  });
-  check(res, { '[logout] status 201': (r) => r.status === 201 });
+function injectCookies() {
+  const jar = http.cookieJar();
+  if (savedCookies.Authentication) {
+    jar.set(BASE_URL, 'Authentication', savedCookies.Authentication);
+  }
+  if (savedCookies.Refresh) {
+    jar.set(BASE_URL, 'Refresh', savedCookies.Refresh);
+  }
 }
+
+// ─────────────────────────────────────────────
+// VU별 로그인 상태 (iteration 간 유지)
+// ─────────────────────────────────────────────
+let loggedIn = false;
+const savedCookies = { Authentication: null, Refresh: null };
 
 // ─────────────────────────────────────────────
 // 학생 시나리오
 // ─────────────────────────────────────────────
 export function studentScenario() {
-  // 계정 순환 (__VU는 1-based)
   const creds = STUDENTS[(__VU - 1) % STUDENTS.length];
 
-  // 1. 로그인
-  const loginOk = login(creds);
-  sleep(2);
-  if (!loginOk) return;
+  if (!loggedIn) {
+    loggedIn = login(creds);
+    sleep(2);
+    if (!loggedIn) return;
+  } else {
+    injectCookies();
+  }
 
-  // 2. 내 클래스 전체 목록 조회 → 랜덤 선택
+  // 1. 내 클래스 전체 목록 조회 → 랜덤 선택
   const classesRes = http.get(`${BASE_URL}/students/me/classes`, {
     tags: { type: 'normal', name: 'GET /students/me/classes' },
   });
@@ -462,13 +476,10 @@ export function studentScenario() {
   sleep(2);
 
   const classes = parseData(classesRes);
-  if (!classes || classes.length === 0) {
-    logout();
-    return;
-  }
+  if (!classes || classes.length === 0) return;
   const classId = randomItem(classes).classId;
 
-  // 3. 해당 클래스 공지사항 전체 조회 → 50% 확률로 공지사항 상세 조회
+  // 2. 해당 클래스 공지사항 전체 조회 → 50% 확률로 공지사항 상세 조회
   const noticesRes = http.get(`${BASE_URL}/classes/${classId}/notices`, {
     tags: { type: 'normal', name: 'GET /classes/:classId/notices' },
   });
@@ -497,14 +508,14 @@ export function studentScenario() {
     }
   }
 
-  // 4. 교재 목록 조회
+  // 3. 교재 목록 조회
   const textbooksRes = http.get(`${BASE_URL}/class/${classId}/textbooks`, {
     tags: { type: 'normal', name: 'GET /class/:classId/textbooks' },
   });
   check(textbooksRes, { '[student] textbooks 200': (r) => r.status === 200 });
   sleep(5);
 
-  // 5. 학생 본인의 숙제 진도 목록 조회 (textbookId 필요)
+  // 4. 학생 본인의 숙제 진도 목록 조회 (textbookId 필요)
   const textbooks = parseData(textbooksRes);
   if (Array.isArray(textbooks) && textbooks.length > 0) {
     // 응답 형태: [{ classTextbookId, classId, textbook: { textbookId, name, grade } }]
@@ -524,7 +535,7 @@ export function studentScenario() {
     }
   }
 
-  // 6. 학습자료 목록 조회 → 50% 확률로 학습자료 상세 조회
+  // 5. 학습자료 목록 조회
   const materialsRes = http.get(
     `${BASE_URL}/students/materials?classId=${classId}`,
     {
@@ -534,14 +545,14 @@ export function studentScenario() {
   check(materialsRes, { '[student] materials 200': (r) => r.status === 200 });
   sleep(5);
 
-  // 7. 학생 본인 시험점수 전체 조회
+  // 6. 학생 본인 시험점수 전체 조회
   const gradesRes = http.get(`${BASE_URL}/classes/${classId}/exams/grades/me`, {
     tags: { type: 'heavy', name: 'GET /classes/:classId/exams/grades/me' },
   });
   check(gradesRes, { '[student] grades 200': (r) => r.status === 200 });
   sleep(10);
 
-  // 8. 학생 본인 시험 등수 조회 (grades 응답에서 examId 추출)
+  // 7. 학생 본인 시험 등수 조회 → 10초 후 클래스 목록으로 돌아감
   const grades = parseData(gradesRes);
   if (Array.isArray(grades) && grades.length > 0) {
     const examId = randomItem(grades).examId;
@@ -559,9 +570,6 @@ export function studentScenario() {
       sleep(10);
     }
   }
-
-  // 9. 로그아웃
-  logout();
 }
 
 // ─────────────────────────────────────────────
@@ -570,12 +578,15 @@ export function studentScenario() {
 export function parentScenario() {
   const creds = PARENTS[(__VU - 1) % PARENTS.length];
 
-  // 1. 로그인
-  const loginOk = login(creds);
-  sleep(2);
-  if (!loginOk) return;
+  if (!loggedIn) {
+    loggedIn = login(creds);
+    sleep(2);
+    if (!loggedIn) return;
+  } else {
+    injectCookies();
+  }
 
-  // 2. 자녀 조회 → 랜덤 선택
+  // 1. 자녀 조회 → 랜덤 선택
   const childrenRes = http.get(`${BASE_URL}/parents/me/students`, {
     tags: { type: 'normal', name: 'GET /parents/me/students' },
   });
@@ -583,13 +594,10 @@ export function parentScenario() {
   sleep(2);
 
   const children = parseData(childrenRes);
-  if (!children || children.length === 0) {
-    logout();
-    return;
-  }
+  if (!children || children.length === 0) return;
   const studentId = randomItem(children).studentId;
 
-  // 3. 내 클래스 전체 목록 조회 (자녀 기준) → 랜덤 선택
+  // 2. 내 클래스 전체 목록 조회 (자녀 기준) → 랜덤 선택
   const classesRes = http.get(
     `${BASE_URL}/parents/me/students/${studentId}/classes`,
     {
@@ -603,13 +611,10 @@ export function parentScenario() {
   sleep(2);
 
   const classes = parseData(classesRes);
-  if (!classes || classes.length === 0) {
-    logout();
-    return;
-  }
+  if (!classes || classes.length === 0) return;
   const classId = randomItem(classes).classId;
 
-  // 4. 해당 클래스 공지사항 전체 조회 → 50% 확률로 공지사항 상세 조회
+  // 3. 해당 클래스 공지사항 전체 조회 → 50% 확률로 공지사항 상세 조회
   const noticesRes = http.get(`${BASE_URL}/classes/${classId}/notices`, {
     tags: { type: 'normal', name: 'GET /classes/:classId/notices' },
   });
@@ -637,7 +642,7 @@ export function parentScenario() {
     }
   }
 
-  // 5. 학생(자녀) 본인의 숙제 진도 목록 조회 (textbookId 필요)
+  // 4. 학생(자녀) 본인의 숙제 진도 목록 조회 (textbookId 필요)
   const textbooksRes = http.get(`${BASE_URL}/class/${classId}/textbooks`, {
     tags: { type: 'normal', name: 'GET /class/:classId/textbooks' },
   });
@@ -662,7 +667,7 @@ export function parentScenario() {
     }
   }
 
-  // 6. 학생 본인 시험점수 전체 조회
+  // 5. 학생 본인 시험점수 전체 조회
   const gradesRes = http.get(
     `${BASE_URL}/classes/${classId}/exams/grades/my-students/${studentId}`,
     {
@@ -675,7 +680,7 @@ export function parentScenario() {
   check(gradesRes, { '[parent] grades 200': (r) => r.status === 200 });
   sleep(10);
 
-  // 7. 학생 본인 시험 등수 조회
+  // 6. 학생 본인 시험 등수 조회 → 10초 후 자녀 조회로 돌아감
   const grades = parseData(gradesRes);
   if (Array.isArray(grades) && grades.length > 0) {
     const examId = randomItem(grades).examId;
@@ -693,7 +698,4 @@ export function parentScenario() {
       sleep(10);
     }
   }
-
-  // 8. 로그아웃
-  logout();
 }
