@@ -23,10 +23,8 @@ services:
     command:
       [
         'redis-server',
-        '--maxmemory',
-        '200mb',
         '--maxmemory-policy',
-        'allkeys-lru',
+        'noeviction',
         '--save',
         '',
         '--appendonly',
