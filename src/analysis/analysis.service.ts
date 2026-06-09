@@ -336,7 +336,6 @@ export class AnalysisService {
     image: string,
     imageIndex: number,
     attempt = 0,
-    emptyAttempt = 0,
   ): Promise<{ problemNumbers: number[]; usage: { input_tokens: number; output_tokens: number } }> {
     try {
       return await this.withKimiLimits(async () => {
@@ -357,37 +356,37 @@ export class AnalysisService {
           ],
         };
 
-        const response = await (
-          this.client.chat.completions.create as (p: unknown) => Promise<OpenAI.Chat.ChatCompletion>
-        )(params);
+        for (let emptyAttempt = 0; emptyAttempt < 3; emptyAttempt++) {
+          const response = await (
+            this.client.chat.completions.create as (p: unknown) => Promise<OpenAI.Chat.ChatCompletion>
+          )(params);
 
-        const text = response.choices[0].message.content ?? '[]';
-        const match = text.match(/\[[\d,\s]+\]/);
-        const problemNumbers: number[] = match ? (JSON.parse(match[0]) as number[]) : [];
+          const text = response.choices[0].message.content ?? '[]';
+          const match = text.match(/\[[\d,\s]+\]/);
+          const problemNumbers: number[] = match ? (JSON.parse(match[0]) as number[]) : [];
 
-        if (problemNumbers.length === 0 && emptyAttempt < 3) {
+          if (problemNumbers.length > 0) {
+            return {
+              problemNumbers,
+              usage: {
+                input_tokens: response.usage?.prompt_tokens ?? 0,
+                output_tokens: response.usage?.completion_tokens ?? 0,
+              },
+            };
+          }
+
           this.logger.warn(`[image:${imageIndex}] 빈 배열 반환 - 재시도 (${emptyAttempt + 1}/3)`);
-          await new Promise((r) => setTimeout(r, 500));
-          return this.callKimiDetect(image, imageIndex, attempt, emptyAttempt + 1);
+          if (emptyAttempt < 2) await new Promise((r) => setTimeout(r, 500));
         }
 
-        if (problemNumbers.length === 0) {
-          this.logger.warn(`[image:${imageIndex}] 3번 재시도 후에도 문제 미감지`);
-        }
-
-        return {
-          problemNumbers,
-          usage: {
-            input_tokens: response.usage?.prompt_tokens ?? 0,
-            output_tokens: response.usage?.completion_tokens ?? 0,
-          },
-        };
+        this.logger.warn(`[image:${imageIndex}] 3번 재시도 후에도 문제 미감지`);
+        return { problemNumbers: [], usage: { input_tokens: 0, output_tokens: 0 } };
       });
     } catch (error) {
       if (error instanceof RateLimitError && attempt < 5) {
         const retryAfter = parseInt(error.headers?.['retry-after'] ?? '2', 10);
         await new Promise((r) => setTimeout(r, (retryAfter + 1) * 1000));
-        return this.callKimiDetect(image, imageIndex, attempt + 1, emptyAttempt);
+        return this.callKimiDetect(image, imageIndex, attempt + 1);
       }
       throw error;
     }
