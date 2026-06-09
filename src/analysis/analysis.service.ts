@@ -131,7 +131,7 @@ export class AnalysisService {
 
   async uploadFileToMoonshot(buffer: Buffer, filename: string, mimetype: string): Promise<string> {
     const file = await toFile(buffer, filename, { type: mimetype });
-    const uploaded = await this.client.files.create({ file, purpose: 'vision' });
+    const uploaded = await this.client.files.create({ file, purpose: 'image' as any });
     return uploaded.id;
   }
 
