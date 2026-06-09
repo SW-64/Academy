@@ -35,7 +35,7 @@ export interface SolveResponse {
   total_output_tokens: number;
 }
 
-const KIMI_CONCURRENCY = 3;
+const KIMI_CONCURRENCY = 1;
 const KIMI_RPM = 20;
 
 const DETECT_PROMPT = `이 시험지에 있는 문제 번호를 JSON 배열로만 반환해줘. 예시: [11, 12, 13]`;
