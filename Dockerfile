@@ -35,6 +35,8 @@ WORKDIR /app
 # 운영 환경임을 Node.js에 알림 (성능 최적화 활성화)
 ENV NODE_ENV=production
 
+RUN apk add --no-cache poppler-utils
+
 COPY package*.json ./
 
 # --omit=dev = devDependencies 제외하고 설치
