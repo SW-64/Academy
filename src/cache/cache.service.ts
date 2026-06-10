@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 
-const CACHE_ENABLED = false;
+const CACHE_ENABLED = true;
 
 @Injectable()
 export class CacheService implements OnModuleInit {
