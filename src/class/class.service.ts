@@ -3,11 +3,9 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
-  Inject,
   Logger,
 } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import { CacheService } from '../cache/cache.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Class } from './entities/class.entity';
 import { DataSource, In, IsNull, Repository } from 'typeorm';
@@ -27,7 +25,7 @@ import { CACHE_KEYS, cacheKey } from '../constants/cache-keys.constant';
 @Injectable()
 export class ClassService {
   constructor(
-    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly cache: CacheService,
     private readonly dataSource: DataSource,
     @InjectRepository(Class)
     private readonly classRepository: Repository<Class>,

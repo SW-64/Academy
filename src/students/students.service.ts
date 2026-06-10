@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -17,8 +16,7 @@ import { Role, Status, User } from '../users/entities/user.entity';
 import { Grade, Level } from '../grades/entities/grade.entity';
 import { Student } from './entities/student.entity';
 import { StudentClass } from '../student-class/entities/student-class.entity';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import { CacheService } from '../cache/cache.service';
 import { CACHE_KEYS, cacheKey } from '../constants/cache-keys.constant';
 import {
   PaginatedResponse,
@@ -27,7 +25,7 @@ import {
 @Injectable()
 export class StudentsService {
   constructor(
-    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly cache: CacheService,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Student)

@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -28,12 +27,11 @@ import { Admin } from './../admin/entities/admin.entity';
 import { ClassNotice } from './entities/class-notice.entity';
 import { Class } from './../class/entities/class.entity';
 
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import { CacheService } from '../cache/cache.service';
 @Injectable()
 export class NoticesService {
   constructor(
-    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly cache: CacheService,
     private readonly dataSource: DataSource,
     @InjectRepository(Notice)
     private readonly noticeRepository: Repository<Notice>,

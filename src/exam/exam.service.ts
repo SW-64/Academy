@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -24,13 +23,12 @@ import { GradeWrongAnswer } from '../grades/entities/grade-wrong-answer.entity';
 import { ReplaceWrongAnswersDto } from './dto/wrong-answer-patch.dto';
 import { Class } from './../class/entities/class.entity';
 
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class ExamService {
   constructor(
-    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly cache: CacheService,
     private readonly dataSource: DataSource,
     @InjectRepository(Admin)
     private readonly adminRepository: Repository<Admin>,
