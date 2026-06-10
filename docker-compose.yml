@@ -1,5 +1,5 @@
 services:
-  backend:
+  backend: # backend는 내 코드로 직접 이미지를 만든다는 뜻
     build:
       context: .
       dockerfile: Dockerfile
@@ -20,16 +20,16 @@ services:
     image: redis:7-alpine
     ports:
       - '6379:6379'
-    command:
+    command: # 컨테이너 켤 때 실행할 명령어
       [
         'redis-server',
-        '--maxmemory-policy',
+        '--maxmemory-policy', #메모리 꽉 차면, 기존 데이터를 멋대로 지우지 말고 그냥 새 쓰기를 거절
         'noeviction',
-        '--save',
+        '--save', # 디스크에 주기적으로 저장하지 마. 빈 값을 줘서 백업을 꺼버림
         '',
-        '--appendonly',
+        '--appendonly', #변경 기록도 파일로 안 남길래
         'no',
-      ]
+      ] # 즉 데이터가 사라져도 상관없는 순수 캐시 용도
     networks:
       - app-network
     restart: always
@@ -42,8 +42,9 @@ services:
 volumes:
   uploads_data:
 
-networks:
+networks: # 컨테이너들끼리 연결된 사설 통신망
   app-network:
-    driver: bridge
+    driver: bridge #  한 서버 안의 컨테이너끼리 통신할 때 쓰는 표준 방식
+
 
     # ----------------
