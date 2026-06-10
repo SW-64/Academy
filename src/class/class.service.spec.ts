@@ -9,7 +9,7 @@ import { ClassTextbook } from '../class-textbook/entities/class-textbook.entity'
 import { StudentClass } from '../student-class/entities/student-class.entity';
 import { Student } from '../students/entities/student.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CacheService } from '../cache/cache.service';
 
 describe('ClassService - HIGH-1 IDOR (Guard 적용 후)', () => {
   let service: ClassService;
@@ -33,7 +33,7 @@ describe('ClassService - HIGH-1 IDOR (Guard 적용 후)', () => {
         { provide: getRepositoryToken(Student), useValue: {} },
         { provide: getRepositoryToken(ActionLog), useValue: {} },
         {
-          provide: CACHE_MANAGER,
+          provide: CacheService,
           useValue: {
             get: jest.fn(),
             set: jest.fn(),

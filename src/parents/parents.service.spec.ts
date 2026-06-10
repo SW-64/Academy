@@ -12,7 +12,7 @@ import { StudentClass } from '../student-class/entities/student-class.entity';
 import { MESSAGES } from '../constants/message.constant';
 
 import { paginate } from 'nestjs-typeorm-paginate';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CacheService } from '../cache/cache.service';
 
 jest.mock('nestjs-typeorm-paginate', () => ({
   paginate: jest.fn(),
@@ -54,7 +54,7 @@ describe('ParentsService (unit)', () => {
           },
         },
         {
-          provide: CACHE_MANAGER,
+          provide: CacheService,
           useValue: {
             get: jest.fn(),
             set: jest.fn(),

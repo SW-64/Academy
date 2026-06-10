@@ -11,7 +11,7 @@ import { Student } from '../students/entities/student.entity';
 import { GradeWrongAnswer } from '../grades/entities/grade-wrong-answer.entity';
 import { ActionLog } from '../action-logs/entities/action-logs.entity';
 import { Admin } from '../admin/entities/admin.entity';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CacheService } from '../cache/cache.service';
 
 describe('ExamService', () => {
   let service: ExamService;
@@ -68,7 +68,7 @@ describe('ExamService', () => {
           useValue: {},
         },
         {
-          provide: CACHE_MANAGER,
+          provide: CacheService,
           useValue: {
             get: jest.fn(),
             set: jest.fn(),

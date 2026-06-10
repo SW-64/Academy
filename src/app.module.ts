@@ -28,6 +28,7 @@ import { MaterialsModule } from './materials/materials.module';
 
 import { VideosModule } from './videos/videos.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { AppCacheModule } from './cache/cache.module';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { WebhookModule } from './webhook/webhook.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
@@ -87,6 +88,7 @@ import { AnalysisModule } from './analysis/analysis.module';
       }),
       inject: [ConfigService],
     }),
+    AppCacheModule,
     SentryModule.forRoot(),
     WebhookModule,
     AnalysisModule,

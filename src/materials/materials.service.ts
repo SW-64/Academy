@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ForbiddenException,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -30,8 +29,7 @@ import { UpdateMaterialDto } from './dto/update-material.dto';
 import { randomUUID } from 'crypto';
 import { S3Service } from '../s3/s3.service';
 
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import { CacheService } from '../cache/cache.service';
 
 type StudentMaterialListItem = {
   materialId: number;
@@ -44,7 +42,7 @@ type StudentMaterialListItem = {
 @Injectable()
 export class MaterialsService {
   constructor(
-    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly cache: CacheService,
     private readonly dataSource: DataSource,
     private readonly s3Service: S3Service,
     @InjectRepository(Material)

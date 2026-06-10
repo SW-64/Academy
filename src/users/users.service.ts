@@ -3,7 +3,6 @@ import {
   NotFoundException,
   BadRequestException,
   Logger,
-  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, FindOptionsWhere, In, IsNull, Repository } from 'typeorm';
@@ -24,14 +23,13 @@ import { PartialUser } from './interfaces/partial-user.entity';
 import { Student } from './../students/entities/student.entity';
 import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
 
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import { CacheService } from '../cache/cache.service';
 import { CACHE_KEYS, cacheKey } from '../constants/cache-keys.constant';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly cache: CacheService,
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly bcryptService: BcryptService,
