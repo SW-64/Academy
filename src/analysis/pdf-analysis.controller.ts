@@ -23,4 +23,16 @@ export class PdfAnalysisController {
     }
     return this.pdfAnalysisService.convertAndEnqueue(file);
   }
+
+  @Post('pdf/raw')
+  @UseInterceptors(FileInterceptor('file'))
+  async solvePdfRaw(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('PDF 파일을 업로드해야 합니다.');
+    }
+    if (file.mimetype !== 'application/pdf') {
+      throw new BadRequestException('PDF 파일만 허용됩니다.');
+    }
+    return this.pdfAnalysisService.convertAndEnqueueRaw(file);
+  }
 }
