@@ -23,6 +23,47 @@ export class PdfAnalysisService {
     private readonly analysisService: AnalysisService,
   ) {}
 
+  async convertAndEnqueueRaw(file: Express.Multer.File): Promise<{ jobId: string }> {
+    const jobId = uuidv4();
+
+    this.logger.log(`[${jobId}] PDF 변환 시작 (크롭 없음)`);
+
+    const tmpPdfPath = join(tmpdir(), `${jobId}.pdf`);
+    const tmpImgDir = join(tmpdir(), jobId);
+    const outputPrefix = join(tmpImgDir, 'page');
+
+    await writeFile(tmpPdfPath, file.buffer);
+    await mkdir(tmpImgDir, { recursive: true });
+
+    try {
+      await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
+
+      const filenames = (await readdir(tmpImgDir)).sort();
+      this.logger.log(`[${jobId}] ${filenames.length}페이지 변환 완료`);
+
+      const fileIds = await Promise.all(
+        filenames.map(async (filename, pageIndex) => {
+          const pageBuffer = await readFile(join(tmpImgDir, filename));
+          const fileId = await this.analysisService.uploadFileToMoonshot(
+            pageBuffer,
+            `${pageIndex}.png`,
+            'image/png',
+          );
+          this.logger.log(`[${jobId}] 페이지 ${pageIndex + 1} 업로드 완료`);
+          return fileId;
+        }),
+      );
+
+      this.logger.log(`[${jobId}] 총 ${filenames.length}페이지 처리 완료`);
+      return this.analysisService.enqueueFromFileIds(jobId, fileIds);
+    } finally {
+      await Promise.all([
+        unlink(tmpPdfPath).catch(() => {}),
+        rm(tmpImgDir, { recursive: true, force: true }).catch(() => {}),
+      ]);
+    }
+  }
+
   async convertAndEnqueue(file: Express.Multer.File): Promise<{ jobId: string }> {
     const jobId = uuidv4();
 
