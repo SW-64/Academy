@@ -23,6 +23,7 @@
 ### 서비스 개요
 
 학원 운영에 필요한 학생 관리, 수업 배정, 시험 성적, 숙제 진도, 공지사항, 학습자료 등을 하나의 플랫폼에서 처리합니다.
+<br/>
 선생님(Admin), 학생(Student), 학부모(Parent) 세 역할이 각자의 권한 범위 안에서 서비스를 이용합니다.
 
 ### 주요 기능
@@ -48,7 +49,8 @@
 
 ## 3. 시스템 아키텍처
 
-<img width="960" height="531" alt="Image" src="https://github.com/user-attachments/assets/b279f5ef-9370-4617-baf8-10f47342623a" />
+<img width="1099" height="559" alt="image" src="https://github.com/user-attachments/assets/ac6aa626-b02d-4437-b183-9bb8a57f9e91" />
+
 
 ---
 
