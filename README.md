@@ -9,12 +9,10 @@
 1. [프로젝트 소개](#1-프로젝트-소개)
 2. [기술 스택](#2-기술-스택)
 3. [시스템 아키텍처](#3-시스템-아키텍처)
-4. [API 명세](#4-api-명세)
-5. [인증 플로우](#5-인증-플로우)
-6. [Redis 캐싱 전략](#6-redis-캐싱-전략)
-7. [성능 테스트](#7-성능-테스트)
-8. [폴더 구조](#8-폴더-구조)
-9. [모니터링](#9-모니터링)
+4. [주요 트러블 슈팅](#4-주요-트러블-슈팅)
+5. [성능 / 최적화](#5-성능--최적화)
+6. [보안](#6-보안)
+7. [모니터링](#7-모니터링)
 
 ---
 
@@ -23,7 +21,6 @@
 ### 서비스 개요
 
 학원 운영에 필요한 학생 관리, 수업 배정, 시험 성적, 숙제 진도, 공지사항, 학습자료 등을 하나의 플랫폼에서 처리합니다.
-<br/>
 선생님(Admin), 학생(Student), 학부모(Parent) 세 역할이 각자의 권한 범위 안에서 서비스를 이용합니다.
 
 ### 주요 기능
@@ -49,224 +46,303 @@
 
 ## 3. 시스템 아키텍처
 
-<img width="1099" height="559" alt="image" src="https://github.com/user-attachments/assets/ac6aa626-b02d-4437-b183-9bb8a57f9e91" />
+<img width="960" height="531" alt="Image" src="https://github.com/user-attachments/assets/b279f5ef-9370-4617-baf8-10f47342623a" />
 
+### 외부 서비스 선택
 
----
+비용 구조를 기준으로 외부 서비스를 선택해 운영 비용을 최소화했다.
 
-## 4. API 명세
-
-Swagger UI를 통해 전체 API 명세를 확인할 수 있습니다.
-
-> [https://api.kwakmath.co.kr/docs](https://api.kwakmath.co.kr/docs)
-
----
-
-## 5. 인증 플로우
-
-### 사용자 등록 및 승인
-
-신규 가입 시 계정은 `PENDING` 상태로 생성되며, Admin이 승인해야 `APPROVED`로 전환되어 서비스를 이용할 수 있습니다.
-
-```
-회원가입 → PENDING → Admin 승인 → APPROVED → 로그인 가능
-```
-
-### JWT + Refresh Token
-
-```
-POST /auth/sign-in
-  └─ Local Strategy: loginId + bcrypt 비밀번호 검증
-  └─ Access Token (Cookie: Authentication) + Refresh Token (Cookie: Refresh) 발급
-
-POST /auth/token
-  └─ Refresh Token 검증 → 새 Access Token 재발급
-
-POST /auth/sign-out
-  └─ 쿠키 삭제 + DB의 Refresh Token 제거
-```
-
-- **Access Token**: HttpOnly 쿠키로 전달, 짧은 만료시간
-- **Refresh Token**: HttpOnly 쿠키로 전달, DB 저장, 재발급 시 교체
-- **비밀번호 해싱**: bcrypt (argon2id 대비 부하테스트에서 서버 자원 효율이 높아 채택)
-
-### 역할별 권한
-
-| Guard                             | 설명                                 |
-| --------------------------------- | ------------------------------------ |
-| `JwtAuthGuard`                    | Access Token 검증                    |
-| `JwtRefreshAuthGuard`             | Refresh Token 검증                   |
-| `RolesGuard` + `@Roles()`         | ADMIN / STUDENT / PARENT 역할 제한   |
-| `ClassAccessGuard`                | 해당 반 소속 여부 확인               |
-| `VideoAccessGuard`                | 영상 접근 권한 확인                  |
-| `StudentOrParentOwnsStudentGuard` | 본인 또는 자녀 데이터 접근만 허용    |
-| `UserIdThrottlerGuard`            | 전역 Rate Limit (유저당 120 req/min) |
+| 서비스 | 용도 | 선택 이유 |
+| ------ | ---- | --------- |
+| **Cloudflare R2** | 파일 스토리지 | AWS S3와 달리 이그레스(전송) 비용이 없어, 파일 다운로드가 많아도 비용이 늘지 않음 |
+| **Bunny CDN** | 영상 스토리지·스트리밍 | CloudFront와 달리 요청당 과금이 없고 대역폭으로만 과금. 영상은 조각 요청이 많아 요청 과금이 없는 Bunny가 유리. 인코딩도 무료 포함 |
+| **Moonshot (Kimi K2.6)** | 시험지 해설 AI | 수학·추론 벤치마크 상위권 중 토큰 비용이 낮아 성능 대비 비용이 효율적 |
 
 ---
 
-## 6. Redis 캐싱 전략
+## 4. 주요 트러블 슈팅
 
-읽기 빈도가 높고 변경 빈도가 낮은 목록 API를 대상으로 Cache-Aside 패턴을 적용했습니다.
-캐시 무효화는 키 구조에 따라 두 가지 전략으로 나눠 설계했습니다.
+### Bunny CDN 고아 객체 문제
 
-### 전략 A — 버전 카운터 증가 (동적 키)
+#### 문제
+
+영상 업로드를 비동기로 처리하는데, 업로드가 중간에 실패하면 Bunny CDN에 생성된 영상 객체가 삭제되지 않고 남는 문제를 발견했다. DB에는 영상 정보가 없는데 Bunny에는 영상이 남아, 어디서도 참조되지 않는 고아(orphan) 데이터가 쌓일 수 있었다.
+
+#### 원인
+
+고아 객체는 두 가지 경로로 생긴다.
+
+- **업로드 실패**: `Bunny 객체 생성 → 파일 업로드 → DB 저장` 중간에 실패하면, 이미 만든 Bunny 객체가 남는다. (`FAILED`)
+- **삭제 실패**: 어드민이 영상 삭제를 요청해 DB에선 삭제 처리됐지만 Bunny 삭제가 실패하면, Bunny에만 영상이 남는다. (`DELETING`)
+
+두 경우 모두 외부 서비스(Bunny)와 DB 상태가 어긋나는 정합성 문제다.
+
+#### 해결
+
+실패를 두 단계로 처리했다.
+
+**1단계 — 업로드 실패 시 즉시 Bunny 객체 삭제 시도**
+
+```typescript
+// videos.service.ts
+} catch (error) {
+  await this.videoRepository.update(videoId, { status: VideoStatus.FAILED });
+
+  // 즉시 보상 삭제 시도
+  try {
+    await this.bunnyService.deleteVideo(bunnyVideoId);
+  } catch (deleteError) {
+    const delErr = deleteError instanceof Error ? deleteError : new Error(String(deleteError));
+    this.logger.error('Bunny 보상 삭제 실패 (배치에서 재시도)', {
+      videoId,
+      bunnyVideoId,
+      error: delErr.message,
+    });
+  }
+}
 ```
-시험·공지·학습자료처럼 classId, 월별 필터 등 조건에 따라 
-캐시 키가 동적으로 생성되는 경우 적용
-조회 시: ver 키 조회 → {resource}:list:...:v:{ver} 조회 → 없으면 DB 조회 후 캐시 저장
-변경 시: ver 키 +1 증가 → 이전 캐시는 TTL(10분) 후 자연 만료
+
+**2단계 — 즉시 삭제마저 실패한 경우, 매일 새벽 4시 배치로 재처리**
+
+1일 이상 지난 고아 객체를 두 가지 상태로 나눠 찾아 Bunny 삭제를 재시도한다.
+- `FAILED` — 업로드 실패 후 보상 삭제까지 실패한 영상
+- `DELETING` — 어드민이 삭제 요청했으나 Bunny 삭제가 실패한 영상
+
+```typescript
+// videos.service.ts
+@Cron('0 4 * * *')
+async cleanupOrphanBunnyVideos(): Promise<void> {
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+  const deletingVideos = await this.videoRepository.find({
+    where: {
+      status: VideoStatus.DELETING,
+      deletedAt: LessThan(oneDayAgo),
+    },
+    withDeleted: true,
+    select: ['videoId', 'bunnyVideoId'],
+  });
+
+  const failedVideos = await this.videoRepository.find({
+    where: {
+      status: VideoStatus.FAILED,
+      updatedAt: LessThan(oneDayAgo),
+    },
+    select: ['videoId', 'bunnyVideoId'],
+  });
+
+  for (const video of deletingVideos) {
+    await this.cleanupBunnyVideo(video.videoId, video.bunnyVideoId, 'DELETING');
+  }
+
+  for (const video of failedVideos) {
+    await this.cleanupBunnyVideo(video.videoId, video.bunnyVideoId, 'FAILED');
+  }
+}
 ```
-### 전략 B — 직접 삭제 (고정 키)
+
+### 로그인 간헐적 실패
+
+#### 문제
+
+부하 테스트 중, 이미 로그인한 적 있는 사용자가 다시 로그인할 때 간헐적으로 로그인이 실패하는 현상을 발견했다. 처음 가입한 사용자는 정상인데, 재로그인하는 사용자에게서만 실패가 나타났다.
+
+#### 원인
+
+Refresh Token을 저장할 때 `createQueryBuilder().insert()`에 `orUpdate`를 사용해 `INSERT ... ON DUPLICATE KEY UPDATE`로 처리한다. 첫 로그인은 INSERT, 재로그인은 UPDATE 분기를 탄다.
+
+문제는 TypeORM의 `InsertQueryBuilder`가 기본적으로 INSERT 후 `insertId`로 방금 처리한 엔티티를 재조회한다는 점이다. 그런데 UPDATE 분기에서는 MySQL이 `insertId`를 0으로 반환한다. 존재하지 않는 `id=0`인 행을 재조회하려다 실패한 것이 간헐적 로그인 오류의 원인이었다.
+
 ```
-학생·학부모·클래스처럼 캐시 키가 고정된 경우 적용
-조회 시: 고정 키로 캐시 조회 → 없으면 DB 조회 후 캐시 저장
-변경 시: 해당 고정 키 직접 삭제
+첫 로그인 → INSERT → insertId = 정상값 → 재조회 성공
+재로그인  → UPDATE → insertId = 0      → id=0 재조회 → 실패
 ```
-### 공통
-- 캐시 장애 시 DB fallback으로 서비스 안정성 보장
-- Redis 설정: LRU 정책, 최대 200MB
-- TTL: 목록 키 10분, 버전 키 1일
 
+#### 해결
 
-### 캐시 적용 API
+`.updateEntity(false)` 옵션을 추가해 INSERT 후의 불필요한 재조회를 비활성화했다. 이 메서드의 반환값을 사용하지 않으므로 부작용 없이 문제를 해결했고, 재조회 쿼리가 사라져 쿼리도 하나 줄었다.
 
-| 역할    | API                          | 캐시 키                                                     |
-| ------- | ---------------------------- | ----------------------------------------------------------- |
-| Admin   | 반 목록 조회                 | `admin:classes:list`                                        |
-| Admin   | 학생 목록 조회 (1페이지)     | `admin:students:list:page:1`                                |
-| Admin   | 학부모 목록 조회 (1페이지)   | `admin:parents:list:page:1`                                 |
-| Admin   | 반별 수강생 목록 조회        | `admin:classes:{classId}:students:list`                     |
-| Admin   | 반별 시험 월별 목록          | `admin:classes:{classId}:exams:list:month:{yyyymm}:v:{ver}` |
-| Admin   | 반별 학습자료 목록 (1페이지) | `admin:classes:{classId}:materials:list:page:1:v:{ver}`     |
-| Admin   | 반별 공지사항 목록 (1페이지) | `admin:classes:{classId}:notices:list:page:1:v:{ver}`       |
-| Student | 내 반 목록 조회              | `student:user:{userId}:classes:list`                        |
-| Student | 반별 공지사항 목록 (1페이지) | `student:classes:{classId}:notices:list:page:1:v:{ver}`     |
-| Student | 반별 학습자료 목록 (1페이지) | `student:classes:{classId}:materials:list:page:1:v:{ver}`   |
-| Parent  | 반별 공지사항 목록 (1페이지) | `parent:classes:{classId}:notices:list:page:1:v:{ver}`      |
+```typescript
+// auth.service.ts
+await this.refreshTokenRepository
+  .createQueryBuilder()
+  .insert()
+  .into(RefreshToken)
+  .values({
+    userId: userId,
+    refreshtoken: refreshToken,
+    createdAt: new Date(),
+    expiresAt: expiresAt,
+  })
+  .orUpdate(['refreshtoken', 'expires_at'], ['userId'])
+  .updateEntity(false) // UPDATE 분기에서 insertId=0으로 인한 재조회 실패 방지
+  .execute();
+```
 
+#### 결과
+
+재로그인 시 간헐적 실패가 사라졌고, 부하 테스트에서 로그인 에러율 0%를 달성했다.
 
 ---
 
-## 7. 성능 테스트
-### 테스트 환경
+## 5. 성능 검증 / 최적화
 
-- **도구**: k6
-- **시나리오**: 로그인 후 주요 API 순차 호출 (Ramp-up)
-- **서버**: AWS EC2 t4g.small
+### 부하 테스트
 
-### 200명일때 테스트 결과
-<img width="1876" height="839" alt="image" src="https://github.com/user-attachments/assets/9ca03aed-d882-481a-8bb5-870e5e715d74" />
-<img width="1537" height="566" alt="image" src="https://github.com/user-attachments/assets/f57744ec-1f91-461c-9375-0e8acaa5576b" />
-<img width="1908" height="740" alt="image" src="https://github.com/user-attachments/assets/f3d3dc8b-ef6d-45c9-80be-2ec5a347809e" />
+#### 측정 환경
 
-### VU별 전체 지표 비교
-<img width="718" height="291" alt="image" src="https://github.com/user-attachments/assets/583fd414-2b43-47a7-a7e5-60297cd368d9" />
+EC2 t4g.small (2GB RAM), k6 사용, 300 VU Ramp-up 시나리오 기준으로 측정했다.
 
-### API별 속도 비교 
-<img width="740" height="658" alt="image" src="https://github.com/user-attachments/assets/9a150073-ff9a-4121-a58c-d13c41a8ad9a" />
+<!-- 사진 ①: k6 부하 테스트 구성/시나리오 또는 VU 곡선 -->
 
-### 주요 결과
-- ✅ 100VU ~ 200VU 구간에서 실패율 0% 유지
-- ✅ 모든 API p95 500ms 이하 달성
-- ⚠️ 로그인 API는 bcrypt 특성상 부하 증가 시 응답시간 상승
+#### 측정 방법론
 
+처음엔 로그인/로그아웃을 반복하는 스크립트로 테스트했는데, 실사용자는 그렇게 행동하지 않아 CPU 사용률이 80%로 과장됐다. 로그인 1회 후 토큰을 재사용하는 현실적인 패턴으로 바꾸자 CPU가 50%로 낮아졌다. 잘못된 측정으로 엉뚱한 결론을 내리지 않으려 테스트를 실사용 패턴에 맞게 설계했다.
 
+<!-- 사진 ②: CPU 80% → 50% Grafana 그래프 -->
 
+#### 결과
+
+전 API p95 < 1s SLA를 충족했으며, 약 40 RPS를 아래 수치로 처리했다.
+
+| 지표 | 값 |
+| ---- | -- |
+| p95  | 336ms |
+| p99  | 520ms |
+| 에러율 | 0% |
+
+<!-- 사진 ③: k6 결과 요약 화면 (p95/p99/에러율) -->
 
 ---
 
-## 8. 폴더 구조
+### 동시성 최적화 (AI 해설)
 
-```
-academy/
-├── src/
-│   ├── action-logs/        # 사용자 액션 감사 로그
-│   ├── admin/              # 관리자 프로필
-│   ├── analysis/           # 데이터 분석
-│   ├── auth/               # 인증 (JWT, Passport, Guards)
-│   ├── class/              # 반 관리
-│   ├── class-textbook/     # 반-교재 연결
-│   ├── configs/            # DB, 환경변수 설정
-│   ├── constants/          # 공통 상수 (메시지, 캐시 키)
-│   ├── exam/               # 시험 출제 및 관리
-│   ├── grades/             # 성적 및 오답
-│   ├── homework/           # 숙제 진도
-│   ├── materials/          # 학습자료 (S3 연동)
-│   ├── migrations/         # TypeORM 마이그레이션
-│   ├── notices/            # 공지사항
-│   ├── parents/            # 학부모 프로필
-│   ├── s3/                 # AWS S3 + CloudFront 연동
-│   ├── seeds/              # 더미 데이터 시딩
-│   ├── student-class/      # 학생-반 수강 관계
-│   ├── students/           # 학생 프로필
-│   ├── textbook/           # 교재 및 단원
-│   ├── users/              # 공통 유저 (승인 워크플로우)
-│   ├── util/               # 공통 유틸리티, 데코레이터
-│   ├── videos/             # 영상 (Bunny CDN 연동)
-│   └── webhook/            # Sentry → Discord 웹훅
-├── k6/                     # 부하테스트 시나리오
-├── hooks/                  # Claude Code 훅
-├── docker-compose.yml
-└── .env
-```
+#### 배경
 
-## 9. 모니터링
+시험지 해설은 외부 AI(Moonshot) API를 호출하기 때문에 응답까지 장시간이 걸린다. HTTP 요청 흐름을 블로킹하지 않도록 **BullMQ 비동기 큐**로 분리해 처리한다.
 
-### 모니터링 전략
-```
-Vercel 대시보드 (직접 확인)
-├── 배포 성공/실패
-├── Edge Requests (트래픽 패턴)
-├── Fast Data Transfer (데이터량)
-├── Analytics (방문자, 유입 경로)
-└── Speed Insights (LCP, FID, CLS)
+#### 최적화
 
-Sentry + Discord (알림 + 상세 추적)
-├── 에러 발생 즉시 알림
-└── 에러 상세 내용, 스택트레이스
+순차 처리(동시성 1)로 실행하면 55분이 소요됐다. Moonshot API의 동시성 한도(3)에 맞춰 3개를 병렬 처리하자 19분으로 단축됐다.
 
-Grafana (지표 시각화 + 알림)
-├── EC2 서버 상태
-├── NestJS 앱 응답 시간, 요청 수
-├── 임계값 초과하게되면 Discord 알림
-└── 서버
-    1. SWAP Used 70% 이상
-    2. RAM Used 85% 이상
-    3. CPU Busy 30% 이상
-    4. Root FS 80% 이상
-└── NestJS 앱
-    5. Event Loop Latency 100ms 이상
-    6. Heap Used 95% 이상
-    7. CPU 사용량 50% 이상
+병렬 처리 수는 두 가지 제약으로 결정된다 — 외부 API가 허용하는 동시 요청 수와, 서버의 메모리다. 사용 중인 Moonshot API의 Tier0 등급은 동시 요청 한도가 3이고, 3개 병렬 처리 시 EC2 메모리도 여유가 있어 한도에 맞춰 3으로 설정했다.
 
-UptimeRobot (생존 확인)
-└── 서버 다운 즉시 Discord 알림
+| 동시성 | 처리 시간 |
+| ------ | --------- |
+| 1 (순차) | 55분 |
+| 3 (병렬) | 19분 |
 
+> 같은 시험지를 3회씩 측정한 평균값 기준
 
-Bunny (영상 트래픽 )
-├── Views — 영상별 재생 횟수
-├── Watch Time — 평균 시청 시간 (영상을 끝까지 보는지)
-├── Bandwidth — 영상별 트래픽 사용량
-├── Cache Hit Rate — 높을수록 좋아요. 70~80% 이상이면 정상
-├── Cache Miss — 이게 높으면 원본 서버(EC2)로 요청이 많이 가는 것
-└── 서버 다운 즉시 알림
+<!-- 사진 ④: 동시성 측정 결과 (55분/19분 비교 또는 Moonshot Tier 화면) -->
 
+#### 결과
 
-RDS 
-├── CPUUtilization                    - 50% 이상 주의, 80% 이상 위험
-├── DatabaseConnections               - 50 이상 주의, 100 이상 위험
-├── FreeStorageSpace ( 현재 20기가 ) - 20% 이하 주의, 10% 이하 위험
-└── ReadLatency / WriteLatency        - 20ms 이상 주의, 100ms 이상 위험
+약 2.8배 처리 시간 단축
 
-R2 한달에 한번 용량 확인
-무료 한도
-→ 저장 용량: 10GB/월
-→ Class A (쓰기): 1,000,000회/월
-→ Class B (읽기): 10,000,000회/월
+---
+
+## 6. 보안
+
+### SSM Session Manager
+
+SSH 키 없이 **AWS SSM Session Manager**를 통해 EC2에 접속합니다.
+EC2의 22번 포트(SSH)를 열 필요 없이 IAM 권한만으로 터미널 세션을 시작할 수 있습니다.
+
+```bash
+aws ssm start-session \
+  --target i-xxxxxxxxxxxxxxxxx \
+  --region ap-northeast-2
 ```
 
-### 모니터링 체크리스트
-매일 다음과 같이 체크리스트를 활용하여 점검했습니다. 
-<img width="456" height="279" alt="image" src="https://github.com/user-attachments/assets/f0bf8f17-9af2-4d62-9764-492ff49bf0d2" />
+| 항목      | 기존 SSH 방식  | Session Manager          |
+| --------- | -------------- | ------------------------ |
+| 포트 개방 | 22번 오픈 필요 | 불필요                   |
+| 자격증명  | SSH 키 관리    | IAM 역할                 |
+| 감사 로그 | 별도 설정 필요 | AWS CloudTrail 자동 기록 |
 
+### Refresh Token Rotation
 
+액세스 토큰 재발급 시 리프레시 토큰도 함께 교체합니다. DB에는 `userId`당 최신 토큰 1개만 유지(Upsert)되므로 탈취된 구 토큰을 재사용할 수 없습니다.
+
+```typescript
+// auth.service.ts
+async reissueAccessToken(userId: number, role: Role, res: Response) {
+  const { accessToken, ...accessOption } = this.createAccessToken(userId, role);
+  const { refreshToken, ...refreshOption } = this.createRefreshToken(userId);
+  await this.setCurrentRefreshToken(refreshToken, userId); // DB Upsert로 구 토큰 즉시 무효화
+  res.cookie('Authentication', accessToken, accessOption);
+  res.cookie('Refresh', refreshToken, refreshOption);
+  return { accessToken };
+}
+
+// Upsert: 같은 userId의 토큰은 항상 1개만 존재
+await this.refreshTokenRepository
+  .createQueryBuilder()
+  .insert()
+  .into(RefreshToken)
+  .values({ userId, refreshtoken: refreshToken, expiresAt })
+  .orUpdate(['refreshtoken', 'expires_at'], ['userId'])
+  .updateEntity(false)
+  .execute();
+```
+
+토큰은 모두 **HttpOnly 쿠키**로 전달해 JavaScript에서 접근할 수 없도록 합니다.
+
+### HttpOnly + SameSite 쿠키
+
+액세스 토큰과 리프레시 토큰 모두 동일한 쿠키 옵션으로 발급합니다.
+
+```typescript
+// auth.service.ts
+private getCookieBaseOption() {
+  return {
+    path: '/',
+    httpOnly: true,                                                        // JS에서 document.cookie 접근 불가
+    secure: this.configService.get('NODE_ENV') === 'production',          // HTTPS에서만 전송
+    sameSite: this.configService.get('COOKIE_SAMESITE') ?? 'lax',        // 외부 사이트 요청 시 쿠키 미전송
+  } as const;
+}
+```
+
+| 옵션             | 설정값          | 방어 대상                                                               |
+| ---------------- | --------------- | ----------------------------------------------------------------------- |
+| `httpOnly: true` | 항상 적용       | **XSS** — 악성 스크립트가 `document.cookie`로 토큰을 탈취하는 공격 차단 |
+| `sameSite: lax`  | 환경변수로 주입 | **CSRF** — 외부 사이트에서 유발한 요청에 쿠키가 자동 첨부되는 공격 차단 |
+| `secure: true`   | production 한정 | 토큰이 암호화되지 않은 HTTP 채널로 노출되는 것을 방지                   |
+
+---
+
+## 7. 모니터링
+
+### Sentry — 에러 추적 및 성능 프로파일링
+
+`src/instrument.ts`를 `main.ts` 최상단에서 임포트해 모든 요청의 트레이스와 프로파일을 수집합니다.
+
+```typescript
+// src/instrument.ts
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  integrations: [nodeProfilingIntegration()],
+  tracesSampleRate: 1.0, // 요청 100% 추적
+  profilesSampleRate: 1.0, // CPU 프로파일 100% 수집
+  environment: process.env.NODE_ENV,
+});
+```
+
+Sentry 이슈 발생 시 Webhook을 통해 Discord 알림을 전송합니다 (`POST /webhook/sentry`).
+
+### Prometheus + Grafana — 메트릭 수집
+
+`/metrics` 엔드포인트에서 NestJS 기본 메트릭(HTTP 요청 수, 응답 시간, 메모리 등)을 노출합니다.
+
+```typescript
+// app.module.ts
+PrometheusModule.register({
+  defaultMetrics: { enabled: true },
+  path: '/metrics',
+});
+```
+
+Prometheus는 EC2 서버에 직접 설치해 `/metrics`를 주기적으로 스크레이핑하고, 수집된 데이터는 **Grafana Cloud**에서 대시보드로 시각화합니다.
