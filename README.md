@@ -9,10 +9,11 @@
 1. [프로젝트 소개](#1-프로젝트-소개)
 2. [기술 스택](#2-기술-스택)
 3. [시스템 아키텍처](#3-시스템-아키텍처)
-4. [주요 트러블 슈팅](#4-주요-트러블-슈팅)
-5. [성능 / 최적화](#5-성능--최적화)
-6. [보안](#6-보안)
-7. [모니터링](#7-모니터링)
+4. [AI 시험지 해설](#4-ai-시험지-해설)
+5. [부하 테스트](#5-부하-테스트)
+6. [주요 트러블 슈팅](#6-주요-트러블-슈팅)
+7. [보안](#7-보안)
+8. [모니터링](#8-모니터링)
 
 ---
 
@@ -46,21 +47,240 @@
 
 ## 3. 시스템 아키텍처
 
-<img width="960" height="531" alt="Image" src="https://github.com/user-attachments/assets/b279f5ef-9370-4617-baf8-10f47342623a" />
+<p align="center">
+  <img width="960" height="531" alt="Image" src="https://github.com/user-attachments/assets/b279f5ef-9370-4617-baf8-10f47342623a" />
+  <br>
+  <em>전체 시스템 구성도</em>
+</p>
 
 ### 외부 서비스 선택
 
 비용 구조를 기준으로 외부 서비스를 선택해 운영 비용을 최소화했다.
 
-| 서비스 | 용도 | 선택 이유 |
-| ------ | ---- | --------- |
-| **Cloudflare R2** | 파일 스토리지 | AWS S3와 달리 이그레스(전송) 비용이 없어, 파일 다운로드가 많아도 비용이 늘지 않음 |
-| **Bunny CDN** | 영상 스토리지·스트리밍 | CloudFront와 달리 요청당 과금이 없고 대역폭으로만 과금. 영상은 조각 요청이 많아 요청 과금이 없는 Bunny가 유리. 인코딩도 무료 포함 |
-| **Moonshot (Kimi K2.6)** | 시험지 해설 AI | 수학·추론 벤치마크 상위권 중 토큰 비용이 낮아 성능 대비 비용이 효율적 |
+| 서비스                   | 용도                   | 선택 이유                                                                                                                         |
+| ------------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Cloudflare R2**        | 파일 스토리지          | AWS S3와 달리 이그레스(전송) 비용이 없어, 파일 다운로드가 많아도 비용이 늘지 않음                                                 |
+| **Bunny CDN**            | 영상 스토리지·스트리밍 | CloudFront와 달리 요청당 과금이 없고 대역폭으로만 과금. 영상은 조각 요청이 많아 요청 과금이 없는 Bunny가 유리. 인코딩도 무료 포함 |
+| **Moonshot (Kimi K2.6)** | 시험지 해설 AI         | 수학·추론 벤치마크 상위권 중 토큰 비용이 낮아 성능 대비 비용이 효율적                                                             |
 
 ---
 
-## 4. 주요 트러블 슈팅
+## 4. AI 시험지 해설
+
+시험지 PDF를 업로드하면 AI(Kimi K2.6)가 문제를 풀어 해설을 생성하는 기능이다.
+
+### 비동기 처리
+
+AI 해설은 외부 API(Moonshot) 호출이라 응답까지 수십 분이 걸린다.
+HTTP 요청 흐름을 블로킹하면 사용자가 그동안 대기하거나 요청이 타임아웃되므로,
+요청 시 작업을 BullMQ 큐에 넣고 즉시 jobId를 반환한 뒤 백그라운드에서 처리한다.
+처리 결과는 작업 상태(jobId)로 조회한다.
+
+```
+POST /solve  →  enqueue()  →  jobId 즉시 반환
+                                    ↓
+                          BullMQ Worker (백그라운드)
+                                    ↓
+GET /solve/:jobId  →  getStatus()  →  { status, result }
+```
+
+**요청 시: 큐에 등록 후 jobId 즉시 반환**
+
+```typescript
+// analysis.service.ts
+async enqueue(files: Express.Multer.File[]): Promise<{ jobId: string }> {
+  const jobId = uuidv4();
+
+  // 1. Moonshot 파일 서버에 이미지 업로드
+  const fileIds = await Promise.all(
+    files.map((f) => this.uploadFileToMoonshot(f.buffer, f.originalname, f.mimetype)),
+  );
+
+  // 2. DB에 pending 상태로 작업 저장
+  await this.analysisRepository.save(
+    this.analysisRepository.create({ jobId, status: 'pending', images: JSON.stringify(fileIds) }),
+  );
+
+  // 3. BullMQ 큐에 등록 (실제 처리는 Worker가 백그라운드에서 수행)
+  await this.analysisQueue.add('solve', { jobId, fileIds }, { jobId, attempts: 3 });
+
+  return { jobId }; // 클라이언트에 즉시 반환
+}
+```
+
+**백그라운드 처리: Worker가 큐에서 꺼내 AI 호출 후 DB 업데이트**
+
+```typescript
+// analysis.processor.ts
+@Processor('analysis', { concurrency: 3 })
+export class AnalysisProcessor extends WorkerHost {
+  async process(job: Job<SolveJobData>): Promise<void> {
+    const { jobId, fileIds } = job.data;
+
+    await this.analysisRepository.update({ jobId }, { status: 'processing' });
+
+    const images = fileIds.map((id) => `ms://${id}`);
+    const result = await this.analysisService.processImages(images); // AI 호출 (수십 분 소요)
+
+    await this.analysisRepository.update(
+      { jobId },
+      { result: JSON.stringify(result), status: 'completed' },
+    );
+  }
+}
+```
+
+**결과 조회: jobId로 상태와 해설 반환**
+
+```typescript
+// analysis.service.ts
+async getStatus(jobId: string): Promise<{ jobId: string; status: string; result: SolveResponse | null }> {
+  const record = await this.analysisRepository.findOne({ where: { jobId } });
+  if (!record) throw new NotFoundException(`jobId ${jobId}를 찾을 수 없습니다.`);
+
+  return {
+    jobId,
+    status: record.status, // pending | processing | completed | failed
+    result: record.status === 'completed' ? JSON.parse(record.result) : null,
+  };
+}
+```
+
+### 동시성 최적화
+
+#### 배경
+
+시험지 해설은 외부 AI(Moonshot) API를 호출하기 때문에 응답까지 장시간이 걸린다. HTTP 요청 흐름을 블로킹하지 않도록 **BullMQ 비동기 큐**로 분리해 처리한다.
+
+#### 최적화
+
+순차 처리(동시성 1)로 실행하면 55분이 소요됐다. Moonshot API의 동시성 한도(3)에 맞춰 3개를 병렬 처리하자 19분으로 단축됐다.
+
+병렬 처리 수는 두 가지 제약으로 결정된다 — 외부 API가 허용하는 동시 요청 수와, 서버의 메모리다. 사용 중인 Moonshot API의 Tier0 등급은 동시 요청 한도가 3이고, 3개 병렬 처리 시 EC2 메모리도 여유가 있어 한도에 맞춰 3으로 설정했다.
+
+> 같은 시험지를 3회씩 측정한 평균값 기준
+
+| 동시성   | 1회  | 2회  | 3회  | 평균    |
+| -------- | ---- | ---- | ---- | ------- |
+| 3 (병렬) | 18분 | 19분 | 21분 | 약 19분 |
+| 1 (순차) | 58분 | 51분 | 56분 | 약 55분 |
+
+#### 결과
+
+약 2.8배 처리 시간 단축
+
+---
+
+## 5. 부하 테스트
+
+### 측정 환경
+
+EC2 t4g.small (2GB RAM), k6 사용, 300 VU Ramp-up 시나리오 기준으로 측정했다.
+
+<p align="center">
+  <img width="1824" height="825" alt="image" src="https://github.com/user-attachments/assets/c2a6d5c3-8f2b-4c85-ba1b-9300c13ba644" />
+  <br>
+  <em>300 VU 부하 테스트 중 Grafana 메트릭 대시보드</em>
+</p>
+
+<p align="center">
+  <img width="1530" height="727" alt="image" src="https://github.com/user-attachments/assets/5f1be4fc-511f-4d0b-9e7b-785b3ac84a91" />
+  <br>
+  <em>k6 테스트 진행 중 CPU · 메모리 사용률</em>
+</p>
+
+### 측정 방법론
+
+처음엔 로그인/로그아웃을 반복하는 스크립트로 테스트했는데, 실사용자는 그렇게 행동하지 않아 CPU 사용률이 80%로 과장됐다. 로그인 1회 후 토큰을 재사용하는 현실적인 패턴으로 바꾸자 CPU가 50%로 낮아졌다. 잘못된 측정으로 엉뚱한 결론을 내리지 않으려 테스트를 실사용 패턴에 맞게 설계했다.
+
+**[수정 후 학생 시나리오]**
+
+```
+로그인 → sleep(2)
+  └→ 내 클래스 목록 전체 조회 → sleep(2)
+       └→ 클래스 목록에서 랜덤 1개 선택
+            └→ 공지사항 전체 조회 → sleep(5)
+                 └→ [50%] 공지사항 상세 조회 → sleep(10)
+            └→ 교재 목록 조회 → sleep(5)
+            └→ 숙제 진도 목록 조회 → sleep(10)
+            └→ 학습자료 목록 조회 → sleep(5)
+                 └→ [50%] 학습자료 상세 조회 → sleep(10)
+            └→ 시험점수 전체 조회 → sleep(10)
+            └→ 시험 등수 조회 → sleep(10)
+```
+
+**[수정 후 학부모 시나리오]**
+
+```
+로그인 → sleep(2)
+  └→ 자녀 조회 → sleep(2)
+       └→ 내 클래스 전체 목록 조회 → sleep(2)
+            └→ 클래스 목록에서 랜덤 1개 선택
+                 └→ 공지사항 전체 조회 → sleep(5)
+                      └→ [50%] 공지사항 상세 조회 → sleep(10)
+                 └→ 숙제 진도 목록 조회 → sleep(10)
+                 └→ 시험점수 전체 조회 → sleep(10)
+                 └→ 시험 등수 조회 → sleep(10)
+```
+
+**[부하테스트 흐름 및 임계값]**
+
+```
+VU
+300 |                    _______________
+    |                   /               \
+200 |         _________/                 \
+    |        /                            \
+  0 |_______/                              \___
+    0      90s         180s          +3m   +30s
+
+학생 (200 VU) : ramp-up 0 → 200 / 90s, 유지 3m, ramp-down 30s
+학부모 (100 VU): 90s 후 시작, ramp-up 0 → 100 / 90s, 유지 3m, ramp-down 30s
+최대 동시 VU  : 300
+
+목적: 정상 트래픽에서 threshold 충족 여부 확인
+에러율 < 1%
+
+전 API
+p(95) < 1000ms
+p(99) < 1000ms
+```
+
+**[스크립트 수정 전]**
+
+<p align="center">
+  <img width="752" height="275" alt="image" src="https://github.com/user-attachments/assets/d7a2ffcf-5583-438d-bbd4-d34e92e6f1d9" />
+  <br>
+  <em>수정 전: 로그인/로그아웃 반복 스크립트 — CPU 80%</em>
+</p>
+
+**[스크립트 수정 후]**
+
+<p align="center">
+  <img width="746" height="257" alt="image" src="https://github.com/user-attachments/assets/c67475c6-a75d-411d-a6a2-75c7189d0dc2" />
+  <br>
+  <em>수정 후: 실사용 패턴 스크립트 — CPU 50%</em>
+</p>
+
+#### 결과
+
+전 API p95 < 1s SLA를 충족했으며, 약 40 RPS를 아래 수치로 처리했다.
+
+| 지표   | 값    |
+| ------ | ----- |
+| p95    | 336ms |
+| p99    | 520ms |
+| 에러율 | 0%    |
+
+<p align="center">
+  <img width="757" height="591" alt="image" src="https://github.com/user-attachments/assets/854145ed-04eb-4ace-ad20-8539e136ebae" />
+  <br>
+  <em>최종 측정값 — 40 RPS 기준 p95 336ms, 에러율 0%</em>
+</p>
+
+---
+
+## 6. 주요 트러블 슈팅
 
 ### Bunny CDN 고아 객체 문제
 
@@ -105,6 +325,7 @@
 **2단계 — 즉시 삭제마저 실패한 경우, 매일 새벽 4시 배치로 재처리**
 
 1일 이상 지난 고아 객체를 두 가지 상태로 나눠 찾아 Bunny 삭제를 재시도한다.
+
 - `FAILED` — 업로드 실패 후 보상 삭제까지 실패한 영상
 - `DELETING` — 어드민이 삭제 요청했으나 Bunny 삭제가 실패한 영상
 
@@ -147,12 +368,29 @@ async cleanupOrphanBunnyVideos(): Promise<void> {
 #### 문제
 
 부하 테스트 중, 이미 로그인한 적 있는 사용자가 다시 로그인할 때 간헐적으로 로그인이 실패하는 현상을 발견했다. 처음 가입한 사용자는 정상인데, 재로그인하는 사용자에게서만 실패가 나타났다.
+<p align="center">
+  <img width="1808" height="506" alt="image" src="https://github.com/user-attachments/assets/96e384b8-d384-4ebd-ba85-785d5497b086" />
+  <br>
+  <em>부하 테스트 중 재로그인 사용자에서 간헐적 오류 발생</em>
+</p>
+
+<p align="center">
+  <img width="239" height="48" alt="image" src="https://github.com/user-attachments/assets/cf00bbd3-513f-4615-aed9-f93bb3e6b8a7" />
+  <br>
+  <em>k6 에러 로그 — 재로그인 시 500 응답</em>
+</p>
 
 #### 원인
 
 Refresh Token을 저장할 때 `createQueryBuilder().insert()`에 `orUpdate`를 사용해 `INSERT ... ON DUPLICATE KEY UPDATE`로 처리한다. 첫 로그인은 INSERT, 재로그인은 UPDATE 분기를 탄다.
 
 문제는 TypeORM의 `InsertQueryBuilder`가 기본적으로 INSERT 후 `insertId`로 방금 처리한 엔티티를 재조회한다는 점이다. 그런데 UPDATE 분기에서는 MySQL이 `insertId`를 0으로 반환한다. 존재하지 않는 `id=0`인 행을 재조회하려다 실패한 것이 간헐적 로그인 오류의 원인이었다.
+
+<p align="center">
+  <img width="1187" height="272" alt="image" src="https://github.com/user-attachments/assets/697175bf-407d-4b33-a0f7-c132ef8b801b" />
+  <br>
+  <em>UPDATE 분기에서 MySQL이 insertId=0을 반환하는 쿼리 로그</em>
+</p>
 
 ```
 첫 로그인 → INSERT → insertId = 정상값 → 재조회 성공
@@ -172,7 +410,6 @@ await this.refreshTokenRepository
   .values({
     userId: userId,
     refreshtoken: refreshToken,
-    createdAt: new Date(),
     expiresAt: expiresAt,
   })
   .orUpdate(['refreshtoken', 'expires_at'], ['userId'])
@@ -184,66 +421,15 @@ await this.refreshTokenRepository
 
 재로그인 시 간헐적 실패가 사라졌고, 부하 테스트에서 로그인 에러율 0%를 달성했다.
 
----
-
-## 5. 성능 검증 / 최적화
-
-### 부하 테스트
-
-#### 측정 환경
-
-EC2 t4g.small (2GB RAM), k6 사용, 300 VU Ramp-up 시나리오 기준으로 측정했다.
-
-<!-- 사진 ①: k6 부하 테스트 구성/시나리오 또는 VU 곡선 -->
-
-#### 측정 방법론
-
-처음엔 로그인/로그아웃을 반복하는 스크립트로 테스트했는데, 실사용자는 그렇게 행동하지 않아 CPU 사용률이 80%로 과장됐다. 로그인 1회 후 토큰을 재사용하는 현실적인 패턴으로 바꾸자 CPU가 50%로 낮아졌다. 잘못된 측정으로 엉뚱한 결론을 내리지 않으려 테스트를 실사용 패턴에 맞게 설계했다.
-
-<!-- 사진 ②: CPU 80% → 50% Grafana 그래프 -->
-
-#### 결과
-
-전 API p95 < 1s SLA를 충족했으며, 약 40 RPS를 아래 수치로 처리했다.
-
-| 지표 | 값 |
-| ---- | -- |
-| p95  | 336ms |
-| p99  | 520ms |
-| 에러율 | 0% |
-
-<!-- 사진 ③: k6 결과 요약 화면 (p95/p99/에러율) -->
+<p align="center">
+  <img width="352" height="369" alt="image" src="https://github.com/user-attachments/assets/28d06629-1d2b-4303-94b0-d719a3604119" />
+  <br>
+  <em>수정 후 재로그인 에러율 0% 달성</em>
+</p>
 
 ---
 
-### 동시성 최적화 (AI 해설)
-
-#### 배경
-
-시험지 해설은 외부 AI(Moonshot) API를 호출하기 때문에 응답까지 장시간이 걸린다. HTTP 요청 흐름을 블로킹하지 않도록 **BullMQ 비동기 큐**로 분리해 처리한다.
-
-#### 최적화
-
-순차 처리(동시성 1)로 실행하면 55분이 소요됐다. Moonshot API의 동시성 한도(3)에 맞춰 3개를 병렬 처리하자 19분으로 단축됐다.
-
-병렬 처리 수는 두 가지 제약으로 결정된다 — 외부 API가 허용하는 동시 요청 수와, 서버의 메모리다. 사용 중인 Moonshot API의 Tier0 등급은 동시 요청 한도가 3이고, 3개 병렬 처리 시 EC2 메모리도 여유가 있어 한도에 맞춰 3으로 설정했다.
-
-| 동시성 | 처리 시간 |
-| ------ | --------- |
-| 1 (순차) | 55분 |
-| 3 (병렬) | 19분 |
-
-> 같은 시험지를 3회씩 측정한 평균값 기준
-
-<!-- 사진 ④: 동시성 측정 결과 (55분/19분 비교 또는 Moonshot Tier 화면) -->
-
-#### 결과
-
-약 2.8배 처리 시간 단축
-
----
-
-## 6. 보안
+## 7. 보안
 
 ### SSM Session Manager
 
@@ -314,7 +500,7 @@ private getCookieBaseOption() {
 
 ---
 
-## 7. 모니터링
+## 8. 모니터링
 
 ### Sentry — 에러 추적 및 성능 프로파일링
 
@@ -346,3 +532,12 @@ PrometheusModule.register({
 ```
 
 Prometheus는 EC2 서버에 직접 설치해 `/metrics`를 주기적으로 스크레이핑하고, 수집된 데이터는 **Grafana Cloud**에서 대시보드로 시각화합니다.
+
+### 모니터링 체크리스트
+
+매일 각각의 지표를 Notion과 체크리스트를 통해 관리했습니다.
+<p align="center">
+  <img width="1392" height="858" alt="image" src="https://github.com/user-attachments/assets/ba7a3722-ec43-4605-96b3-ec6c51b232db" />
+  <br>
+  <em>Notion 기반 일별 모니터링 체크리스트</em>
+</p>
