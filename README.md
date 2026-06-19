@@ -386,7 +386,7 @@ Refresh Token을 저장할 때 `createQueryBuilder().insert()`에 `orUpdate`를 
 로그인 API는 orUpdate를 실행하지 않고 Insert만 실행하게 설계가 되어있지만 ( 토큰 재발급 API는 orUpdate 실행 )
 시나리오 내, 동시성 문제로 인해 로그인 API가 orUpdate가 실행이 되었다. 자세한 내용은 블로그로 서술했다.
 
-[부하테스트 중 발견한 에러](https://development-getting-better.tistory.com/manage/newpost/184?type=post&returnURL=ENTRY)
+[부하테스트 중 발견한 에러](https://development-getting-better.tistory.com/184)
 
 문제는 TypeORM의 `InsertQueryBuilder`가 기본적으로 INSERT 후 `insertId`로 방금 처리한 엔티티를 재조회한다는 점이다. 그런데 UPDATE 분기에서는 MySQL이 `insertId`를 0으로 반환한다. 존재하지 않는 `id=0`인 행을 재조회하려다 실패한 것이 간헐적 로그인 오류의 원인이었다.
 
