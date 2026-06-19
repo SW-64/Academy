@@ -367,17 +367,17 @@ async cleanupOrphanBunnyVideos(): Promise<void> {
 
 #### 문제
 
-부하 테스트 중, 간헐적으로 로그인이 실패하는 현상을 발견했다. 
+부하 테스트 중, 간헐적으로 로그인이 실패하는 현상을 발견했다. (1307건 중, 8건 실패)
 <p align="center">
   <img width="1808" height="506" alt="image" src="https://github.com/user-attachments/assets/96e384b8-d384-4ebd-ba85-785d5497b086" />
   <br>
-  <em>부하 테스트 중 재로그인 사용자에서 간헐적 오류 발생</em>
+  <em>부하 테스트 중, 간헐적 로그인 오류 발생</em>
 </p>
 
 <p align="center">
   <img width="239" height="48" alt="image" src="https://github.com/user-attachments/assets/cf00bbd3-513f-4615-aed9-f93bb3e6b8a7" />
   <br>
-  <em>k6 에러 로그 — 재로그인 시 500 응답</em>
+  <em>k6 에러 로그 — 로그인 시 간헐적으로 500 응답</em>
 </p>
 
 #### 원인
@@ -388,7 +388,7 @@ Refresh Token을 저장할 때 `createQueryBuilder().insert()`에 `orUpdate`를 
 
 [부하테스트 중 발견한 에러](https://development-getting-better.tistory.com/184)
 
-문제는 TypeORM의 `InsertQueryBuilder`가 기본적으로 INSERT 후 `insertId`로 방금 처리한 엔티티를 재조회한다는 점이다. 그런데 UPDATE 분기에서는 MySQL이 `insertId`를 0으로 반환한다. 존재하지 않는 `id=0`인 행을 재조회하려다 실패한 것이 간헐적 로그인 오류의 원인이었다.
+문제는 TypeORM의 `InsertQueryBuilder`가 기본적으로 INSERT 후 `insertId`로 방금 처리한 엔티티를 재조회한다는 점이다. 그런데 UPDATE 분기에서는 MySQL이 `insertId`를 0으로 반환한다. id=0은 유효하지 않아 재조회를 실행하기 전에 에러가 발생한 것이 간헐적 로그인 오류의 원인이었다.
 
 <p align="center">
   <img width="1187" height="272" alt="image" src="https://github.com/user-attachments/assets/697175bf-407d-4b33-a0f7-c132ef8b801b" />
@@ -424,7 +424,7 @@ await this.refreshTokenRepository
 <p align="center">
   <img width="352" height="369" alt="image" src="https://github.com/user-attachments/assets/28d06629-1d2b-4303-94b0-d719a3604119" />
   <br>
-  <em>수정 후 재로그인 에러율 0% 달성</em>
+  <em>수정 후 로그인 에러율 0% 달성</em>
 </p>
 
 ---
