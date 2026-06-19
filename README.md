@@ -186,7 +186,7 @@ EC2 t4g.small (2GB RAM), k6 사용, 300 VU Ramp-up 시나리오 기준으로 측
 <p align="center">
   <img width="1530" height="727" alt="image" src="https://github.com/user-attachments/assets/5f1be4fc-511f-4d0b-9e7b-785b3ac84a91" />
   <br>
-  <em>k6 테스트 진행 중 CPU · 메모리 사용률</em>
+  <em>k6 테스트 진행 중 DB CPU · 메모리 사용률</em>
 </p>
 
 ### 측정 방법론
@@ -282,7 +282,7 @@ p(99) < 1000ms
 
 ## 6. 주요 트러블 슈팅
 
-### Bunny CDN 고아 객체 문제
+### 1) Bunny CDN 고아 객체 문제
 
 #### 문제
 
@@ -363,11 +363,11 @@ async cleanupOrphanBunnyVideos(): Promise<void> {
 }
 ```
 
-### 로그인 간헐적 실패
+### 2) 로그인 간헐적 실패
 
 #### 문제
 
-부하 테스트 중, 이미 로그인한 적 있는 사용자가 다시 로그인할 때 간헐적으로 로그인이 실패하는 현상을 발견했다. 처음 가입한 사용자는 정상인데, 재로그인하는 사용자에게서만 실패가 나타났다.
+부하 테스트 중, 간헐적으로 로그인이 실패하는 현상을 발견했다. 
 <p align="center">
   <img width="1808" height="506" alt="image" src="https://github.com/user-attachments/assets/96e384b8-d384-4ebd-ba85-785d5497b086" />
   <br>
@@ -382,7 +382,11 @@ async cleanupOrphanBunnyVideos(): Promise<void> {
 
 #### 원인
 
-Refresh Token을 저장할 때 `createQueryBuilder().insert()`에 `orUpdate`를 사용해 `INSERT ... ON DUPLICATE KEY UPDATE`로 처리한다. 첫 로그인은 INSERT, 재로그인은 UPDATE 분기를 탄다.
+Refresh Token을 저장할 때 `createQueryBuilder().insert()`에 `orUpdate`를 사용해 `INSERT ... ON DUPLICATE KEY UPDATE`로 처리한다. 
+로그인 API는 orUpdate를 실행하지 않고 Insert만 실행하게 설계가 되어있지만 ( 토큰 재발급 API는 orUpdate 실행 )
+시나리오 내, 동시성 문제로 인해 로그인 API가 orUpdate가 실행이 되었다. 자세한 내용은 블로그로 서술했다.
+
+[부하테스트 중 발견한 에러](https://development-getting-better.tistory.com/manage/newpost/184?type=post&returnURL=ENTRY)
 
 문제는 TypeORM의 `InsertQueryBuilder`가 기본적으로 INSERT 후 `insertId`로 방금 처리한 엔티티를 재조회한다는 점이다. 그런데 UPDATE 분기에서는 MySQL이 `insertId`를 0으로 반환한다. 존재하지 않는 `id=0`인 행을 재조회하려다 실패한 것이 간헐적 로그인 오류의 원인이었다.
 
@@ -392,10 +396,6 @@ Refresh Token을 저장할 때 `createQueryBuilder().insert()`에 `orUpdate`를 
   <em>UPDATE 분기에서 MySQL이 insertId=0을 반환하는 쿼리 로그</em>
 </p>
 
-```
-첫 로그인 → INSERT → insertId = 정상값 → 재조회 성공
-재로그인  → UPDATE → insertId = 0      → id=0 재조회 → 실패
-```
 
 #### 해결
 
@@ -419,7 +419,7 @@ await this.refreshTokenRepository
 
 #### 결과
 
-재로그인 시 간헐적 실패가 사라졌고, 부하 테스트에서 로그인 에러율 0%를 달성했다.
+로그인 API의 간헐적 실패가 사라졌고, 부하 테스트에서 로그인 에러율 0%를 달성했다.
 
 <p align="center">
   <img width="352" height="369" alt="image" src="https://github.com/user-attachments/assets/28d06629-1d2b-4303-94b0-d719a3604119" />
