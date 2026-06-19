@@ -367,7 +367,7 @@ async cleanupOrphanBunnyVideos(): Promise<void> {
 
 #### 문제
 
-부하 테스트 중, 간헐적으로 로그인이 실패하는 현상을 발견했다. (1307건 중, 8건 실패)
+부하 테스트 중, 간헐적으로 로그인이 실패하는 현상을 발견했다. (1307건 중, 7~8건 실패)
 <p align="center">
   <img width="1808" height="506" alt="image" src="https://github.com/user-attachments/assets/96e384b8-d384-4ebd-ba85-785d5497b086" />
   <br>
