@@ -7,6 +7,7 @@ import {
   NotFoundException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Video, VideoStatus } from './entities/video.entity';
 import { DataSource, In, IsNull, LessThan, Repository } from 'typeorm';
@@ -801,11 +802,12 @@ export class VideosService {
   }
 
   /**
-   * 배치: Bunny 영상 객체 정리 (매시간 실행)
+   * 배치: Bunny 영상 객체 정리 (매일 새벽 4시 실행)
    * - DELETING: 삭제 요청 후 Bunny 삭제가 실패한 영상 (soft-deleted)
    * - FAILED:   업로드 실패 후 Bunny 보상 삭제까지 실패한 영상
    */
-  async cleanupDeletedVideos(): Promise<void> {
+  @Cron('0 4 * * *')
+  async cleanupOrphanBunnyVideos(): Promise<void> {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
