@@ -40,7 +40,7 @@ const KIMI_RPM = 20;
 
 const DETECT_PROMPT = `이 시험지에 있는 문제 번호를 JSON 배열로만 반환해줘. 예시: [11, 12, 13]`;
 
-const SOLVE_PROMPT_BASE = `## 지침
+export const SOLVE_PROMPT_BASE = `## 지침
 - 대상: 고등학교 수험생 (수능 기준)
 - 각 풀이 단계마다 왜 이 방법을 쓰는지 이유를 한 문장으로 먼저 써줘
 - 수식은 LaTeX로 작성
@@ -282,6 +282,40 @@ export class AnalysisService {
       await this.analysisRepository.update({ jobId: record.jobId }, { images: null });
       this.logger.log(`[cleanup] jobId=${record.jobId} 완료`);
     }
+  }
+
+  async estimateImageTokens(fileId: string): Promise<number> {
+    const response = await fetch('https://api.moonshot.ai/v1/tokenizers/estimate-token-count', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.MOONSHOT_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'kimi-k2.6',
+        messages: [
+          { role: 'system', content: SOLVE_PROMPT_BASE },
+          {
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: `ms://${fileId}` } },
+              { type: 'text', text: '문제를 해설해줘.' },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`estimate-token-count 실패: ${response.status} ${response.statusText}`);
+    }
+
+    const json = (await response.json()) as { data: { total_tokens: number } };
+    return json.data.total_tokens;
+  }
+
+  async deleteFile(fileId: string): Promise<void> {
+    await this.client.files.delete(fileId);
   }
 
   async processImages(images: string[]): Promise<SolveResponse> {

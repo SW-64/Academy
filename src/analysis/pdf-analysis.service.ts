@@ -8,6 +8,12 @@ import * as sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import { AnalysisService } from './analysis.service';
 
+export interface TokenMeasureResult {
+  image_count: number;
+  total_tokens: number;
+  per_image_tokens: number[];
+}
+
 const execFileAsync = promisify(execFile);
 
 const CROP = {
@@ -22,6 +28,97 @@ export class PdfAnalysisService {
   constructor(
     private readonly analysisService: AnalysisService,
   ) {}
+
+  async measureTokensRaw(file: Express.Multer.File): Promise<TokenMeasureResult> {
+    const tmpPdfPath = join(tmpdir(), `${uuidv4()}.pdf`);
+    const tmpImgDir = join(tmpdir(), uuidv4());
+    const outputPrefix = join(tmpImgDir, 'page');
+
+    await writeFile(tmpPdfPath, file.buffer);
+    await mkdir(tmpImgDir, { recursive: true });
+
+    const uploadedFileIds: string[] = [];
+    try {
+      await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
+      const filenames = (await readdir(tmpImgDir)).sort();
+
+      const fileIds = await Promise.all(
+        filenames.map(async (filename, i) => {
+          const buf = await readFile(join(tmpImgDir, filename));
+          return this.analysisService.uploadFileToMoonshot(buf, `${i}.png`, 'image/png');
+        }),
+      );
+      uploadedFileIds.push(...fileIds);
+
+      const perImageTokens = await Promise.all(
+        fileIds.map((id) => this.analysisService.estimateImageTokens(id)),
+      );
+
+      return {
+        image_count: fileIds.length,
+        total_tokens: perImageTokens.reduce((s, t) => s + t, 0),
+        per_image_tokens: perImageTokens,
+      };
+    } finally {
+      await Promise.all([
+        unlink(tmpPdfPath).catch(() => {}),
+        rm(tmpImgDir, { recursive: true, force: true }).catch(() => {}),
+        ...uploadedFileIds.map((id) => this.analysisService.deleteFile(id).catch(() => {})),
+      ]);
+    }
+  }
+
+  // 크롭 로직: PdfAnalysisService.convertAndEnqueue()의 CROP 상수 및 sharp().extract() 동일 적용
+  async measureTokensCropped(file: Express.Multer.File): Promise<TokenMeasureResult> {
+    const tmpPdfPath = join(tmpdir(), `${uuidv4()}.pdf`);
+    const tmpImgDir = join(tmpdir(), uuidv4());
+    const outputPrefix = join(tmpImgDir, 'page');
+
+    await writeFile(tmpPdfPath, file.buffer);
+    await mkdir(tmpImgDir, { recursive: true });
+
+    const uploadedFileIds: string[] = [];
+    try {
+      await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
+      const filenames = (await readdir(tmpImgDir)).sort();
+
+      const fileIds: string[] = new Array(filenames.length * 2);
+      await Promise.all(
+        filenames.map(async (filename, pageIndex) => {
+          const pageBuffer = await readFile(join(tmpImgDir, filename));
+          const [leftBuffer, rightBuffer] = await Promise.all([
+            sharp(pageBuffer).extract(CROP.left).png().toBuffer(),
+            sharp(pageBuffer).extract(CROP.right).png().toBuffer(),
+          ]);
+
+          const [leftId, rightId] = await Promise.all([
+            this.analysisService.uploadFileToMoonshot(leftBuffer, `${pageIndex * 2}.png`, 'image/png'),
+            this.analysisService.uploadFileToMoonshot(rightBuffer, `${pageIndex * 2 + 1}.png`, 'image/png'),
+          ]);
+
+          fileIds[pageIndex * 2] = leftId;
+          fileIds[pageIndex * 2 + 1] = rightId;
+        }),
+      );
+      uploadedFileIds.push(...fileIds);
+
+      const perImageTokens = await Promise.all(
+        fileIds.map((id) => this.analysisService.estimateImageTokens(id)),
+      );
+
+      return {
+        image_count: fileIds.length,
+        total_tokens: perImageTokens.reduce((s, t) => s + t, 0),
+        per_image_tokens: perImageTokens,
+      };
+    } finally {
+      await Promise.all([
+        unlink(tmpPdfPath).catch(() => {}),
+        rm(tmpImgDir, { recursive: true, force: true }).catch(() => {}),
+        ...uploadedFileIds.map((id) => this.analysisService.deleteFile(id).catch(() => {})),
+      ]);
+    }
+  }
 
   async convertAndEnqueueRaw(file: Express.Multer.File): Promise<{ jobId: string }> {
     const jobId = uuidv4();

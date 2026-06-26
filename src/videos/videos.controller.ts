@@ -188,7 +188,7 @@ export class VideosController {
   @Roles(Role.ADMIN)
   @Post('cleanup')
   async cleanupDeletedVideos() {
-    await this.videosService.cleanupDeletedVideos();
+    await this.videosService.cleanupOrphanBunnyVideos();
 
     return {
       statusCode: HttpStatus.OK,
