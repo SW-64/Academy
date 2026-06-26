@@ -35,4 +35,28 @@ export class PdfAnalysisController {
     }
     return this.pdfAnalysisService.convertAndEnqueueRaw(file);
   }
+
+  @Post('pdf/measure-tokens')
+  @UseInterceptors(FileInterceptor('file'))
+  async measureTokensRaw(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('PDF 파일을 업로드해야 합니다.');
+    }
+    if (file.mimetype !== 'application/pdf') {
+      throw new BadRequestException('PDF 파일만 허용됩니다.');
+    }
+    return this.pdfAnalysisService.measureTokensRaw(file);
+  }
+
+  @Post('pdf/measure-tokens/cropped')
+  @UseInterceptors(FileInterceptor('file'))
+  async measureTokensCropped(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('PDF 파일을 업로드해야 합니다.');
+    }
+    if (file.mimetype !== 'application/pdf') {
+      throw new BadRequestException('PDF 파일만 허용됩니다.');
+    }
+    return this.pdfAnalysisService.measureTokensCropped(file);
+  }
 }
