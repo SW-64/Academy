@@ -284,7 +284,8 @@ export class AnalysisService {
     }
   }
 
-  async estimateImageTokens(fileId: string): Promise<number> {
+  async estimateImageTokens(imageBuffer: Buffer): Promise<number> {
+    const base64 = imageBuffer.toString('base64');
     const response = await fetch('https://api.moonshot.ai/v1/tokenizers/estimate-token-count', {
       method: 'POST',
       headers: {
@@ -298,7 +299,7 @@ export class AnalysisService {
           {
             role: 'user',
             content: [
-              { type: 'image_url', image_url: { url: `ms://${fileId}` } },
+              { type: 'image_url', image_url: { url: `data:image/png;base64,${base64}` } },
               { type: 'text', text: '문제를 해설해줘.' },
             ],
           },
@@ -312,10 +313,6 @@ export class AnalysisService {
 
     const json = (await response.json()) as { data: { total_tokens: number } };
     return json.data.total_tokens;
-  }
-
-  async deleteFile(fileId: string): Promise<void> {
-    await this.client.files.delete(fileId);
   }
 
   async processImages(images: string[]): Promise<SolveResponse> {

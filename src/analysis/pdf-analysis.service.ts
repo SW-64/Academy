@@ -37,25 +37,20 @@ export class PdfAnalysisService {
     await writeFile(tmpPdfPath, file.buffer);
     await mkdir(tmpImgDir, { recursive: true });
 
-    const uploadedFileIds: string[] = [];
     try {
       await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
       const filenames = (await readdir(tmpImgDir)).sort();
 
-      const fileIds = await Promise.all(
-        filenames.map(async (filename, i) => {
-          const buf = await readFile(join(tmpImgDir, filename));
-          return this.analysisService.uploadFileToMoonshot(buf, `${i}.png`, 'image/png');
-        }),
+      const buffers = await Promise.all(
+        filenames.map((filename) => readFile(join(tmpImgDir, filename))),
       );
-      uploadedFileIds.push(...fileIds);
 
       const perImageTokens = await Promise.all(
-        fileIds.map((id) => this.analysisService.estimateImageTokens(id)),
+        buffers.map((buf) => this.analysisService.estimateImageTokens(buf)),
       );
 
       return {
-        image_count: fileIds.length,
+        image_count: buffers.length,
         total_tokens: perImageTokens.reduce((s, t) => s + t, 0),
         per_image_tokens: perImageTokens,
       };
@@ -63,7 +58,6 @@ export class PdfAnalysisService {
       await Promise.all([
         unlink(tmpPdfPath).catch(() => {}),
         rm(tmpImgDir, { recursive: true, force: true }).catch(() => {}),
-        ...uploadedFileIds.map((id) => this.analysisService.deleteFile(id).catch(() => {})),
       ]);
     }
   }
@@ -77,12 +71,11 @@ export class PdfAnalysisService {
     await writeFile(tmpPdfPath, file.buffer);
     await mkdir(tmpImgDir, { recursive: true });
 
-    const uploadedFileIds: string[] = [];
     try {
       await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
       const filenames = (await readdir(tmpImgDir)).sort();
 
-      const fileIds: string[] = new Array(filenames.length * 2);
+      const croppedBuffers: Buffer[] = new Array(filenames.length * 2);
       await Promise.all(
         filenames.map(async (filename, pageIndex) => {
           const pageBuffer = await readFile(join(tmpImgDir, filename));
@@ -90,24 +83,17 @@ export class PdfAnalysisService {
             sharp(pageBuffer).extract(CROP.left).png().toBuffer(),
             sharp(pageBuffer).extract(CROP.right).png().toBuffer(),
           ]);
-
-          const [leftId, rightId] = await Promise.all([
-            this.analysisService.uploadFileToMoonshot(leftBuffer, `${pageIndex * 2}.png`, 'image/png'),
-            this.analysisService.uploadFileToMoonshot(rightBuffer, `${pageIndex * 2 + 1}.png`, 'image/png'),
-          ]);
-
-          fileIds[pageIndex * 2] = leftId;
-          fileIds[pageIndex * 2 + 1] = rightId;
+          croppedBuffers[pageIndex * 2] = leftBuffer;
+          croppedBuffers[pageIndex * 2 + 1] = rightBuffer;
         }),
       );
-      uploadedFileIds.push(...fileIds);
 
       const perImageTokens = await Promise.all(
-        fileIds.map((id) => this.analysisService.estimateImageTokens(id)),
+        croppedBuffers.map((buf) => this.analysisService.estimateImageTokens(buf)),
       );
 
       return {
-        image_count: fileIds.length,
+        image_count: croppedBuffers.length,
         total_tokens: perImageTokens.reduce((s, t) => s + t, 0),
         per_image_tokens: perImageTokens,
       };
@@ -115,7 +101,6 @@ export class PdfAnalysisService {
       await Promise.all([
         unlink(tmpPdfPath).catch(() => {}),
         rm(tmpImgDir, { recursive: true, force: true }).catch(() => {}),
-        ...uploadedFileIds.map((id) => this.analysisService.deleteFile(id).catch(() => {})),
       ]);
     }
   }
