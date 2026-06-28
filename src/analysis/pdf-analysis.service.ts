@@ -16,9 +16,19 @@ export interface TokenMeasureResult {
 
 const execFileAsync = promisify(execFile);
 
-const CROP = {
-  left:  { left: 60,   top: 620, width: 1654, height: 4343 },
-  right: { left: 1794, top: 620, width: 1655, height: 4343 },
+const CROP: Record<number, { left: { left: number; top: number; width: number; height: number }; right: { left: number; top: number; width: number; height: number } }> = {
+  300: {
+    left:  { left: 60,   top: 620, width: 1654, height: 4343 },
+    right: { left: 1794, top: 620, width: 1655, height: 4343 },
+  },
+  200: {
+    left:  { left: 40,   top: 413, width: 1103, height: 2895 },
+    right: { left: 1196, top: 413, width: 1103, height: 2895 },
+  },
+  150: {
+    left:  { left: 30,  top: 310, width: 827, height: 2172 },
+    right: { left: 897, top: 310, width: 828, height: 2172 },
+  },
 };
 
 @Injectable()
@@ -79,9 +89,10 @@ export class PdfAnalysisService {
       await Promise.all(
         filenames.map(async (filename, pageIndex) => {
           const pageBuffer = await readFile(join(tmpImgDir, filename));
+          const crop = CROP[dpi];
           const [leftBuffer, rightBuffer] = await Promise.all([
-            sharp(pageBuffer).extract(CROP.left).png().toBuffer(),
-            sharp(pageBuffer).extract(CROP.right).png().toBuffer(),
+            sharp(pageBuffer).extract(crop.left).png().toBuffer(),
+            sharp(pageBuffer).extract(crop.right).png().toBuffer(),
           ]);
           croppedBuffers[pageIndex * 2] = leftBuffer;
           croppedBuffers[pageIndex * 2 + 1] = rightBuffer;
@@ -169,9 +180,10 @@ export class PdfAnalysisService {
       await Promise.all(
         filenames.map(async (filename, pageIndex) => {
           const pageBuffer = await readFile(join(tmpImgDir, filename));
+          const crop = CROP[dpi];
           const [leftBuffer, rightBuffer] = await Promise.all([
-            sharp(pageBuffer).extract(CROP.left).png().toBuffer(),
-            sharp(pageBuffer).extract(CROP.right).png().toBuffer(),
+            sharp(pageBuffer).extract(crop.left).png().toBuffer(),
+            sharp(pageBuffer).extract(crop.right).png().toBuffer(),
           ]);
 
           const [leftFileId, rightFileId] = await Promise.all([
