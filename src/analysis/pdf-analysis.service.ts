@@ -29,7 +29,7 @@ export class PdfAnalysisService {
     private readonly analysisService: AnalysisService,
   ) {}
 
-  async measureTokensRaw(file: Express.Multer.File): Promise<TokenMeasureResult> {
+  async measureTokensRaw(file: Express.Multer.File, dpi = 300): Promise<TokenMeasureResult> {
     const tmpPdfPath = join(tmpdir(), `${uuidv4()}.pdf`);
     const tmpImgDir = join(tmpdir(), uuidv4());
     const outputPrefix = join(tmpImgDir, 'page');
@@ -38,7 +38,7 @@ export class PdfAnalysisService {
     await mkdir(tmpImgDir, { recursive: true });
 
     try {
-      await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
+      await execFileAsync('pdftoppm', ['-r', String(dpi), '-png', tmpPdfPath, outputPrefix]);
       const filenames = (await readdir(tmpImgDir)).sort();
 
       const buffers = await Promise.all(
@@ -63,7 +63,7 @@ export class PdfAnalysisService {
   }
 
   // 크롭 로직: PdfAnalysisService.convertAndEnqueue()의 CROP 상수 및 sharp().extract() 동일 적용
-  async measureTokensCropped(file: Express.Multer.File): Promise<TokenMeasureResult> {
+  async measureTokensCropped(file: Express.Multer.File, dpi = 300): Promise<TokenMeasureResult> {
     const tmpPdfPath = join(tmpdir(), `${uuidv4()}.pdf`);
     const tmpImgDir = join(tmpdir(), uuidv4());
     const outputPrefix = join(tmpImgDir, 'page');
@@ -72,7 +72,7 @@ export class PdfAnalysisService {
     await mkdir(tmpImgDir, { recursive: true });
 
     try {
-      await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
+      await execFileAsync('pdftoppm', ['-r', String(dpi), '-png', tmpPdfPath, outputPrefix]);
       const filenames = (await readdir(tmpImgDir)).sort();
 
       const croppedBuffers: Buffer[] = new Array(filenames.length * 2);
@@ -105,7 +105,7 @@ export class PdfAnalysisService {
     }
   }
 
-  async convertAndEnqueueRaw(file: Express.Multer.File): Promise<{ jobId: string }> {
+  async convertAndEnqueueRaw(file: Express.Multer.File, dpi = 300): Promise<{ jobId: string }> {
     const jobId = uuidv4();
 
     this.logger.log(`[${jobId}] PDF 변환 시작 (크롭 없음)`);
@@ -118,7 +118,7 @@ export class PdfAnalysisService {
     await mkdir(tmpImgDir, { recursive: true });
 
     try {
-      await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
+      await execFileAsync('pdftoppm', ['-r', String(dpi), '-png', tmpPdfPath, outputPrefix]);
 
       const filenames = (await readdir(tmpImgDir)).sort();
       this.logger.log(`[${jobId}] ${filenames.length}페이지 변환 완료`);
@@ -146,7 +146,7 @@ export class PdfAnalysisService {
     }
   }
 
-  async convertAndEnqueue(file: Express.Multer.File): Promise<{ jobId: string }> {
+  async convertAndEnqueue(file: Express.Multer.File, dpi = 300): Promise<{ jobId: string }> {
     const jobId = uuidv4();
 
     this.logger.log(`[${jobId}] PDF 변환 시작`);
@@ -159,7 +159,7 @@ export class PdfAnalysisService {
     await mkdir(tmpImgDir, { recursive: true });
 
     try {
-      await execFileAsync('pdftoppm', ['-r', '300', '-png', tmpPdfPath, outputPrefix]);
+      await execFileAsync('pdftoppm', ['-r', String(dpi), '-png', tmpPdfPath, outputPrefix]);
 
       const filenames = (await readdir(tmpImgDir)).sort();
       this.logger.log(`[${jobId}] ${filenames.length}페이지 변환 완료`);
