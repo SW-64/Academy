@@ -69,6 +69,9 @@
 
 시험지 PDF를 업로드하면 AI(Kimi K2.6)가 문제를 풀어 해설을 생성하는 기능이다.
 
+자세한 내용은 블로그에 더 담겨져있다.
+https://development-getting-better.tistory.com/187
+
 ### 비동기 처리
 
 AI 해설은 외부 API(Moonshot) 호출이라 응답까지 수십 분이 걸린다.
