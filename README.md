@@ -188,7 +188,7 @@ async getStatus(jobId: string): Promise<{ jobId: string; status: string; result:
 
 보라색 부분은 제거하고, 하늘색 부분과 분홍색 부분. 이렇게 2개로 크롭을 진행시켰다.
 
-#### 결과
+#### 1차 결과
 
 크롭 전: 117,361
 크롭 후: 146,850
@@ -204,6 +204,38 @@ Kimi의 정책은 다음과 같다.
 크롭 후는 기준 해상도인 4K 바로 아래에 위치했다.
 
 그러므로 입력 토큰량을 결정하는 해상도가 비슷하기에 장당 토큰이 동일했다.
+
+
+#### 어떻게 크롭해야 토큰량을 줄일 수 있을까?
+
+Kimi 개발자 커뮤니티에 내 상황을 올렸고, 그에 대한 답이 왔다.
+
+문제는 크롭 전/후로 내가 기준 해상도인 4K를 넘겼거나 비슷하기 때문이다. 
+
+그렇기에 300DPI를 150DPI로 내려, 해상도를 결정하는 픽셀을 반으로 낮췄다.
+
+즉, 해상도가 1/4이 되었고 그 이미지로 토큰량을 측정했다. 
+
+<img width="1280" height="433" alt="image" src="https://github.com/user-attachments/assets/19b1af0e-3eb4-41ef-883d-5c3929e431e9" />
+
+한 장당, 2576으로  약 1800토큰량이 감소되었다.
+
+다만 크롭으로 이미지 수가 2배가 되므로, 실제 절함 효과는 해설 API 전체로 확인을 해야한다.
+
+해설 API의 결과는 다음과 같다.
+
+<img width="645" height="146" alt="image" src="https://github.com/user-attachments/assets/2c435cfb-94ef-44da-b4c5-30f0ce427cd5" />
+<img width="634" height="144" alt="image" src="https://github.com/user-attachments/assets/b36cff4c-7725-482b-afff-d92833b92e77" />
+
+전체 입력 토큰이 117,361에서 84,970으로, 약 28% 절감됐다.
+
+150DPI의 픽셀로 낮출 경우, 해설의 품질이 떨어지지 않을까 걱정되어
+
+API의 반환값으로 나온 해설 전체를 복사해서 AI에게 전달해봤다.
+
+<img width="632" height="666" alt="image" src="https://github.com/user-attachments/assets/28d66c20-4d33-4801-bbcd-bb94b39ab4e6" />
+
+품질에는 영향이 없었다.
 
 더 자세한 내용은 블로그로 정리를 했다.
 https://development-getting-better.tistory.com/186
